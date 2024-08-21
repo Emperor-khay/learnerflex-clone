@@ -52,10 +52,12 @@ class AuthService
                 'description' => 'Complete your registration payment',
             ]
         ];
+
         $transaction = [
             'tx_ref' => $paymentData['tx_ref'],
             'amount' => $paymentData['amount'],
             'currency' => $paymentData['currency'],
+            'is_onboard' => true,
         ];
 
         $this->userService->createTransactionForUser($user, $transaction);
@@ -72,14 +74,19 @@ class AuthService
 
     public function login(string $email, string $password)
     {
-        $user = $this->userService->getUserByEmail($email);
-        if (!$user || !Hash::check($password, $user->password)) {
+        try {
+            $user = $this->userService->getUserByEmail($email);
+            if (!Hash::check($password, $user->password)) {
+                throw new \Exception('Credentials Invalid', 422);
+            }
+
+            return [
+                'user' => $user,
+                'token' => $user->createToken('lfT')->plainTextToken
+            ];
+        } catch (\Throwable $th) {
             throw new \Exception('Credentials Invalid', 422);
         }
-
-        return [
-            'user' => $user
-        ];
     }
 
     public function logout($user): bool

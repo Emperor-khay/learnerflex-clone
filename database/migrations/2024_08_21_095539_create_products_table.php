@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ProductType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,14 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('digital_products', function (Blueprint $table) {
+        Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete(null);
+            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('vendor_id')->constrained('vendors');
             $table->string('name');
-            $table->string('seller_name');
-            $table->integer('price');
-            $table->string('commission');
-            $table->string('contact_email');
+            $table->string('description')->nullable();
+            $table->decimal('price', 15, 2);
+            $table->decimal('old_price', 15, 2)->nullable();
+            $table->enum('type', array_map(fn($case) => $case->value, ProductType::cases()));
+            $table->string('commission')->nullable();
+            $table->string('contact_email')->nullable();
             $table->string('affiliate_link')->nullable();
             $table->string('vsl_pa_link')->nullable();
             $table->string('access_link')->nullable();
@@ -39,6 +43,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('digital_products');
+        Schema::dropIfExists('products');
     }
 };

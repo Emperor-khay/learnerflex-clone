@@ -25,6 +25,8 @@ class User extends Authenticatable
         'password',
         'country',
         'image',
+        'has_paid_onboard',
+        'is_vendor',
         'otp',
         'role',
     ];
@@ -50,6 +52,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'has_paid_onboard' => 'boolean',
+            'is_vendor' => 'boolean',
             'role' => 'array',
         ];
     }
@@ -60,5 +64,21 @@ class User extends Authenticatable
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Get the vendors of the user.
+     */
+    public function vendor(): HasMany
+    {
+        return $this->hasMany(Vendor::class);
+    }
+
+    /**
+     * Get the reviews of the user.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 }

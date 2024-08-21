@@ -16,9 +16,22 @@ class Transaction extends Model
         'amount',
         'currency',
         'status',
+        'is_onboard',
         'user_id',
         'meta',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_onboard' => 'boolean',
+        ];
+    }
 
     /**
      * Get the user that owns the transaction.

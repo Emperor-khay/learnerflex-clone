@@ -23,7 +23,7 @@ class LoginController extends Controller
             $result = $this->authService->login($attempt['email'], $attempt['password']);
             return $this->success($result, 'Login Successfully!');
         } catch (\Throwable $th) {
-            return $this->error([], $th->getMessage(), $th->getCode());
+            return $this->error(null, $th->getMessage(), $th->getCode());
         }
     }
 }

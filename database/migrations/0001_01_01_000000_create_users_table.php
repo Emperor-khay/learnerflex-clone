@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('password');
             $table->string('country')->nullable();
             $table->string('image')->nullable();
+            $table->boolean('has_paid_onboard')->default(0);
+            $table->boolean('is_vendor')->default(0);
             $table->string('otp')->nullable();
             $table->json('role')->default('[affiliate]');
             $table->rememberToken();

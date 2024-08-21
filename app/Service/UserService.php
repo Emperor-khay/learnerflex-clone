@@ -45,4 +45,14 @@ class UserService
     {
         return $user->transactions()->create($transactionData);
     }
+
+    public function getTransactionsForUser(User $user)
+    {
+        return $user->transactions;
+    }
+
+    public function createVendorForUser(User $user, array $vendorProfile)
+    {
+        return $user->vendor()->create($vendorProfile);
+    }
 }

@@ -2,8 +2,9 @@
 
 namespace App\Enums;
 
-enum OtherProductType: string
+enum ProductType: string
 {
     case MENTORSHIP  = 'mentorship';
     case EBOOK = 'ebook';
+    case DIGITAL = 'digital';
 }

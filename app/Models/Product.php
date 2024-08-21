@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class DigitalProduct extends Model
+class Product extends Model
 {
     use HasFactory;
 
@@ -16,11 +18,15 @@ class DigitalProduct extends Model
      */
     protected $fillable = [
         'user_id',
+        'vendor_id',
         'name',
-        'seller_name',
+        'description',
         'price',
+        'old_price',
+        'type',
         'commission',
         'contact_email',
+        'access_link',
         'affiliate_link',
         'vsl_pa_link',
         'access_link',
@@ -44,5 +50,18 @@ class DigitalProduct extends Model
         return [
             'is_partnership' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the vendor that owns the product.
+     */
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 }

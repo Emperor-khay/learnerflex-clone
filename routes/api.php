@@ -18,3 +18,4 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/users', [UserController::class, 'index']);
+Route::get('/users/{user}/transactions', [UserController::class, 'transactions']);

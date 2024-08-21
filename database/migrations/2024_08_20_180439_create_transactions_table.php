@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->string('currency', 10);
             $table->string('status')->default('pending');
+            $table->boolean('is_onboard')->default(0);
             $table->json('meta')->nullable();  // To store any additional data
             $table->timestamps();
         });
