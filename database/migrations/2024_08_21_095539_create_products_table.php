@@ -18,12 +18,12 @@ return new class extends Migration
             $table->foreignId('vendor_id')->constrained('vendors');
             $table->string('name');
             $table->string('description')->nullable();
+            $table->string('image')->nullable();
             $table->decimal('price', 15, 2);
             $table->decimal('old_price', 15, 2)->nullable();
             $table->enum('type', array_map(fn($case) => $case->value, ProductType::cases()));
             $table->string('commission')->nullable();
             $table->string('contact_email')->nullable();
-            $table->string('affiliate_link')->nullable();
             $table->string('vsl_pa_link')->nullable();
             $table->string('access_link')->nullable();
             $table->string('sale_page_link')->nullable();
@@ -35,6 +35,7 @@ return new class extends Migration
             $table->string('yt_link')->nullable();
             $table->string('fb_link')->nullable();
             $table->string('tt_link')->nullable();
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }

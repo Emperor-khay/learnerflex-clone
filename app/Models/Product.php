@@ -21,13 +21,13 @@ class Product extends Model
         'vendor_id',
         'name',
         'description',
+        'image',
         'price',
         'old_price',
         'type',
         'commission',
         'contact_email',
         'access_link',
-        'affiliate_link',
         'vsl_pa_link',
         'access_link',
         'sale_page_link',
@@ -39,6 +39,7 @@ class Product extends Model
         'yt_link',
         'fb_link',
         'tt_link',
+        'status',
     ];
 
     /**

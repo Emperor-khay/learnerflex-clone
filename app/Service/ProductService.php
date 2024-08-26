@@ -34,6 +34,19 @@ class ProductService
         return Product::all();
     }
 
+    public function getProductsWhereStatus(string $status)
+    {
+        return Product::where('status', $status)->get();
+    }
+
+    public function updateProductById($product_id, array $updatedData)
+    {
+        $product = $this->getProductById($product_id);
+        return DB::transaction(function () use ($product, $updatedData) {
+            return $product->update($updatedData);
+        });
+    }
+
     public function deleteOneProduct(int $id)
     {
         $product = $this->getProductById($id);

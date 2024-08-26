@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auths\LoginController;
 use App\Http\Controllers\Auths\LogoutController;
 use App\Http\Controllers\Auths\RegisterController;
+use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Users\UserController;
 use App\Http\Controllers\Vendor\VendorController;
 use Illuminate\Http\Request;
@@ -26,4 +27,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}/vendors', [VendorController::class, 'index']);
     Route::post('/vendor/create', [VendorController::class, 'store']);
     Route::delete('/vendors/{vendor}/delete', [VendorController::class, 'delete']);
+
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/status/{status}', [ProductController::class, 'getProductsWithStatus']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
+    Route::post('/product/{vendor}/digital/create', [ProductController::class, 'createDigitalProduct']);
+    Route::post('/product/{vendor}/other/create', [ProductController::class, 'createOtherProduct']);
+    Route::patch('/products/{product}/update', [ProductController::class, 'edit']);
+    Route::delete('/products/{product}/delete', [ProductController::class, 'destroy']);
 });

@@ -51,7 +51,7 @@ class VendorController extends Controller
             return $this->success($result, 'Vendor Created!', Response::HTTP_CREATED);
         } catch (\Throwable $th) {
             Log::error('Vendor creation failed', ['error' => $th->getMessage()]);
-            return $this->error([], $th->getMessage(), Response::HTTP_BAD_REQUEST);
+            return $this->error(null, $th->getMessage(), Response::HTTP_BAD_REQUEST);
         }
     }
 
