@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('affiliate_link')->nullable();
             $table->string('vsl_pa_link')->nullable();
             $table->string('access_link')->nullable();
+            $table->string('sale_page_link')->nullable();
             $table->string('sale_challenge_link')->nullable();
             $table->string('promotional_material')->nullable();
             $table->boolean('is_partnership')->default(false)->nullable();

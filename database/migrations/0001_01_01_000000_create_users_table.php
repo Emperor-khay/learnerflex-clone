@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\VendorStatusEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +14,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->string('aff_id')->unique();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
@@ -22,8 +24,9 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->boolean('has_paid_onboard')->default(0);
             $table->boolean('is_vendor')->default(0);
+            $table->enum('vendor_status', array_map(fn($case) => $case->value, VendorStatusEnum::cases()))
+                    ->default(VendorStatusEnum::DOWN->value);
             $table->string('otp')->nullable();
-            $table->json('role')->default('[affiliate]');
             $table->rememberToken();
             $table->timestamps();
         });

@@ -30,6 +30,7 @@ class Product extends Model
         'affiliate_link',
         'vsl_pa_link',
         'access_link',
+        'sale_page_link',
         'sale_challenge_link',
         'promotional_material',
         'is_partnership',

@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class UserService
 {
@@ -51,8 +52,22 @@ class UserService
         return $user->transactions;
     }
 
-    public function createVendorForUser(User $user, array $vendorProfile)
+    public function createVendorForUser(User $user, array $vendorData)
     {
-        return $user->vendor()->create($vendorProfile);
+        return DB::transaction(function () use ($user, $vendorData) {
+            return $user->vendors()->create($vendorData);
+        });
+    }
+
+    public function getUserVendors(User $user)
+    {
+        return $user->vendors;
+    }
+
+    public function updateUserCurrency(User $user, string $currency)
+    {
+        return $user->update([
+            'currency' => $currency
+        ]);
     }
 }

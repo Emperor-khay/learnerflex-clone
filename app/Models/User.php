@@ -8,10 +8,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            $user->aff_id = Str::uuid7();
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -27,8 +37,8 @@ class User extends Authenticatable
         'image',
         'has_paid_onboard',
         'is_vendor',
+        'vendor_status',
         'otp',
-        'role',
     ];
 
     /**
@@ -54,7 +64,6 @@ class User extends Authenticatable
             'password' => 'hashed',
             'has_paid_onboard' => 'boolean',
             'is_vendor' => 'boolean',
-            'role' => 'array',
         ];
     }
 
@@ -69,7 +78,7 @@ class User extends Authenticatable
     /**
      * Get the vendors of the user.
      */
-    public function vendor(): HasMany
+    public function vendors(): HasMany
     {
         return $this->hasMany(Vendor::class);
     }
@@ -80,5 +89,13 @@ class User extends Authenticatable
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Get the withdrawals of the user.
+     */
+    public function withdrawals(): HasMany
+    {
+        return $this->hasMany(Withdrawal::class);
     }
 }

@@ -35,4 +35,14 @@ class UserController extends Controller
             return $this->error([], $th->getMessage(), 400);
         }
     }
+
+    public function displayCurrency(User $user, Request $request)
+    {
+        try {
+            $users = $this->userService->updateUserCurrency($user, $request->input('currency'));
+            return $this->success($users, 'user currency updated!', 201);
+        } catch (\Throwable $th) {
+            return $this->error([], $th->getMessage(), 400);
+        }
+    }
 }
