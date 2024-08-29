@@ -70,4 +70,13 @@ class UserService
             'currency' => $currency
         ]);
     }
+
+    public function updateUserImage(User $user, string $newPath)
+    {
+        return DB::transaction(function () use ($user, $newPath) {
+            return $user->update([
+                'image' => $newPath
+            ]);
+        });
+    }
 }
