@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Users;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
 use App\Service\UserService;
 use Illuminate\Http\Request;
@@ -67,6 +68,21 @@ class UserController extends Controller
             return $this->success($result, 'profile image updated!', 201);
         } catch (\Throwable $th) {
             Log::error("user image update error: $th");
+            return $this->error([], $th->getMessage(), 400);
+        }
+    }
+
+    public function handleUserProfile(UpdateProfileRequest $updateProfileRequest)
+    {
+        try {
+            $profile = $updateProfileRequest->validated();
+            if(empty($profile)){
+                return $this->error([], 'Missing details!', 400);
+            }
+            $user = $this->userService->updateUserDetails($updateProfileRequest->user(), $profile);
+            return $this->success($user, 'Profile updated!', 201);
+        } catch (\Throwable $th) {
+            Log::error("Profile update: $th");
             return $this->error([], $th->getMessage(), 400);
         }
     }

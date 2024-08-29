@@ -34,6 +34,7 @@ class Product extends Model
         'sale_challenge_link',
         'promotional_material',
         'is_partnership',
+        'is_affiliated',
         'x_link',
         'ig_link',
         'yt_link',
@@ -51,6 +52,7 @@ class Product extends Model
     {
         return [
             'is_partnership' => 'boolean',
+            'is_affiliated' => 'boolean',
         ];
     }
 

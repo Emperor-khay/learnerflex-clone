@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete(null);
             $table->string('name');
-            $table->string('currency');
+            $table->string('number');
             $table->string('country');
             $table->timestamps();
         });

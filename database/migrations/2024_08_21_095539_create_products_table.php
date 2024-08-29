@@ -30,6 +30,7 @@ return new class extends Migration
             $table->string('sale_challenge_link')->nullable();
             $table->string('promotional_material')->nullable();
             $table->boolean('is_partnership')->default(false)->nullable();
+            $table->boolean('is_affiliated')->default(true);
             $table->string('x_link')->nullable();
             $table->string('ig_link')->nullable();
             $table->string('yt_link')->nullable();

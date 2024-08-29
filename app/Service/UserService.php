@@ -79,4 +79,12 @@ class UserService
             return $user->refresh();
         });
     }
+
+    public function updateUserDetails(User $user, array $data): User
+    {
+        return DB::transaction(function () use ($user, $data) {
+            $user->update($data);
+            return $user->refresh();
+        });
+    }
 }
