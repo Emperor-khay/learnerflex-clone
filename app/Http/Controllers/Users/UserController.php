@@ -48,7 +48,7 @@ class UserController extends Controller
         }
     }
 
-    public function handleUserImage(User $user, Request $request)
+    public function handleUserImage(Request $request)
     {
         try {
             $data = $request->all();
@@ -58,9 +58,10 @@ class UserController extends Controller
             } else {
                 $data['image'] = null;
             }
-            $user = $this->userService->updateUserImage($user, $data['image']);
-            $user['image'] = $user->image ? Storage::url($user->image) : null;
-            return $this->success($user, 'profile image updated!', 201);
+            $user = $request->user();
+            $result = $this->userService->updateUserImage($user, $data['image']);
+            $result['image'] = $result->image ? Storage::url($result->image) : null;
+            return $this->success($result, 'profile image updated!', 201);
         } catch (\Throwable $th) {
             Log::error("user image update error: $th");
             return $this->error([], $th->getMessage(), 400);

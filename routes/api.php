@@ -24,7 +24,7 @@ Route::get('/users', [UserController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}/transactions', [UserController::class, 'transactions']);
     Route::patch('/users/{user}/currency', [UserController::class, 'transactions']);
-    Route::patch('/users/{user}/image', [UserController::class, 'handleUserImage']);
+    Route::post('/user/update/image', [UserController::class, 'handleUserImage']);
     Route::get('/users/{user}/vendors', [VendorController::class, 'index']);
     Route::post('/vendor/create', [VendorController::class, 'store']);
     Route::delete('/vendors/{vendor}/delete', [VendorController::class, 'delete']);
