@@ -36,6 +36,8 @@ class PaymentController extends Controller
                     ->get('https://api.flutterwave.com/v3/transactions/' . $request->query('transaction_id') . '/verify');
 
                 $responseBody = $response->json();
+                $tx_ref = $request->query('tx_ref');
+                $clientUrl = env('CLIENT_URL');
 
                 if (
                     $responseBody['data']['status'] === 'successful' &&
@@ -48,14 +50,13 @@ class PaymentController extends Controller
                     $transaction->status = 'successful';
                     $transaction->save();
 
-                    // You can now proceed with any other post-payment processes here
-                    return $this->success([], 'Payment confirmed successfully.');
+                    return redirect("$clientUrl/auth/payment?tx_ref=$tx_ref&message=Payment+confirmed+successfully.");
                 } else {
                     // Payment verification failed
                     $transaction->status = 'failed';
                     $transaction->save();
 
-                    return $this->error([], 'Payment verification failed.', 400);
+                    return redirect("$clientUrl/auth/payment?tx_ref=$tx_ref&message=Payment+verification+failed.");
                 }
             } else {
                 return $this->error([], 'Transaction not found.', 404);

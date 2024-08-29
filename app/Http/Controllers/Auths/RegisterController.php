@@ -7,6 +7,7 @@ use App\Http\Requests\RegisterRequest;
 use App\Service\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class RegisterController extends Controller
 {
@@ -23,6 +24,7 @@ class RegisterController extends Controller
             $result = $this->authService->register($request->validated());
             return $this->success($result, 'Onboarding Successful', Response::HTTP_CREATED);
         } catch (\Throwable $th) {
+            Log::error("signup error: $th");
             return $this->error([], $th->getMessage(), Response::HTTP_BAD_REQUEST);
         }
     }
