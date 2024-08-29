@@ -74,9 +74,9 @@ class UserService
     public function updateUserImage(User $user, string $newPath)
     {
         return DB::transaction(function () use ($user, $newPath) {
-            return $user->update([
-                'image' => $newPath
-            ]);
+            $user->image = $newPath;
+            $user->save();
+            return $user->refresh();
         });
     }
 }

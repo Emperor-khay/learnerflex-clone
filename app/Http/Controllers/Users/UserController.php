@@ -61,6 +61,9 @@ class UserController extends Controller
             $user = $request->user();
             $result = $this->userService->updateUserImage($user, $data['image']);
             $result['image'] = $result->image ? Storage::url($result->image) : null;
+            if ($user->image) {
+                Storage::disk('public')->delete($user->photo);
+            }
             return $this->success($result, 'profile image updated!', 201);
         } catch (\Throwable $th) {
             Log::error("user image update error: $th");
