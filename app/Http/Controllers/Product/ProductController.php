@@ -34,11 +34,11 @@ class ProductController extends Controller
         }
     }
 
-    public function getProductsWithStatus(string $status): JsonResponse
+    public function getApprovedProducts(string $status): JsonResponse
     {
         try {
             $products = $this->productService->getProductsWhereStatus($status);
-            return $this->success($products, 'Products with status of success!');
+            return $this->success($products, 'Products with status of approved!');
         } catch (\Throwable $th) {
             return $this->error([], $th->getMessage(), Response::HTTP_BAD_REQUEST);
         }

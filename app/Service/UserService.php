@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Enums\VendorStatusEnum;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -9,7 +10,9 @@ class UserService
 {
     public function newUser(array $data): User
     {
-        return User::create($data);
+        return DB::transaction(function () use ($data) {
+           return User::create($data);
+        });
     }
 
     public function getUserById(int $id): User
@@ -55,13 +58,13 @@ class UserService
     public function createVendorForUser(User $user, array $vendorData)
     {
         return DB::transaction(function () use ($user, $vendorData) {
-            return $user->vendors()->create($vendorData);
+            return $user->vendor()->create($vendorData);
         });
     }
 
-    public function getUserVendors(User $user)
+    public function getUserVendor(User $user)
     {
-        return $user->vendors;
+        return $user->vendor;
     }
 
     public function updateUserCurrency(User $user, string $currency)
@@ -84,6 +87,32 @@ class UserService
     {
         return DB::transaction(function () use ($user, $data) {
             $user->update($data);
+            return $user->refresh();
+        });
+    }
+
+    public function updateUserVendorApplication(User $user, string $data)
+    {
+        if($user->vendorStatus) {
+            throw new \Exception('vendor request already exists', 422);
+        }
+        return DB::transaction(function () use ($user, $data) {
+            $user->vendorStatus()->create(['sale_url' => $data]);
+            $user->update(['vendor_status' => VendorStatusEnum::PENDING->value]);
+            return $user->refresh();
+        });
+    }
+
+    public function updateUserVendorStatus(User $user)
+    {
+        if($user->is_vendor) {
+            throw new \Exception('User is already a vendor!', 422);
+        }
+        return DB::transaction(function () use ($user) {
+            $user->update([
+                'is_vendor' => true,
+                'vendor_status' => VendorStatusEnum::UP->value,
+            ]);
             return $user->refresh();
         });
     }

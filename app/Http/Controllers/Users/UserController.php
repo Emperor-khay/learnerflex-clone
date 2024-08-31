@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Users;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Requests\WantVendorRequest;
+use App\Mail\VendorAccountWanted;
 use App\Models\User;
 use App\Service\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
@@ -83,6 +86,32 @@ class UserController extends Controller
             return $this->success($user, 'Profile updated!', 201);
         } catch (\Throwable $th) {
             Log::error("Profile update: $th");
+            return $this->error([], $th->getMessage(), 400);
+        }
+    }
+
+    public function handleVendorRequest(WantVendorRequest $wantVendorRequest)
+    {
+        try {
+            $saleUrl = $wantVendorRequest->saleUrl;
+            $user = $wantVendorRequest->user();
+            $user = $this->userService->updateUserVendorApplication($user, $saleUrl);
+            // send email to admins
+            Mail::to(env('MAIL_FROM_ADDRESS'))->send(new VendorAccountWanted($user, $saleUrl));
+            return $this->success($user, 'Vendor request Sent!');
+        } catch (\Throwable $th) {
+            Log::error("Vendor request: $th");
+            return $this->error([], $th->getMessage(), 400);
+        }
+    }
+
+    public function handleUserVendorStatus(User $user)
+    {
+        try {
+            $user = $this->userService->updateUserVendorStatus($user);
+            return $this->success($user, 'User Vendor Status Updated!');
+        } catch (\Throwable $th) {
+            Log::error("Vendor request: $th");
             return $this->error([], $th->getMessage(), 400);
         }
     }

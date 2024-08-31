@@ -26,12 +26,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/users/{user}/currency', [UserController::class, 'transactions']);
     Route::post('/user/update/image', [UserController::class, 'handleUserImage']);
     Route::post('/user/update/profile', [UserController::class, 'handleUserProfile']);
-    Route::get('/users/{user}/vendors', [VendorController::class, 'index']);
+    Route::patch('/users/update/{user}/vendor/status', [UserController::class, 'handleUserVendorStatus']);
+    Route::post('/user/request/vendor', [UserController::class, 'handleVendorRequest']);
+    Route::get('/users/{user}/vendor', [VendorController::class, 'index']);
     Route::post('/vendor/create', [VendorController::class, 'store']);
     Route::delete('/vendors/{vendor}/delete', [VendorController::class, 'delete']);
 
     Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/status/{status}', [ProductController::class, 'getProductsWithStatus']);
+    Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
     Route::post('/product/{vendor}/digital/create', [ProductController::class, 'createDigitalProduct']);
     Route::post('/product/{vendor}/other/create', [ProductController::class, 'createOtherProduct']);

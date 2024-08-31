@@ -29,7 +29,8 @@ class OtherProductRequest extends FormRequest
             'price' => ['required', 'integer'],
             'old_price' => ['required', 'integer'],
             'access_link' => ['required', 'string'],
-            'type' => ['required', 'string', 'in:' . ProductType::EBOOK->value . ',' . ProductType::MENTORSHIP->value]
+            'type' => ['required', 'string', 'in:' . ProductType::EBOOK->value . ',' . ProductType::MENTORSHIP->value],
+            'is_affiliated' => ['boolean']
         ];
     }
 }

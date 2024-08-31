@@ -28,8 +28,8 @@ class VendorController extends Controller
     public function index(User $user): JsonResponse
     {
         try {
-            $vendors = $this->userService->getUserVendors($user);
-            return $this->success($vendors, 'Retrieved all user vendors!');
+            $vendor = $this->userService->getUserVendor($user);
+            return $this->success($vendor, 'Retrieved user vendor data!');
         } catch (\Throwable $th) {
             return $this->error([], $th->getMessage(), 400);
         }

@@ -77,11 +77,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the vendors of the user.
+     * Get the vendor associated with the user.
      */
-    public function vendors(): HasMany
+    public function vendor(): HasOne
     {
-        return $this->hasMany(Vendor::class);
+        return $this->hasOne(Vendor::class);
     }
 
     /**
@@ -106,5 +106,21 @@ class User extends Authenticatable
     public function account(): HasOne
     {
         return $this->hasOne(Account::class);
+    }
+
+    /**
+     * Get the affiliates of the user.
+     */
+    public function affiliates(): HasOne
+    {
+        return $this->hasOne(Affiliate::class);
+    }
+
+    /**
+     * Get the vendor request data of the user.
+     */
+    public function vendorStatus(): HasOne
+    {
+        return $this->hasOne(VendorStatus::class);
     }
 }
