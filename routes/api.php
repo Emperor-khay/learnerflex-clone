@@ -6,6 +6,7 @@ use App\Http\Controllers\Auths\RegisterController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Users\UserController;
 use App\Http\Controllers\Vendor\VendorController;
+use App\Http\Controllers\Flutterwave\WithdrawalController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/vendor/create', [VendorController::class, 'store']);
     Route::delete('/vendors/{vendor}/delete', [VendorController::class, 'delete']);
 
+    // products
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
@@ -39,4 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/product/{vendor}/other/create', [ProductController::class, 'createOtherProduct']);
     Route::patch('/products/{product}/update', [ProductController::class, 'edit']);
     Route::delete('/products/{product}/delete', [ProductController::class, 'destroy']);
+
+    // withdrawals
+    Route::get('/withdrawals', [WithdrawalController::class, 'index']);
 });

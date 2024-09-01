@@ -67,6 +67,11 @@ class UserService
         return $user->vendor;
     }
 
+    public function getUserWithdrawals(User $user)
+    {
+        return $user->withdrawals;
+    }
+
     public function updateUserCurrency(User $user, string $currency)
     {
         return $user->update([
