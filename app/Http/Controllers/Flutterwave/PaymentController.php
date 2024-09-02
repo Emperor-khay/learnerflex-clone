@@ -51,6 +51,11 @@ class PaymentController extends Controller
                     $transaction->status = 'successful';
                     $transaction->save();
 
+                    // update user access to market
+                    $transaction->user()->update([
+                        'market_access' => true
+                    ]);
+
                     return redirect("$clientUrl/auth/payment?tx_ref=$tx_ref&message=Payment+confirmed+successfully.");
                 } else {
                     // Payment verification failed
