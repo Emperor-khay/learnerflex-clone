@@ -26,7 +26,8 @@ class PaymentController extends Controller
 
     public function handleCallback(Request $request)
     {
-        if ($request->query('status') === 'successful') {
+        $status = $request->query('status');
+        if ($status === 'successful') {
             // Retrieve the transaction details from your database using the tx_ref
             $transaction = Transaction::where('tx_ref', $request->query('tx_ref'))->first();
 
@@ -56,14 +57,14 @@ class PaymentController extends Controller
                     $transaction->status = 'failed';
                     $transaction->save();
 
-                    return redirect("$clientUrl/auth/payment?tx_ref=$tx_ref&message=Payment+verification+failed.");
+                    return redirect("$clientUrl/auth/payment?status=$status&tx_ref=$tx_ref&message=Payment+verification+failed.");
                 }
             } else {
-                return $this->error([], 'Transaction not found.', 404);
+                return redirect("$clientUrl/auth/payment?message=Transaction+not+found&status=$status&tx_ref=$tx_ref");
             }
         }
 
         // If payment wasn't successful or if some other error occurred
-        return $this->error([], 'Payment was unsuccessful.', 400);
+        return redirect("$clientUrl/auth/payment?message=Payment+verification+failed&status=$status&tx_ref=$tx_ref");
     }
 }
