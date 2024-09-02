@@ -27,6 +27,7 @@ class PaymentController extends Controller
     public function handleCallback(Request $request)
     {
         $status = $request->query('status');
+        $clientUrl = env('CLIENT_URL');
         if ($status === 'successful') {
             // Retrieve the transaction details from your database using the tx_ref
             $transaction = Transaction::where('tx_ref', $request->query('tx_ref'))->first();
@@ -38,7 +39,6 @@ class PaymentController extends Controller
 
                 $responseBody = $response->json();
                 $tx_ref = $request->query('tx_ref');
-                $clientUrl = env('CLIENT_URL');
 
                 if (
                     $responseBody['data']['status'] === 'successful' &&
