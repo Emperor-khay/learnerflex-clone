@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('affiliates', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // The vendor
-            $table->foreignId('affiliate_id')->constrained('users')->onDelete('cascade'); // The affiliate
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // The vendor User id
+            $table->string('email'); // The affiliate's email
             $table->timestamps();
         });
     }

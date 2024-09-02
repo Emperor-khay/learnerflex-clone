@@ -44,4 +44,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // withdrawals
     Route::get('/withdrawals', [WithdrawalController::class, 'index']);
+    Route::get('/withdrawals/amount', [WithdrawalController::class, 'userWithdrawSum']);
+
+    // dashboard home endpoints
+    Route::get('/todays-affiliate-sales', [UserController::class, 'handleTodaysAffSales']);
+    Route::get('/total-affiliate-sales', [UserController::class, 'handleTotalAffiliateSales']);
+    Route::get('/available-affiliate-earnings', function() {
+        return response()->json(['amount' => 20000]);
+    });
 });

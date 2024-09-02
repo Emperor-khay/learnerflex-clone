@@ -92,4 +92,32 @@ class WithdrawalService
     {
         return Withdrawal::where('status', $status)->get();
     }
+
+    /**
+     * Get Total Withdrawals
+     *
+     * This method sums the amount of all withdrawals made by the user.
+     *
+     * @param int $userId
+     * @return float
+     */
+    public function getTotalWithdrawalsByUserId(int $userId): float
+    {
+        return Withdrawal::where('user_id', $userId)
+            ->sum('amount');
+    }
+
+    /**
+     * Get Total Withdrawals
+     *
+     * This method sums the amount of all withdrawals made by the User.
+     * It uses the User relationship for this query
+     * 
+     * @param User $user
+     * @return float
+     */
+    public function getTotalWithdrawalsByUser(User $user): float
+    {
+        return $user->withdrawals()->sum('amount');
+    }
 }

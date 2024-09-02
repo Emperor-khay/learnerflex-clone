@@ -10,7 +10,7 @@ class Affiliate extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'affiliate_id'];
+    protected $fillable = ['user_id', 'email'];
 
     /**
      * Get the user that owns the affiliate.

@@ -27,6 +27,7 @@ return new class extends Migration
             $table->enum('vendor_status', array_map(fn($case) => $case->value, VendorStatusEnum::cases()))
                     ->default(VendorStatusEnum::DOWN->value);
             $table->string('otp')->nullable();
+            $table->boolean('market_access')->default(1);
             $table->rememberToken();
             $table->timestamps();
         });

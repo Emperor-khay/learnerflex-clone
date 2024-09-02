@@ -36,7 +36,7 @@ class ProductService
 
     public function getProductsWhereStatus(string $status)
     {
-        return Product::where('status', $status)->get();
+        return Product::with('vendor')->where('status', $status)->get();
     }
 
     public function updateProductById($product_id, array $updatedData)

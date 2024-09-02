@@ -4,6 +4,10 @@ namespace App\Service;
 
 use App\Enums\VendorStatusEnum;
 use App\Models\User;
+use App\Models\Sale;
+use App\Models\Product;
+use App\Models\Affiliate;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class UserService
@@ -71,6 +75,50 @@ class UserService
     {
         return $user->withdrawals;
     }
+
+    public function totalAffSales(User $user)
+    {
+        // user who is requesting for the afffiliate sales
+        // if vendor has affiliates then return sales
+        $affs = $user->affiliates;
+        if (count($affs) < 1) {
+            return [
+                'amount' => 0,
+                'sales' => 0
+            ];
+        }
+        return $affSales = Sale::where('user_id', $user->id)->get();
+    }
+
+    public function todaysAffSales(User $user)
+    {
+        // Check if the user has affiliates
+        $affs = $user->affiliates;
+        if (count($affs) < 1) {
+            return [
+                'amount' => 0,
+                'sales' => 0
+            ];
+        }
+
+        // Get today's date
+        $today = Carbon::today();
+
+        // Query sales made today
+        $todaysSales = Sale::where('user_id', $user->id)
+            ->whereDate('created_at', $today)
+            ->get();
+
+        // Calculate the total amount and number of sales
+        $totalAmount = $todaysSales->sum('amount');
+        $totalSales = $todaysSales->count();
+
+        return [
+            'amount' => $totalAmount,
+            'sales' => $totalSales
+        ];
+    }
+
 
     public function updateUserCurrency(User $user, string $currency)
     {

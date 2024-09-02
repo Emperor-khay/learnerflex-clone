@@ -28,4 +28,17 @@ class WithdrawalController extends Controller
             return $this->error(null, $th->getMessage(), 400);
         }
     }
+
+    /**
+     * Request for total sum of withdrawals made by user
+     */
+    public function userWithdrawSum(Request $request): JsonResponse
+    {
+        try {
+            $totalAmount = $this->withdrawalService->getTotalWithdrawalsByUser($request->user());
+            return $this->success($totalAmount, 'Total withdrawals!');
+        } catch (\Throwable $th) {
+            return $this->error(null, $th->getMessage(), 400);
+        }
+    }
 }
