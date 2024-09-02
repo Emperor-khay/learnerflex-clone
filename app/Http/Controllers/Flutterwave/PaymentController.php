@@ -28,9 +28,10 @@ class PaymentController extends Controller
     {
         $status = $request->query('status');
         $clientUrl = env('CLIENT_URL');
+        $tx_ref = $request->query('tx_ref');
         if ($status === 'successful') {
             // Retrieve the transaction details from your database using the tx_ref
-            $transaction = Transaction::where('tx_ref', $request->query('tx_ref'))->first();
+            $transaction = Transaction::where('tx_ref', $tx_ref)->first();
 
             if ($transaction) {
                 // Verify the payment with Flutterwave
@@ -38,7 +39,6 @@ class PaymentController extends Controller
                     ->get('https://api.flutterwave.com/v3/transactions/' . $request->query('transaction_id') . '/verify');
 
                 $responseBody = $response->json();
-                $tx_ref = $request->query('tx_ref');
 
                 if (
                     $responseBody['data']['status'] === 'successful' &&
