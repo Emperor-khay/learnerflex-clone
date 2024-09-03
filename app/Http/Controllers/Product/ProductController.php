@@ -44,20 +44,20 @@ class ProductController extends Controller
         }
     }
 
-    public function createDigitalProduct(Vendor $vendor, DigitalProductRequest $digitalProductRequest): JsonResponse
+    public function createDigitalProduct(DigitalProductRequest $digitalProductRequest): JsonResponse
     {
         try {
             $user = $digitalProductRequest->user();
             $productData = $digitalProductRequest->validated();
             $productData['user_id'] = $user->id;
-            $digitalProduct = $this->vendorService->newVendorProduct($vendor, $productData);
+            $digitalProduct = $this->vendorService->newVendorProduct($user->vendor, $productData);
             return $this->success($digitalProduct, 'Digital Product Pending!', Response::HTTP_CREATED);
         } catch (\Throwable $th) {
             return $this->error([], $th->getMessage(), Response::HTTP_BAD_REQUEST);
         }
     }
 
-    public function createOtherProduct(Vendor $vendor, OtherProductRequest $otherProductRequest): JsonResponse
+    public function createOtherProduct(OtherProductRequest $otherProductRequest): JsonResponse
     {
         try {
             $user = $otherProductRequest->user();
@@ -69,7 +69,7 @@ class ProductController extends Controller
                 $productData['image'] = null;
             }
             $productData['user_id'] = $user->id;
-            $otherProduct = $this->vendorService->newVendorProduct($vendor, $productData);
+            $otherProduct = $this->vendorService->newVendorProduct($user->vendor, $productData);
             $otherProduct['image'] = $otherProduct->image ? Storage::url($otherProduct->image) : null;
             return $this->success($otherProduct, 'Other Product Created!', Response::HTTP_CREATED);
         } catch (\Throwable $th) {
@@ -105,6 +105,18 @@ class ProductController extends Controller
             return $this->success($product, 'Product Removed!');
         } catch (\Throwable $th) {
             return $this->error([], $th->getMessage(), Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    public function unlockMarketAccess(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $result = $this->productService->generateMarketAccessPayment($user);
+            return $this->success($result, 'unlock market');
+        } catch (\Throwable $th) {
+            Log::error("unlock market: $th");
+            return $this->error([], $th->getMessage(), 400);
         }
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
+use App\Http\Controllers\Flutterwave\PaymentController;
 use App\Models\Product;
+use App\Service\UserService;
 use Illuminate\Support\Facades\DB;
 
 class ProductService
@@ -51,5 +53,43 @@ class ProductService
     {
         $product = $this->getProductById($id);
         return $product->delete();
+    }
+
+    public function generateMarketAccessPayment($user)
+    {
+        $paymentData = [
+            'tx_ref' => uniqid().time(),
+            'amount' => 1100, // Amount to be charged
+            'currency' => 'NGN',
+            'redirect_url' => url('/payment/market-access/callback'),
+            'customer' => [
+                'email' => $user->email,
+                'name' => $user->name,
+                'phone_number' => $user->phone,
+            ],
+            'customizations' => [
+                'title' => 'Unlock Market',
+                'description' => 'Unlocks all products for your access to promote',
+            ]
+        ];
+
+        $transaction = [
+            'tx_ref' => $paymentData['tx_ref'],
+            'amount' => $paymentData['amount'],
+            'currency' => $paymentData['currency'],
+        ];
+
+        $userService = new userService();
+
+        $userService->createTransactionForUser($user, $transaction);
+
+        // Initialize Flutterwave payment
+        $flutterwave = new PaymentController();
+        $payment = $flutterwave->initiatePayment($paymentData);
+
+        // Extracting the data from the JsonResponse
+        $paymentArray = $payment->getData(true); // 'true' converts the object to an array
+
+        return $paymentArray['data']['link'];
     }
 }

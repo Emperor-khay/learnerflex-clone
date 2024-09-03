@@ -7,4 +7,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/payment/callback', [PaymentController::class, 'handleCallback']);
+Route::get('/payment/callback', [PaymentController::class, 'handleOnboardCallback']);
+
+Route::get('/payment/market-access/callback', [PaymentController::class, 'handleMarketAccessCallback']);
