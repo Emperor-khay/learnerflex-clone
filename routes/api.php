@@ -7,6 +7,7 @@ use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Users\UserController;
 use App\Http\Controllers\Vendor\VendorController;
 use App\Http\Controllers\Flutterwave\WithdrawalController;
+use App\Http\Controllers\Flutterwave\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -52,7 +53,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // dashboard home endpoints
     Route::get('/todays-affiliate-sales', [UserController::class, 'handleTodaysAffSales']);
     Route::get('/total-affiliate-sales', [UserController::class, 'handleTotalAffiliateSales']);
-    Route::get('/available-affiliate-earnings', function() {
+    Route::get('/available-affiliate-earnings', function () {
         return response()->json(['amount' => 20000]);
     });
+
+    // check bank account route and update user account
+    Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
 });

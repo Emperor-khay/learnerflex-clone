@@ -15,7 +15,7 @@ class UserService
     public function newUser(array $data): User
     {
         return DB::transaction(function () use ($data) {
-           return User::create($data);
+            return User::create($data);
         });
     }
 
@@ -65,6 +65,17 @@ class UserService
             return $user->vendor()->create($vendorData);
         });
     }
+
+    public function createAccountForUser(User $user, array $data)
+    {
+        return DB::transaction(function () use ($user, $data) {
+            if($user->account) {
+                return $user->account()->update($data);
+            }
+            return $user->account()->create($data);
+        });
+    }
+
 
     public function getUserVendor(User $user)
     {

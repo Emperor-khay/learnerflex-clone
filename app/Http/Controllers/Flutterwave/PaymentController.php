@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Flutterwave;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
+use App\Service\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -120,6 +121,46 @@ class PaymentController extends Controller
 
         // If payment wasn't successful or if some other error occurred
         return redirect("$clientUrl/auth/payment?message=Payment+verification+failed&status=$status&tx_ref=$tx_ref");
-        
+
+    }
+
+    public function handleCheckAccount(Request $request)
+    {
+        try {
+            $response = Http::withToken(env('FLW_SECRET_KEY'))
+                ->post('https://api.flutterwave.com/v3/accounts/resolve', [
+                    'account_number' => $request->number,
+                    'account_bank' => $request->country,
+                ]);
+
+            $responseBody = $response->json();
+
+            if (
+                $responseBody['status'] === 'success'
+            ) {
+                // Success! Update the user account
+                $user = $request->user();
+                $account = new UserService();
+                $account->createAccountForUser($user, [
+                    'name' => $request->name,
+                    'number' => $request->number,
+                    'country' => $request->country,
+                ]);
+
+                return $this->success(
+                    [
+                        'name' => $responseBody['data']['account_name'],
+                    ],
+                    'Bank info updated!'
+                );
+            } else {
+                // Payment verification failed
+                return $this->error(null, 'Unable to verify account!', 400);
+            }
+
+        } catch (\Throwable $th) {
+            //throw $th;
+            return $this->error(null, $th->getMessage(), 400);
+        }
     }
 }
