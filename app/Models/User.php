@@ -31,7 +31,9 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'aff_id',
         'email',
+        'refferal_id',
         'phone',
         'password',
         'country',
@@ -41,6 +43,8 @@ class User extends Authenticatable
         'vendor_status',
         'otp',
         'market_access',
+        'bank_name',
+        'bank_account'
     ];
 
     /**

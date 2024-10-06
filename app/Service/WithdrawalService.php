@@ -118,6 +118,6 @@ class WithdrawalService
      */
     public function getTotalWithdrawalsByUser(User $user): float
     {
-        return $user->withdrawals()->sum('amount');
+        return $user->withdrawals()->where('status', 'success')->sum('amount');
     }
 }

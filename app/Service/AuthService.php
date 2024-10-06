@@ -104,4 +104,15 @@ class AuthService
         }
         return true;
     }
+    
+    /**
+     * Check if the email exists in the vendors table and return the vendor ID if it does.
+     * Return null if the email does not exist.
+     */
+    // protected function getVendorIdByEmail(string $email): ?int
+    // {
+    //     $vendor = Vendor::where('email', $email)->first();
+    //     return $vendor ? $vendor->id : null;
+    // }
+
 }

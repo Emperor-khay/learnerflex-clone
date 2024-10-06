@@ -18,6 +18,9 @@ class Withdrawal extends Model
         'user_id',
         'amount',
         'bank_account',
+        'bank_name',
+        'email',
+        'old_balance',
         'status',
     ];
 

@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Withdrawal;
+use App\Models\Transaction;
+use App\Models\Sale;
 
 class UserController extends Controller
 {
@@ -97,7 +100,7 @@ class UserController extends Controller
             $user = $wantVendorRequest->user();
             $user = $this->userService->updateUserVendorApplication($user, $saleUrl);
             // send email to admins
-            Mail::to(env('MAIL_FROM_ADDRESS'))->send(new VendorAccountWanted($user, $saleUrl));
+            Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleUrl));
             return $this->success($user, 'Vendor request Sent!');
         } catch (\Throwable $th) {
             Log::error("Vendor request: $th");
@@ -139,4 +142,111 @@ class UserController extends Controller
             return $this->error([], $th->getMessage(), 400);
         }
     }
+    
+    public function affiliateEarnings($id){
+        $totalAmount = Transaction::where('user_id', $id)->sum('org_aff');
+
+        return response()->json([
+            'success'=> true,
+            'message' => 'total earnings for withdrawal',
+            'Total sale' => $totalAmount
+        ]);
+
+     }
+     
+     
+    public function getBalance(Request $request){
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+    
+        $checkWithdrawHistory = Withdrawal::where('user_id', $request->user_id)->exists();
+
+        if ($checkWithdrawHistory) {
+            $latestWithdrawal = Withdrawal::where('user_id', $request->user_id)->latest()->first();
+            $old_balance = $latestWithdrawal->old_balance;
+        }else{
+            $old_balance = 0;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'user balance based on withdrawal history',
+            'balance' => $old_balance
+        ]);
+    }
+     
+    public function requestWithdrawal(Request $request)
+     {
+         $request->validate([
+             'user_id' => 'required|exists:users,id',
+             'request_from' => 'required|string|in:vendor,affiliate',
+             'amount' => 'required|numeric|min:0',
+             'bank_account' => 'required',
+             'bank_name' => 'required|string',
+         ]);
+     
+         $checkWithdrawHistory = Withdrawal::where('user_id', $request->user_id)->exists();
+     
+         if ($checkWithdrawHistory) {
+             $latestWithdrawal = Withdrawal::where('user_id', $request->user_id)->latest()->first();
+             $old_balance = $latestWithdrawal->old_balance;
+         } else {
+             if ($request->request_from === 'vendor') {
+                 $old_balance = Transaction::where('user_id', $request->user_id)->sum('org_vendor');
+             } elseif ($request->request_from === 'affiliate') {
+                 $old_balance = Transaction::where('user_id', $request->user_id)->sum('org_aff');
+             } else {
+                 return response()->json([
+                     'success' => false,
+                     'message' => 'Invalid request source. Must be either vendor or affiliate.'
+                 ], 400);
+             }
+         }
+     
+         $user = User::findOrFail($request->user_id);
+         $user_email = $user->email;
+     
+         $requestDetails = Withdrawal::create([
+             'user_id' => $request->user_id,
+             'email' => $user_email,
+             'amount' => $request->amount,
+             'bank_account' => $request->bank_account,
+             'bank_name' => $request->bank_name,
+             'status' => 'pending',
+             'old_balance' => $old_balance,
+         ]);
+     
+         return response()->json([
+             'message' => 'Request sent successfully',
+             'success' => true,
+             'request_details' => $requestDetails
+         ]);
+     }
+     
+    public function salesAffiliate(Request $request){
+        $totalNoSales = Sale::where('affiliate_id', $request->affiliate_id)->where('user_id', $request->user_id)->count();
+
+
+        return response()->json([
+            'message' => "affilaite number of sales",
+            'success' => true,
+            'no of sales' => $totalNoSales
+        ]);
+     }
+     
+     
+    public function totalSaleAff(Request $request){
+        $totalNoSales = Sale::where('affiliate_id', $request->affiliate_id)->count();
+        $totalCommission = Transaction::where('affiliate_id', $request->affiliate_id)->where('status', 'success')->sum('org_aff');
+
+
+        return response()->json([
+            'message' => "affilaite number of sales",
+            'success' => true,
+            'no of sales' => $totalNoSales,
+            'total commission' => $totalCommission
+        ]);
+     }
 }

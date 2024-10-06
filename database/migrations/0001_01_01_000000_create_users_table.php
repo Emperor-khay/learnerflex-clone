@@ -15,18 +15,20 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('aff_id')->unique();
-            $table->string('name');
+            $table->string('name')->nullable();
             $table->string('email')->unique();
+            $table->string('refferal_id')->nullable();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('phone')->unique();
-            $table->string('password');
+            $table->string('phone')->unique()->nullable();
+            $table->string('password')->nullable();
             $table->string('country')->nullable();
             $table->string('image')->nullable();
             $table->boolean('has_paid_onboard')->default(0);
             $table->boolean('is_vendor')->default(0);
-            $table->enum('vendor_status', array_map(fn($case) => $case->value, VendorStatusEnum::cases()))
-                    ->default(VendorStatusEnum::DOWN->value);
+            $table->string('vendor_status');
             $table->string('otp')->nullable();
+            $table->string('bank_name')->nullable();
+            $table->string('bank_account')->nullable();
             $table->boolean('market_access')->default(0);
             $table->rememberToken();
             $table->timestamps();

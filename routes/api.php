@@ -10,12 +10,89 @@ use App\Http\Controllers\Flutterwave\WithdrawalController;
 use App\Http\Controllers\Flutterwave\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PasswordReset\PasswordResetController;
+use App\Http\Controllers\PasswordReset\NewPasswordReset;
+use App\Http\Controllers\Payment\PaystackController;
+use App\Http\Controllers\Payment\MarketplacePaymentController;
+use App\Http\Controllers\Payment\PayStackEbookController;
+use App\Http\Controllers\SuperAdmin\SuperAdminAffiliateController;
+use App\Http\Controllers\SuperAdmin\SuperAdminAuthController;
+use App\Http\Controllers\SuperAdmin\SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\SuperAdminProductController;
+use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
+use App\Http\Controllers\SuperAdmin\SuperAdminUserController;
+use App\Http\Controllers\SuperAdmin\SuperAdminVendorController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
 
-Route::prefix('auth')->group(function () {
+    Route::post('user/get-balance', [UserController::class, 'getBalance']);
+    Route::post('user/total-aff-sales', [UserController::class, 'totalSaleAff']);
+
+    Route::post('/request-withdrawal', [UserController::class, 'requestWithdrawal']);
+
+    //one time payment
+    Route::post('/payment/initialize-marketplace', [MarketplacePaymentController::class, 'make_payment']);
+    
+    Route::post('/payment/callback-marketplace', [MarketplacePaymentController::class, 'payment_callback'])->name('payment.callback');
+
+    Route::get('/vendor/{id}/total-sales', [VendorController::class, 'getVendorTotalSaleAmount']);
+    
+    Route::get('vendor/{id}/transactions', [VendorController::class, 'getVendorSales']);
+
+    Route::post('vendor/students', [VendorController::class, 'students']);
+    
+    Route::post('/vendor/product-performance', [VendorController::class, 'productPerformance']);
+    
+    Route::get('vendor/affiliate-details/{aff_id}', [VendorController::class, 'getAffDetails']);
+    
+    Route::get('/vendor/{id}/balance', [VendorController::class, 'vendorEarnings']);
+    
+    Route::get('/user/{id}/balance', [UserController::class, 'affiliateEarnings']);
+    
+    Route::post('user/accept-vendor-request', [VendorController::class, 'store']);
+
+
+    Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
+    
+    // Route for handling the payment callback
+    Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('callback');
+    
+    Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
+    
+    // Route for handling the payment callback
+    Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'payment_callback'])->name('callback');
+    
+    //new marketplace
+    
+    Route::get('/user/{id}/product/{reffer_id}', [ProductController::class, 'getProduct']);
+
+    //add new product
+    Route::post('product/add-product', [ProductController::class, 'addProduct']);
+    
+    //view all products from a particular vendor
+    Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
+    
+    
+    //get product by id
+    Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
+
+    
+    Route::delete('/product/delete/{id}', [ProductController::class, 'deleteProduct']);
+    
+
+    Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
+    Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
+    
+    Route::post('user/request-vendor', [VendorController::class, 'sendVendorRequest']);
+    
+    Route::get('/affiliate/sales', [UserController::class, 'salesAffiliate']);
+
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    })->middleware('auth:sanctum');
+
+
+    
+    Route::prefix('auth')->group(function () {
     Route::post('/register', [RegisterController::class, 'store']);
     Route::post('/login', [LoginController::class, 'attemptUser']);
     Route::post('/logout', [LogoutController::class, 'logout']);
@@ -60,3 +137,51 @@ Route::middleware('auth:sanctum')->group(function () {
     // check bank account route and update user account
     Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
 });
+
+Route::post('/super-admin/login', [SuperAdminAuthController::class, 'login']);
+Route::post('/super-admin/logout', [SuperAdminAuthController::class, 'logout'])->middleware('auth:superAdmin');
+
+Route::middleware(['auth:superAdmin'])->group(function () {    
+    // Super Admin Dashboard Routes
+    Route::get('/super-admin/dashboard', [SuperAdminController::class, 'index']);
+
+    // Product Management Routes
+    Route::get('/super-admin/products', [SuperAdminProductController::class, 'index']); // View Products
+    Route::post('/super-admin/products', [SuperAdminProductController::class, 'store']); // Create Products
+    Route::get('/super-admin/product/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
+    Route::put('/super-admin/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
+    Route::post('/super-admin/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
+    Route::delete('/super-admin/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product
+
+    // User Management Routes
+    Route::get('/super-admin/users', [SuperAdminUserController::class, 'index']); // View  Users
+    Route::post('/super-admin/users', [SuperAdminUserController::class, 'store']); // Create  User(s)
+    Route::get('/super-admin/user/{id}', [SuperAdminUserController::class, 'show']); // View Single User
+    Route::get('/super-admin/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User
+    Route::put('/super-admin/user/{id}', [SuperAdminUserController::class, 'update']); // Edit User
+    Route::delete('/super-admin/user/{id}', [SuperAdminUserController::class, 'destroy']); //Delete User
+    
+    // Transactions Route
+    Route::get('/super-admin/transactions', [SuperAdminTransactionController::class, 'index']);
+    Route::get('/super-admin/transaction/{id}', [SuperAdminTransactionController::class, 'show']);
+
+    // View all affiliates
+    Route::get('/super-admin/affiliates', [SuperAdminAffiliateController::class, 'index']); // Get all affiliates
+    Route::get('/super-admin/affiliate/{id}', [SuperAdminAffiliateController::class, 'show']); // View individual affiliate
+    Route::put('/super-admin/affiliate/{id}', [SuperAdminAffiliateController::class, 'update']); // Edit affiliate
+    Route::delete('/super-admin/affiliate/{id}', [SuperAdminAffiliateController::class, 'destroy']); // Delete affiliate
+    Route::post('/super-admin/affiliate/create', [SuperAdminAffiliateController::class, 'store']); // Create single affiliate
+    Route::post('/super-admin/affiliate/bulk-upload', [SuperAdminAffiliateController::class, 'bulkUpload']); // Bulk upload affiliates
+
+    // Vendor Routes
+    Route::get('/super-admin/vendors', [SuperAdminVendorController::class, 'index']); // Get all vendors
+    Route::get('/super-admin/vendor/{id}', [SuperAdminVendorController::class, 'show']); // View individual vendor
+    Route::put('/super-admin/vendor/{id}', [SuperAdminVendorController::class, 'update']); // Edit vendor
+    Route::delete('/super-admin/vendor/{id}', [SuperAdminVendorController::class, 'destroy']); // Delete vendor
+
+    // Dashboard Route
+    Route::get('/super-admin/dashboard-data', [SuperAdminDashboardController::class, 'getDashboardData']);
+});
+
+
+

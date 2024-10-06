@@ -45,4 +45,16 @@ class Sale extends Model
     {
         return $this->belongsTo(User::class, 'affiliate_id');
     }
+    
+    public function affiliateID()
+    {
+        return $this->belongsTo(User::class, 'affiliate_id', 'id');
+    }
+    
+    public function productID()
+    {
+        return $this->belongsTo(Product::class, 'product_id', 'id');
+    }
+
+
 }

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Enums;
+
 enum VendorStatusEnum: string
 {
     case DOWN = 'down';
