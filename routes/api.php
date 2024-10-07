@@ -24,7 +24,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminUserController;
 use App\Http\Controllers\SuperAdmin\SuperAdminVendorController;
 
 
-    Route::post('user/get-balance', [UserController::class, 'getBalance']);
+    Route::post('/user/get-balance', [UserController::class, 'getBalance']);
     Route::post('user/total-aff-sales', [UserController::class, 'totalSaleAff']);
 
     Route::post('/request-withdrawal', [UserController::class, 'requestWithdrawal']);
@@ -56,10 +56,10 @@ use App\Http\Controllers\SuperAdmin\SuperAdminVendorController;
     // Route for handling the payment callback
     Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('callback');
     
-    Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
+    // Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
     
-    // Route for handling the payment callback
-    Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'payment_callback'])->name('callback');
+    // // Route for handling the payment callback
+    // Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'payment_callback'])->name('callback');
     
     //new marketplace
     
@@ -139,49 +139,50 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/super-admin/login', [SuperAdminAuthController::class, 'login']);
-Route::post('/super-admin/logout', [SuperAdminAuthController::class, 'logout'])->middleware('auth:superAdmin');
+Route::post('/super-admin/logout', [SuperAdminAuthController::class, 'logout'])->middleware(['auth:sanctum', 'super-admin']);
 
-Route::middleware(['auth:superAdmin'])->group(function () {    
+Route::middleware(['auth:sanctum', 'super-admin'])
+    ->prefix('super-admin')
+    ->group(function () {  
     // Super Admin Dashboard Routes
-    Route::get('/super-admin/dashboard', [SuperAdminController::class, 'index']);
+    Route::get('/dashboard', [SuperAdminDashboardController::class, 'getDashboardData']);
 
     // Product Management Routes
-    Route::get('/super-admin/products', [SuperAdminProductController::class, 'index']); // View Products
-    Route::post('/super-admin/products', [SuperAdminProductController::class, 'store']); // Create Products
-    Route::get('/super-admin/product/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
-    Route::put('/super-admin/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
-    Route::post('/super-admin/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
-    Route::delete('/super-admin/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product
+    Route::get('/products', [SuperAdminProductController::class, 'index']); // View Products
+    Route::post('/products', [SuperAdminProductController::class, 'store']); // Create Products
+    Route::get('/product/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
+    Route::put('/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
+    Route::post('/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
+    Route::delete('/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product
 
     // User Management Routes
-    Route::get('/super-admin/users', [SuperAdminUserController::class, 'index']); // View  Users
-    Route::post('/super-admin/users', [SuperAdminUserController::class, 'store']); // Create  User(s)
-    Route::get('/super-admin/user/{id}', [SuperAdminUserController::class, 'show']); // View Single User
-    Route::get('/super-admin/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User
-    Route::put('/super-admin/user/{id}', [SuperAdminUserController::class, 'update']); // Edit User
-    Route::delete('/super-admin/user/{id}', [SuperAdminUserController::class, 'destroy']); //Delete User
+    Route::get('/users', [SuperAdminUserController::class, 'index']); // View  Users
+    Route::post('/users', [SuperAdminUserController::class, 'store']); // Create  User(s)
+    Route::get('/user/{id}', [SuperAdminUserController::class, 'show']); // View Single User
+    Route::get('/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User
+    Route::put('/user/{id}', [SuperAdminUserController::class, 'update']); // Edit User
+    Route::delete('/user/{id}', [SuperAdminUserController::class, 'destroy']); //Delete User
     
     // Transactions Route
-    Route::get('/super-admin/transactions', [SuperAdminTransactionController::class, 'index']);
-    Route::get('/super-admin/transaction/{id}', [SuperAdminTransactionController::class, 'show']);
+    Route::get('/transactions', [SuperAdminTransactionController::class, 'index']);
+    Route::get('/transaction/{id}', [SuperAdminTransactionController::class, 'show']);
 
     // View all affiliates
-    Route::get('/super-admin/affiliates', [SuperAdminAffiliateController::class, 'index']); // Get all affiliates
-    Route::get('/super-admin/affiliate/{id}', [SuperAdminAffiliateController::class, 'show']); // View individual affiliate
-    Route::put('/super-admin/affiliate/{id}', [SuperAdminAffiliateController::class, 'update']); // Edit affiliate
-    Route::delete('/super-admin/affiliate/{id}', [SuperAdminAffiliateController::class, 'destroy']); // Delete affiliate
-    Route::post('/super-admin/affiliate/create', [SuperAdminAffiliateController::class, 'store']); // Create single affiliate
-    Route::post('/super-admin/affiliate/bulk-upload', [SuperAdminAffiliateController::class, 'bulkUpload']); // Bulk upload affiliates
+    Route::get('/affiliates', [SuperAdminAffiliateController::class, 'index']); // Get all affiliates
+    Route::get('/affiliate/{id}', [SuperAdminAffiliateController::class, 'show']); // View individual affiliate
+    Route::put('/affiliate/{id}', [SuperAdminAffiliateController::class, 'update']); // Edit affiliate
+    Route::delete('/affiliate/{id}', [SuperAdminAffiliateController::class, 'destroy']); // Delete affiliate
+    Route::post('/affiliate/create', [SuperAdminAffiliateController::class, 'store']); // Create single affiliate
+    Route::post('/affiliate/bulk-upload', [SuperAdminAffiliateController::class, 'bulkUpload']); // Bulk upload affiliates
 
     // Vendor Routes
-    Route::get('/super-admin/vendors', [SuperAdminVendorController::class, 'index']); // Get all vendors
-    Route::get('/super-admin/vendor/{id}', [SuperAdminVendorController::class, 'show']); // View individual vendor
-    Route::put('/super-admin/vendor/{id}', [SuperAdminVendorController::class, 'update']); // Edit vendor
-    Route::delete('/super-admin/vendor/{id}', [SuperAdminVendorController::class, 'destroy']); // Delete vendor
+    Route::get('/vendors', [SuperAdminVendorController::class, 'index']); // Get all vendors
+    Route::get('/vendor/{id}', [SuperAdminVendorController::class, 'show']); // View individual vendor
+    Route::put('/vendor/{id}', [SuperAdminVendorController::class, 'update']); // Edit vendor
+    Route::delete('/vendor/{id}', [SuperAdminVendorController::class, 'destroy']); // Delete vendor
 
     // Dashboard Route
-    Route::get('/super-admin/dashboard-data', [SuperAdminDashboardController::class, 'getDashboardData']);
+    Route::get('/dashboard-data', [SuperAdminDashboardController::class, 'getDashboardData']);
 });
-
 
 
