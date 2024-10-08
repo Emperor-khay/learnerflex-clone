@@ -1,5 +1,5 @@
 <?php
-
+namespace App\Http\Controllers\SuperAdmin;
 use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\Controller;
