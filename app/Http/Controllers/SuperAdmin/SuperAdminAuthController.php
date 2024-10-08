@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\LoginRequest;
-use Illuminate\Http\Request;
+use App\Models\User;
 use App\Models\SuperAdmin;
+use Illuminate\Http\Request;
+use App\Http\Requests\LoginRequest;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 
 class SuperAdminAuthController extends Controller
@@ -19,7 +20,7 @@ class SuperAdminAuthController extends Controller
         ]);
 
         // Attempt to find the super admin by email
-        $superAdmin = SuperAdmin::where('email', $request->email)->first();
+        $superAdmin = User::where('email', $request->email)->where('is_admin', 1)->first();
 
         // Check if the super admin exists and if the password is correct
         if (! $superAdmin || ! Hash::check($request->password, $superAdmin->password)) {

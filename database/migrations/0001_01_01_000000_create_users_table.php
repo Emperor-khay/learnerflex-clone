@@ -25,7 +25,6 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->boolean('has_paid_onboard')->default(0);
             $table->boolean('is_vendor')->default(0);
-            $table->boolean('is_admin')->default(0);
             $table->string('vendor_status');
             $table->string('otp')->nullable();
             $table->string('bank_name')->nullable();
