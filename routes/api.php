@@ -182,7 +182,7 @@ Route::middleware(['auth:sanctum', 'super-admin'])
     Route::delete('/vendor/{id}', [SuperAdminVendorController::class, 'destroy']); // Delete vendor
 
     // Dashboard Route
-    Route::get('/dashboard-data', [SuperAdminDashboardController::class, 'getDashboardData']);
+    // Route::get('/dashboard-data', [SuperAdminDashboardController::class, 'getDashboardData']);
 });
 
 

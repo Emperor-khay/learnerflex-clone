@@ -1,5 +1,7 @@
 /.phpunit.cache
 /node_modules
+/public
+.env.production
 /public/build
 /public/hot
 /public/storage
@@ -18,3 +20,4 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+/.github
