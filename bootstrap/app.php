@@ -16,7 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api('throttle:api');
 
         $middleware->alias([
-            'super-admin' => SuperAdmin::class
+            'Paystack' => Unicodeveloper\Paystack\Facades\Paystack::class,
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
     
     })

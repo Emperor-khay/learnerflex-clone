@@ -56,10 +56,10 @@ Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']
 // Route for handling the payment callback
 Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('callback');
 
-// Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
+Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
 
-// // Route for handling the payment callback
-// Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'payment_callback'])->name('callback');
+// Route for handling the payment callback
+Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback'])->name('callback');
 
 //new marketplace
 
@@ -92,7 +92,7 @@ Route::get('/user', function (Request $request) {
 
 //test endpoints
 Route::get('/test', function () {
-    return "Checked successful";
+    return response()->json(['message' => 'Checked successful']);
 });
 
 Route::prefix('auth')->group(function () {
@@ -141,13 +141,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
 });
 
-Route::post('/super-admin/login', [SuperAdminAuthController::class, 'login']);
-Route::post('/super-admin/logout', [SuperAdminAuthController::class, 'logout'])->middleware(['auth:sanctum', 'super-admin']);
+Route::post('/admin/login', [SuperAdminAuthController::class, 'login']);
+Route::post('/admin/logout', [SuperAdminAuthController::class, 'logout'])->middleware(['auth:sanctum', 'super-admin']);
+   // Admin routes group
+   Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('admin')->group(function () {
 
-Route::middleware(['auth:sanctum', 'super-admin'])
-    ->prefix('super-admin')
-    ->group(function () {
-        // Super Admin Dashboard Routes
+});
+
+    // Admin routes group
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+     // Super Admin Dashboard Routes
         Route::get('/dashboard', [SuperAdminDashboardController::class, 'getDashboardData']);
 
         // Product Management Routes
@@ -186,4 +189,4 @@ Route::middleware(['auth:sanctum', 'super-admin'])
 
         // Dashboard Route
         // Route::get('/dashboard-data', [SuperAdminDashboardController::class, 'getDashboardData']);
-    });
+});

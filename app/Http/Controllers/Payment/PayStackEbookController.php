@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers\Payment;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Unicodeveloper\Paystack\Facades\Paystack;
-use App\Models\Transaction; 
+use Exception;
 use App\Models\Sale; 
 use App\Models\User; 
 use App\Models\Product; 
-use Exception;
+use App\Models\Transaction; 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\EbookPaymentRequest;
+use Unicodeveloper\Paystack\Facades\Paystack;
 
-class PaystackController extends Controller
+class PaystackEbookController extends Controller
 {
     
-    public function make_payment(Request $request)
+    public function make_payment(EbookPaymentRequest $request)
     {
         // Retrieve the product from the request
         $product = Product::find(request('product_id'));
@@ -41,7 +42,9 @@ class PaystackController extends Controller
             'user_id' => request('user_id'), 
             'aff_id' => request('aff_id'),    
             'amount' => $amountKobo,
-            'product_id' => request('product_id'),
+            'metadata' => [
+            'product_id' => $request->product_id, // Include product ID in metadata
+        ]
         ];
         
 
@@ -79,7 +82,7 @@ class PaystackController extends Controller
                     'org_vendor' => $org_vendor_share,
                     'org_aff' => $org_aff_share,
                     'is_onboard' => 0,
-                    'tx_ref' => 0
+                    'tx_ref' => $pay->data->reference,
                 ]);
 
                 // Return the authorization URL in the JSON response
@@ -90,7 +93,7 @@ class PaystackController extends Controller
             } else {
                 return response()->json([
                     'success' => false,
-                    'message' => "Somethingssss went wrong with the payment initialization."
+                    'message' => "Something went wrong with the payment initialization."
                 ], 401);
             }
         } else {
@@ -131,68 +134,134 @@ class PaystackController extends Controller
         return $result;
     }
 
-    public function payment_callback()
-    {
-        $reference = request('reference');
-        $response = json_decode($this->verify_payment($reference));
-        $email = request('email');
 
-        if ($response && $response->status == "success") {
+    public function paymentCallback()
+{
+    // Get the reference from the request
+    $reference = request('reference');
 
-            $transaction = Transaction::where('email', $email)->latest()->first();
-            $transactionAffId = $transaction->aff_id;
-            $transactionProductId = $transaction->product_id;
-            $transactionUserId = $transaction->user_id;
-            $transactionAmount = $transaction->amount;
+    // Verify the payment with Paystack
+    $response = Paystack::getPaymentData();
 
-            $refferer = User::find($transactionAffId);
+    if ($response['status'] && $response['data']['status'] === 'success') {
 
-            $aff_id = $refferer->aff_id;
-      
-            if($transaction) {
-             $transaction->update([
-                 'tx_ref' => request('reference'),
-                 'status' => $response->status,
-                 'is_onboard' => 1,
-             ]);
-             }
+        // Get the transaction details from Paystack
+        $paystackAmount = $response['data']['amount']; // Paystack returns amount in kobo (100 kobo = 1 Naira)
+        $reference = $response['data']['reference'];
+        $product_id = $response['data']['metadata']['product_id']; // Assuming product ID is passed in metadata
 
-            Sale::create([
-                'affiliate_id' => $transactionAffId,
-                'product_id' => $transactionProductId, // Get product ID from request
-                'user_id' => $transactionUserId, // Get user ID from request
-                'transaction_id' => $reference,
-                'amount' => $transactionAmount / 100,
+        // Find the product
+        $product = Product::find($product_id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found', 'success' => false], 404);
+        }
+
+        // Get the product price in Kobo
+        $expectedAmount = $product->price * 100;
+
+        // Check if the amount paid matches the product price
+        if ($paystackAmount != $expectedAmount) {
+            return response()->json(['message' => 'Payment amount does not match product price', 'success' => false], 400);
+        }
+
+        // Find the transaction by reference
+        $transaction = Transaction::where('tx_ref', $reference)->first();
+
+        if ($transaction) {
+            // Update the transaction status and onboard status
+            $transaction->update([
+                'status' => 'success',
+                'is_onboard' => 1,
             ]);
 
-            $checkUser = User::where('email', request('email'))->first();
+            // Create a Sale record
+            Sale::create([
+                'affiliate_id' => $transaction->affiliate_id,
+                'product_id' => $transaction->product_id,
+                'user_id' => $transaction->user_id,
+                'transaction_id' => $reference,
+                'amount' => $transaction->amount, // Store amount in Naira
+            ]);
 
+            // Send user an email if they are new
+            $checkUser = User::where('email', $response['data']['customer']['email'])->first();
             if (!$checkUser) {
-                Mail::to($response->data->customer->email)->send(new \App\Mail\RegisterLink($aff_id));  
+                Mail::to($response['data']['customer']['email'])->send(new \App\Mail\RegisterLink($transaction->affiliate_id));
             }
 
-            
-        } else {
-            return response()->json(['message' => 'transaction not successful', 'success' => false]);
+            return response()->json(['message' => 'Transaction successful', 'success' => true], 200);
         }
+
+        return response()->json(['message' => 'Transaction not found', 'success' => false], 404);
     }
 
-    public function verify_payment($reference)
-    {
-        $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
+    return response()->json(['message' => 'Transaction verification failed', 'success' => false], 400);
+}
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-            "Cache-Control: no-cache"
-        ));
 
-        $result = curl_exec($ch);
+    // public function paymentCallback()
+    // {
+    //     $reference = request('reference');
+    //     $response = json_decode($this->verify_payment($reference));
+    //     $email = request('email');
 
-        curl_close($ch);
+    //     if ($response && $response->status == "success") {
 
-        return $result;
-    }
+    //         $transaction = Transaction::where('email', $email)->latest()->first();
+    //         $transactionAffId = $transaction->aff_id;
+    //         $transactionProductId = $transaction->product_id;
+    //         $transactionUserId = $transaction->user_id;
+    //         $transactionAmount = $transaction->amount;
+
+    //         $refferer = User::find($transactionAffId);
+
+    //         $aff_id = $refferer->aff_id;
+      
+    //         if($transaction) {
+    //          $transaction->update([
+    //              'tx_ref' => request('reference'),
+    //              'status' => $response->status,
+    //              'is_onboard' => 1,
+    //          ]);
+    //          }
+
+    //         Sale::create([
+    //             'affiliate_id' => $transactionAffId,
+    //             'product_id' => $transactionProductId, // Get product ID from request
+    //             'user_id' => $transactionUserId, // Get user ID from request
+    //             'transaction_id' => $reference,
+    //             'amount' => $transactionAmount / 100,
+    //         ]);
+
+    //         $checkUser = User::where('email', request('email'))->first();
+
+    //         if (!$checkUser) {
+    //             Mail::to($response->data->customer->email)->send(new \App\Mail\RegisterLink($aff_id));  
+    //         }
+
+            
+    //     } else {
+    //         return response()->json(['message' => 'transaction not successful', 'success' => false]);
+    //     }
+    // }
+
+    // public function verify_payment($reference)
+    // {
+    //     $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
+
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_URL, $url);
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    //         "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
+    //         "Cache-Control: no-cache"
+    //     ));
+
+    //     $result = curl_exec($ch);
+
+    //     curl_close($ch);
+
+    //     return $result;
+    // }
 }
