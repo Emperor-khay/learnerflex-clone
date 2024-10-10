@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Product;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\DigitalProductRequest;
-use App\Http\Requests\OtherProductRequest;
+use App\Models\User;
 use App\Models\Vendor;
-use App\Service\ProductService;
-use App\Service\VendorService;
-use Illuminate\Http\JsonResponse;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use App\Models\Product;
+use App\Service\VendorService;
+use App\Service\ProductService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\OtherProductRequest;
+use App\Http\Requests\DigitalProductRequest;
 
 class ProductController extends Controller
 {

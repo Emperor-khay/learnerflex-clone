@@ -118,30 +118,6 @@ class UserController extends Controller
             return $this->error([], $th->getMessage(), 400);
         }
     }
-
-    public function handleTotalAffiliateSales(Request $request)
-    {
-        try {
-            $user = $request->user();
-            $sales = $this->userService->totalAffSales($user);
-            return $this->success($sales, 'total affiliate sales');
-        } catch (\Throwable $th) {
-            Log::error("total aff Sales: $th");
-            return $this->error([], $th->getMessage(), 400);
-        }
-    }
-
-    public function handleTodaysAffSales(Request $request)
-    {
-        try {
-            $user = $request->user();
-            $sales = $this->userService->todaysAffSales($user);
-            return $this->success($sales, 'today affiliate sales');
-        } catch (\Throwable $th) {
-            Log::error("today aff Sales: $th");
-            return $this->error([], $th->getMessage(), 400);
-        }
-    }
     
     public function affiliateEarnings($id){
         $totalAmount = Transaction::where('user_id', $id)->sum('org_aff');

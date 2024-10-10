@@ -15,6 +15,7 @@ use App\Http\Controllers\PasswordReset\NewPasswordReset;
 use App\Http\Controllers\Payment\PaystackController;
 use App\Http\Controllers\Payment\MarketplacePaymentController;
 use App\Http\Controllers\Payment\PayStackEbookController;
+use App\Http\Controllers\SecondVendorController;
 use App\Http\Controllers\SuperAdmin\SuperAdminAffiliateController;
 use App\Http\Controllers\SuperAdmin\SuperAdminAuthController;
 use App\Http\Controllers\SuperAdmin\SuperAdminDashboardController;
@@ -23,33 +24,11 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 use App\Http\Controllers\SuperAdmin\SuperAdminUserController;
 use App\Http\Controllers\SuperAdmin\SuperAdminVendorController;
 
-
+//Public Routes
 Route::post('/user/get-balance', [UserController::class, 'getBalance']);
 Route::post('user/total-aff-sales', [UserController::class, 'totalSaleAff']);
 
 Route::post('/request-withdrawal', [UserController::class, 'requestWithdrawal']);
-
-//one time payment
-Route::post('/payment/initialize-marketplace', [MarketplacePaymentController::class, 'make_payment']);
-
-Route::post('/payment/callback-marketplace', [MarketplacePaymentController::class, 'payment_callback'])->name('payment.callback');
-
-Route::get('/vendor/{id}/total-sales', [VendorController::class, 'getVendorTotalSaleAmount']);
-
-Route::get('vendor/{id}/transactions', [VendorController::class, 'getVendorSales']);
-
-Route::post('vendor/students', [VendorController::class, 'students']);
-
-Route::post('/vendor/product-performance', [VendorController::class, 'productPerformance']);
-
-Route::get('vendor/affiliate-details/{aff_id}', [VendorController::class, 'getAffDetails']);
-
-Route::get('/vendor/{id}/balance', [VendorController::class, 'vendorEarnings']);
-
-Route::get('/user/{id}/balance', [UserController::class, 'affiliateEarnings']);
-
-Route::post('user/accept-vendor-request', [VendorController::class, 'store']);
-
 
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
 
@@ -61,47 +40,46 @@ Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, '
 // Route for handling the payment callback
 Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback'])->name('callback');
 
-//new marketplace
+//one time payment
+Route::post('/payment/initialize-marketplace', [MarketplacePaymentController::class, 'make_payment']);
 
+Route::post('/payment/callback-marketplace', [MarketplacePaymentController::class, 'payment_callback'])->name('payment.callback');
+
+//Vendor Routes but will be adjusted later to use middleware routes and be in one place 
+
+Route::get('vendor/{id}/transactions', [VendorController::class, 'getVendorSales']);
+
+Route::post('vendor/students', [VendorController::class, 'students']);
+
+Route::post('/vendor/product-performance', [VendorController::class, 'productPerformance']);
+
+Route::get('vendor/affiliate-details/{aff_id}', [VendorController::class, 'getAffDetails']);
+
+Route::get('/user/{id}/balance', [UserController::class, 'affiliateEarnings']);
+
+Route::post('user/accept-vendor-request', [VendorController::class, 'store']);
+
+//new marketplace
 Route::get('/user/{id}/product/{reffer_id}', [ProductController::class, 'getProduct']);
 
-//add new product
-Route::post('product/add-product', [ProductController::class, 'addProduct']);
 
 //view all products from a particular vendor
 Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
 
-
 //get product by id
 Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
 
-
 Route::delete('/product/delete/{id}', [ProductController::class, 'deleteProduct']);
 
-
-Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
-Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
-
-Route::post('user/request-vendor', [VendorController::class, 'sendVendorRequest']);
-
-Route::get('/affiliate/sales', [UserController::class, 'salesAffiliate']);
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
-//test endpoints
-Route::get('/test', function () {
-    return response()->json(['message' => 'Checked successful']);
-});
-
+//User Authentication
 Route::prefix('auth')->group(function () {
     Route::post('/register', [RegisterController::class, 'store']);
     Route::post('/login', [LoginController::class, 'attemptUser']);
     Route::post('/logout', [LogoutController::class, 'logout']);
 });
+//Admin Authentication
+Route::post('/admin/login', [SuperAdminAuthController::class, 'login']);
 
-Route::get('/users', [UserController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}/transactions', [UserController::class, 'transactions']);
@@ -117,6 +95,38 @@ Route::middleware('auth:sanctum')->group(function () {
     // unlock market
     Route::get('/user/unlock/market', [ProductController::class, 'unlockMarketAccess']);
 
+    // check bank account route and update user account
+    Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
+});
+
+// Affiliate routes group
+Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->group(function () {
+    Route::get('/dashboard', [UserController::class, '']);
+
+    // products
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
+    Route::get('/products/{product}', [ProductController::class, 'show']);
+    //vendor requesting to be a vendor
+    Route::post('user/request-vendor', [VendorController::class, 'sendVendorRequest']);
+    //gets sales data
+    Route::get('/affiliate/sales', [UserController::class, 'salesAffiliate']);
+    // withdrawals
+    Route::get('/withdrawals', [WithdrawalController::class, 'index']);
+    Route::get('/withdrawals/amount', [WithdrawalController::class, 'userWithdrawSum']);
+
+    //password resetting routes
+    Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
+    Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
+});
+
+
+// Vendor routes group
+Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function () {
+    Route::get('/', [UserController::class, '']);
+    Route::get('/vendor/dashboard', [SecondVendorController::class, 'vendorDashboardMetrics']);
+    Route::get('/vendor/affiliate/dashboard', [SecondVendorController::class, 'vendorAffiliiateDashboardMetrics']);
+
     // products
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
@@ -126,67 +136,74 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/products/{product}/update', [ProductController::class, 'edit']);
     Route::delete('/products/{product}/delete', [ProductController::class, 'destroy']);
 
+    //add new product
+Route::post('product/add-product', [ProductController::class, 'addProduct']);
+
+    //gets sales data
+    Route::get('/affiliate/sales', [UserController::class, 'salesAffiliate']);
+
     // withdrawals
     Route::get('/withdrawals', [WithdrawalController::class, 'index']);
     Route::get('/withdrawals/amount', [WithdrawalController::class, 'userWithdrawSum']);
 
-    // dashboard home endpoints
-    Route::get('/todays-affiliate-sales', [UserController::class, 'handleTodaysAffSales']);
-    Route::get('/total-affiliate-sales', [UserController::class, 'handleTotalAffiliateSales']);
-    Route::get('/available-affiliate-earnings', function () {
-        return response()->json(['amount' => 20000]);
-    });
-
-    // check bank account route and update user account
-    Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
+    //password resetting routes
+Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
+Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
 });
 
-Route::post('/admin/login', [SuperAdminAuthController::class, 'login']);
-Route::post('/admin/logout', [SuperAdminAuthController::class, 'logout'])->middleware(['auth:sanctum', 'super-admin']);
-   // Admin routes group
-   Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('admin')->group(function () {
 
-});
-
-    // Admin routes group
+// Admin routes group
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
-     // Super Admin Dashboard Routes
-        Route::get('/dashboard', [SuperAdminDashboardController::class, 'getDashboardData']);
+    // Super Admin Dashboard Routes
+    Route::get('/dashboard', [SuperAdminDashboardController::class, 'getDashboardData']);
 
-        // Product Management Routes
-        Route::get('/products', [SuperAdminProductController::class, 'index']); // View Products
-        Route::post('/products', [SuperAdminProductController::class, 'store']); // Create Products
-        Route::get('/product/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
-        Route::put('/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
-        Route::post('/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
-        Route::delete('/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product
+    // Product Management Routes
+    Route::get('/products', [SuperAdminProductController::class, 'index']); // View Products
+    Route::post('/products', [SuperAdminProductController::class, 'store']); // Create Products
+    Route::get('/product/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
+    Route::put('/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
+    Route::post('/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
+    Route::delete('/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product
 
-        // User Management Routes
-        Route::get('/users', [SuperAdminUserController::class, 'index']); // View  Users
-        Route::post('/users', [SuperAdminUserController::class, 'store']); // Create  User(s)
-        Route::get('/user/{id}', [SuperAdminUserController::class, 'show']); // View Single User
-        Route::get('/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User
-        Route::put('/user/{id}', [SuperAdminUserController::class, 'update']); // Edit User
-        Route::delete('/user/{id}', [SuperAdminUserController::class, 'destroy']); //Delete User
+    // User Management Routes
+    Route::get('/users', [SuperAdminUserController::class, 'index']); // View  Users
+    Route::post('/users', [SuperAdminUserController::class, 'store']); // Create  User(s)
+    Route::get('/user/{id}', [SuperAdminUserController::class, 'show']); // View Single User
+    Route::get('/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User
+    Route::put('/user/{id}', [SuperAdminUserController::class, 'update']); // Edit User
+    Route::delete('/user/{id}', [SuperAdminUserController::class, 'destroy']); //Delete User
 
-        // Transactions Route
-        Route::get('/transactions', [SuperAdminTransactionController::class, 'index']);
-        Route::get('/transaction/{id}', [SuperAdminTransactionController::class, 'show']);
+    // Transactions Route
+    Route::get('/transactions', [SuperAdminTransactionController::class, 'index']);
+    Route::get('/transaction/{id}', [SuperAdminTransactionController::class, 'show']);
 
-        // View all affiliates
-        Route::get('/affiliates', [SuperAdminAffiliateController::class, 'index']); // Get all affiliates
-        Route::get('/affiliate/{id}', [SuperAdminAffiliateController::class, 'show']); // View individual affiliate
-        Route::put('/affiliate/{id}', [SuperAdminAffiliateController::class, 'update']); // Edit affiliate
-        Route::delete('/affiliate/{id}', [SuperAdminAffiliateController::class, 'destroy']); // Delete affiliate
-        Route::post('/affiliate/create', [SuperAdminAffiliateController::class, 'store']); // Create single affiliate
-        Route::post('/affiliate/bulk-upload', [SuperAdminAffiliateController::class, 'bulkUpload']); // Bulk upload affiliates
+    // View all affiliates
+    Route::get('/affiliates', [SuperAdminAffiliateController::class, 'index']); // Get all affiliates
+    Route::get('/affiliate/{id}', [SuperAdminAffiliateController::class, 'show']); // View individual affiliate
+    Route::put('/affiliate/{id}', [SuperAdminAffiliateController::class, 'update']); // Edit affiliate
+    Route::delete('/affiliate/{id}', [SuperAdminAffiliateController::class, 'destroy']); // Delete affiliate
+    Route::post('/affiliate/create', [SuperAdminAffiliateController::class, 'store']); // Create single affiliate
+    Route::post('/affiliate/bulk-upload', [SuperAdminAffiliateController::class, 'bulkUpload']); // Bulk upload affiliates
 
-        // Vendor Routes
-        Route::get('/vendors', [SuperAdminVendorController::class, 'index']); // Get all vendors
-        Route::get('/vendor/{id}', [SuperAdminVendorController::class, 'show']); // View individual vendor
-        Route::put('/vendor/{id}', [SuperAdminVendorController::class, 'update']); // Edit vendor
-        Route::delete('/vendor/{id}', [SuperAdminVendorController::class, 'destroy']); // Delete vendor
+    // Vendor Routes
+    Route::get('/vendors', [SuperAdminVendorController::class, 'index']); // Get all vendors
+    Route::get('/vendor/{id}', [SuperAdminVendorController::class, 'show']); // View individual vendor
+    Route::put('/vendor/{id}', [SuperAdminVendorController::class, 'update']); // Edit vendor
+    Route::delete('/vendor/{id}', [SuperAdminVendorController::class, 'destroy']); // Delete vendor
 
-        // Dashboard Route
-        // Route::get('/dashboard-data', [SuperAdminDashboardController::class, 'getDashboardData']);
+    // Dashboard Route
+    // Route::get('/dashboard-data', [SuperAdminDashboardController::class, 'getDashboardData']);
+
+    Route::post('/admin/logout', [SuperAdminAuthController::class, 'logout']);
 });
+
+
+//test routes
+Route::get('/users', [UserController::class, 'index']);
+//test endpoints
+Route::get('/test', function () {
+    return response()->json(['message' => 'Checked successful']);
+});
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
