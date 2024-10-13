@@ -18,9 +18,22 @@ class RoleMiddleware
         // Retrieve the authenticated user
         $user = $request->user();
 
-        // Check if the user has the required role, or allow vendor access to affiliate routes
-        if ($user && ($user->role === $role || ($role === 'affiliate' && $user->role === 'vendor'))) {
-            return $next($request);
+        // Check if the user is authenticated and has the appropriate role
+        if ($user) {
+            // Admins have access to all routes
+            if ($user->role === 'admin') {
+                return $next($request);
+            }
+
+            // Vendors can access vendor and affiliate routes
+            if ($user->role === 'vendor' && ($role === 'vendor' || $role === 'affiliate')) {
+                return $next($request);
+            }
+
+            // Affiliates can access only affiliate routes
+            if ($user->role === 'affiliate' && $role === 'affiliate') {
+                return $next($request);
+            }
         }
 
         // Return an unauthorized response if role check fails

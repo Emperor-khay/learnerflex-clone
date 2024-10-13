@@ -166,18 +166,4 @@ class UserService
             return $user->refresh();
         });
     }
-
-    public function updateUserVendorStatus(User $user)
-    {
-        if($user->is_vendor) {
-            throw new \Exception('User is already a vendor!', 422);
-        }
-        return DB::transaction(function () use ($user) {
-            $user->update([
-                'is_vendor' => true,
-                'vendor_status' => VendorStatusEnum::UP->value,
-            ]);
-            return $user->refresh();
-        });
-    }
 }

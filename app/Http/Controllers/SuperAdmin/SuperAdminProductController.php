@@ -10,10 +10,26 @@ use App\Models\Vendor;
 
 class SuperAdminProductController extends Controller
 {
-    public function index()
-    {
-        return Product::paginate(30); // Return all products
-    }
+    public function index(Request $request)
+{
+    // Get the 'per_page' query parameter or default to 15
+    $perPage = $request->get('per_page', 15); // Default is 15 products per page
+    
+    // Fetch the products with pagination
+    $products = Product::paginate($perPage);
+
+    return response()->json([
+        'success' => true,
+        'data' => $products->items(), // The products data
+        'pagination' => [
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'total' => $products->total(),
+            'per_page' => $products->perPage(),
+        ]
+    ]);
+}
+
 
     public function show($id)
     {

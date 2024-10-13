@@ -45,63 +45,6 @@ class VendorController extends Controller
         }
     }
 
-    
-    public function store(Request $request)
-    {
-        // Validate the incoming request
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'name' => 'required|string|max:255',
-        ]);
-
-        // Check if validation fails
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        // Check if the user_id exists in the users table
-        $userExists = User::where('id', $request->user_id)->exists();
-        if (!$userExists) {
-            return response()->json(['message' => 'Invalid user_id, user does not exist'], 422);
-        }
-        
-        // Check if the vendor exists in the users table
-        $vendorExists = Vendor::where('user_id', $request->user_id)->exists();
-        
-        if ($vendorExists) {
-            return response()->json(['message' => 'Vendor already exists'], 422);
-        }
-        DB::table('vendors')->insert([
-            'user_id' => $request->user_id,
-            'name' => $request->name,
-            'description' => "New Vendor",
-            'photo' => null,   
-            'created_at' => now(),
-            'updated_at' => now(),         
-        ]);
-
-        $user_id = $request->user_id;
-    
-        // Delete any existing vendor_status entries for this user
-        DB::statement("DELETE FROM vendor_status WHERE user_id = ?", [$user_id]);
-    
-        // Update the is_vendor column in the users table to 1
-        User::where('id', $user_id)->update(['is_vendor' => 1, 'vendor_status' => 'up']);
-        
-        $user_email_check = User::find($user_id);
-        
-        $user_email = $user_email_check->email;
-
-        
-       // Mail::to($user_email)->send(new VendorAccountWanted($user, $saleurl));
-    
-        // Return a successful JSON response
-        return response()->json([
-            'success' => true,
-            'message' => 'Vendor created successfully and user updated to vendor',
-        ], 201);
-    }
-
     public function sendVendorRequest(Request $request){
         $validate = $request->validate([
             'email' => 'bail|required|string',
@@ -121,6 +64,7 @@ class VendorController extends Controller
         DB::table('vendor_status')->insert([
             'user_id' => $user_id,
             'sale_url' => $validate['sale_url'],
+            'status' => 'pending',
             'created_at' => now(),
             'updated_at' => now(),            
         ]);

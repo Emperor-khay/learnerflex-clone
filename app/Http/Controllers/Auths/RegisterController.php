@@ -65,6 +65,7 @@ class RegisterController extends Controller
                     'password' => $hashedPassword,
                     'refferal_id' => null,
                     'has_paid_onboard' => 1,
+                    'role' => 'affiliate',
                     'otp' => null,
                     'market_access' => 1,    
                 ]);
@@ -111,6 +112,7 @@ class RegisterController extends Controller
                 'has_paid_onboard' => 1,
                 'is_vendor' => 0,
                 'vendor_status' => 'down',
+                'role' => 'affiliate',
                 'otp' => null,
                 'market_access' => 1,    
             ]);

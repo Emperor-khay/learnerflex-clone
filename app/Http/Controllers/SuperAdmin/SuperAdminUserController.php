@@ -2,20 +2,41 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Product;
-use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Models\Product;
+use App\Models\Affiliate;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Mail\VendorAccountUpgraded;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Mail;
 
 class SuperAdminUserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::paginate(10);
-        return response()->json($users);
+        // Get the 'per_page' query parameter or default to 10
+        $perPage = $request->get('per_page', 10); // Default is 10 users per page
+
+        // Paginate users based on the query parameter
+        $users = User::paginate($perPage);
+
+        // Return a JSON response with pagination metadata
+        return response()->json([
+            'success' => true,
+            'data' => $users->items(), // List of users
+            'pagination' => [
+                'current_page' => $users->currentPage(),
+                'last_page' => $users->lastPage(),
+                'total' => $users->total(),
+                'per_page' => $users->perPage(),
+
+            ]
+        ]);
     }
+
 
     public function show($userId)
     {
@@ -56,30 +77,129 @@ class SuperAdminUserController extends Controller
         return response()->json($referrer);
     }
 
-    public function store(Request $request)
+    public function showuser($role, $id)
     {
-        $user = User::create($request->all());
-
-        return response()->json(['message' => 'User created successfully', 'user' => $user]);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $user = User::find($id);
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+        switch ($role) {
+            case 'user':
+                $entity = User::findOrFail($id);
+                break;
+            case 'vendor':
+                $entity = Vendor::where('user_id', $id)->firstOrFail();
+                break;
+            case 'affiliate':
+                $entity = Affiliate::where('user_id', $id)->firstOrFail();
+                break;
+            default:
+                return response()->json(['error' => 'Invalid role'], 400);
         }
-        $user->update($request->all());
-        return response()->json($user);
+
+        return response()->json($entity);
     }
 
-    public function destroy($id)
+    public function store(Request $request, $role)
     {
-        $user = User::find($id);
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+        switch ($role) {
+            case 'user':
+                $user = User::create($request->all());
+                return response()->json($user, 201);
+            case 'vendor':
+                $vendor = Vendor::create($request->all());
+                return response()->json($vendor, 201);
+            case 'affiliate':
+                $affiliate = Affiliate::create($request->all());
+                return response()->json($affiliate, 201);
+            default:
+                return response()->json(['error' => 'Invalid role'], 400);
         }
-        $user->delete();
-        return response()->json(['message' => 'User deleted successfully']);
     }
+
+    public function update(Request $request, $role, $id)
+    {
+        switch ($role) {
+            case 'user':
+                $user = User::findOrFail($id);
+                $user->update($request->all());
+                return response()->json($user);
+            case 'vendor':
+                $vendor = Vendor::where('user_id', $id)->firstOrFail();
+                $vendor->update($request->all());
+                return response()->json($vendor);
+            case 'affiliate':
+                $affiliate = Affiliate::where('user_id', $id)->firstOrFail();
+                $affiliate->update($request->all());
+                return response()->json($affiliate);
+            default:
+                return response()->json(['error' => 'Invalid role'], 400);
+        }
+    }
+
+    public function destroy($role, $id)
+    {
+        switch ($role) {
+            case 'user':
+                User::findOrFail($id)->delete();
+                return response()->json(['message' => 'User deleted']);
+            case 'vendor':
+                Vendor::where('user_id', $id)->firstOrFail()->delete();
+                return response()->json(['message' => 'Vendor deleted']);
+            case 'affiliate':
+                Affiliate::where('user_id', $id)->firstOrFail()->delete();
+                return response()->json(['message' => 'Affiliate deleted']);
+            default:
+                return response()->json(['error' => 'Invalid role'], 400);
+        }
+    }
+
+    public function upgradeAffiliateToVendor(Request $request, $id)
+{
+    // Find the user by ID
+    $user = User::findOrFail($id);
+
+    // Check if the user is already a vendor
+    if ($user->is_vendor) {
+        return response()->json(['error' => 'User is already a vendor!'], 422);
+    }
+
+    try {
+        DB::transaction(function () use ($user) {
+            // Update the user's details to reflect vendor status
+            $user->update([
+                'is_vendor' => true,
+                'vendor_status' => 'up', // Adjust according to your enum values
+                'role' => 'vendor',
+            ]);
+
+            // Insert or update the vendor details in the vendor table
+            DB::table('vendors')->insert([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'description' => "New Vendor",
+                'photo' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Update the vendor_status table for the user
+            DB::table('vendor_status')->where('user_id', $user->id)->updateOrInsert(
+                ['user_id' => $user->id],
+                ['status' => 'active', 'updated_at' => now()]
+            );
+
+            // Send email notification to the affiliate
+            Mail::to($user->email)->send(new VendorAccountUpgraded($user));
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Affiliate upgraded to vendor successfully',
+            'user' => $user->refresh()
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to upgrade affiliate to vendor',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
 }

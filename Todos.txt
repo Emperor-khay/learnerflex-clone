@@ -1,1 +1,4 @@
-1. Change the loginrequest back to min of 6
+1. Change the loginrequest back to password min back to 6 in for production
+
+####################################################
+has_paid_onboard in users table is checking if you have paid #5100
