@@ -26,12 +26,12 @@ class RoleMiddleware
             }
 
             // Vendors can access vendor and affiliate routes
-            if ($user->role === 'vendor' && ($role === 'vendor' || $role === 'affiliate')) {
+            if ($user->role === 'vendor') {
                 return $next($request);
             }
 
             // Affiliates can access only affiliate routes
-            if ($user->role === 'affiliate' && $role === 'affiliate') {
+            if ($user->role === 'affiliate') {
                 return $next($request);
             }
         }

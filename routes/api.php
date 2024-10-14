@@ -34,12 +34,6 @@ Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, '
 // Route for handling the payment callback
 Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback'])->name('callback');
 
-//view all products from a particular vendor
-Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
-//get product by id
-Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
-Route::delete('/product/delete/{id}', [ProductController::class, 'deleteProduct']);
-
 
 //User Authentication
 Route::prefix('auth')->group(function () {
@@ -55,7 +49,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 
     Route::get('/dashboard', [AffiliateController::class, 'affiliateDashboardMetrics']);
 
-    Route::get('/{id}/balance', [UserController::class, 'affiliateEarnings']);
+    // Route::get('/{id}/balance', [UserController::class, 'affiliateEarnings']);
 
     //new marketplace
     Route::get('/{id}/product/{reffer_id}', [ProductController::class, 'getProduct']);
@@ -77,6 +71,11 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     Route::get('/withdrawals/amount', [WithdrawalController::class, 'userWithdrawSum']);
     //transactions
     Route::get('/users/{user}/transactions', [UserController::class, 'transactions']);
+    //view all products from a particular vendor
+    Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
+    //get product by id
+    Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
+    Route::delete('/product/delete/{id}', [ProductController::class, 'deleteProduct']);
     // unlock market
     //one time payment
     Route::post('/payment/initialize-marketplace', [MarketplacePaymentController::class, 'make_payment']);
@@ -105,6 +104,11 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
 
     // check bank account route and update user account
     Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
+    //view all products from a particular vendor
+    Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
+    //get product by id
+    Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
+    Route::delete('/product/delete/{id}', [ProductController::class, 'deleteProduct']);
 
     // products
     Route::get('/products', [ProductController::class, 'index']);

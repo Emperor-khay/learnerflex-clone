@@ -6,8 +6,10 @@ use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\Earning;
 use App\Models\Withdrawal;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Flutterwave\Service\Transactions;
 
 class SecondVendorController extends Controller
 {
@@ -18,7 +20,7 @@ class SecondVendorController extends Controller
             // Get authenticated vendor
             $vendor = Auth::guard('sanctum')->user();
 
-            if ($vendor->is_vendor) {
+            if (!$vendor->is_vendor) {
                 return response()->json(['error' => 'Unauthorized or not a vendor'], 403);
             }
 
@@ -26,23 +28,24 @@ class SecondVendorController extends Controller
             $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
             $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
 
-            // 1. Available Affiliate Earnings (Total earnings for the vendor)
-            $availableEarnings = Earning::where('user_id', $vendor->id)
+            // 1. Available Vendor Earnings (Total earnings for the vendor)
+            $availableEarnings = Transaction::where('vendor_id', $vendor->id)
+                ->where('status', 'success')  // Only successful transactions
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
-                ->sum('amount');
+                ->sum('org_vendor');  // Sum of vendor earnings
 
-            // 2. Today's Affiliate Sales (Sales with affiliate for the current day - both count and amount)
-            $todaySalesData = Sale::where('user_id', $vendor->id)
-                ->whereNotNull('affiliate_id') // Affiliate sales only
-                ->whereDate('created_at', Carbon::today())
+            // 2. Today's Vendor Sales (Sales for the current day - both count and amount)
+            $todaySalesData = Transaction::where('vendor_id', $vendor->id)
+                ->where('status', 'success')  // Only successful transactions
+                ->whereDate('created_at', Carbon::today())  // Today's sales
                 ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
                 ->first();
 
-            // 3. Total Affiliate Sales (All-time or filtered by date sales with affiliate - both count and amount)
-            $totalSalesData = Sale::where('user_id', $vendor->id)
-                ->whereNotNull('affiliate_id')
+            // 3. Total Vendor Sales (All-time or filtered by date - both count and amount)
+            $totalSalesData = Transaction::where('vendor_id', $vendor->id)
+                ->where('status', 'success')  // Only successful transactions
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
@@ -58,12 +61,12 @@ class SecondVendorController extends Controller
 
             // Return all data in JSON format
             return response()->json([
-                'available_affiliate_earnings' => $availableEarnings,
-                'todays_affiliate_sales' => [
+                'available_vendor_earnings' => $availableEarnings,
+                'todays_vendor_sales' => [
                     'total_amount' => $todaySalesData->total_amount ?? 0,
                     'sale_count' => $todaySalesData->sale_count ?? 0
                 ],
-                'total_affiliate_sales' => [
+                'total_vendor_sales' => [
                     'total_amount' => $totalSalesData->total_amount ?? 0,
                     'sale_count' => $totalSalesData->sale_count ?? 0
                 ],
@@ -75,34 +78,35 @@ class SecondVendorController extends Controller
         }
     }
 
+
     public function affiliateDashboardMetrics(Request $request)
     {
         try {
             // Get authenticated affiliate
             $affiliate = Auth::guard('sanctum')->user();
-    
+
             if (!$affiliate) {
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
-    
+
             // Optional date filters for metrics
             $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
             $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
-    
+
             // 1. Available Affiliate Earnings (Total earnings for the affiliate)
             $availableEarnings = Earning::where('user_id', $affiliate->id)
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
                 ->sum('amount');
-    
+
             // 2. Today's Affiliate Sales (Sales with affiliate for the current day - both count and amount)
             $todaySalesData = Sale::where('user_id', $affiliate->id)
                 ->whereNotNull('affiliate_id') // Affiliate sales only
                 ->whereDate('created_at', Carbon::today())
                 ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
                 ->first();
-    
+
             // 3. Total Affiliate Sales (All-time or filtered by date sales with affiliate - both count and amount)
             $totalSalesData = Sale::where('user_id', $affiliate->id)
                 ->whereNotNull('affiliate_id')
@@ -111,14 +115,14 @@ class SecondVendorController extends Controller
                 })
                 ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
                 ->first();
-    
+
             // 4. Total Withdrawals (Sum all withdrawals for the affiliate)
             $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
                 ->sum('amount');
-    
+
             // Return all data in JSON format
             return response()->json([
                 'available_affiliate_earnings' => $availableEarnings,
@@ -132,7 +136,6 @@ class SecondVendorController extends Controller
                 ],
                 'total_withdrawals' => $totalWithdrawals,
             ], 200);
-    
         } catch (\Exception $e) {
             // Error handling
             return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
