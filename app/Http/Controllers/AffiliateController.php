@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\Earning;
 use App\Models\Withdrawal;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 

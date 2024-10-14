@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Adding a new 'role' column with a default value of 'user'
-            $table->string('role')->default('user')->after('has_paid_onboard');
+            // Adding a new 'role' column with a default value of 'affiliate'
+            $table->string('role')->default('affiliate')->after('has_paid_onboard');
             // Adding a new 'status' column with a default value of 'active'
             $table->string('status')->default('active')->after('role');
         });
