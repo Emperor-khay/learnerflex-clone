@@ -128,17 +128,6 @@ class UserController extends Controller
         }
     }
 
-    public function handleUserVendorStatus(User $user)
-    {
-        try {
-            $user = $this->userService->updateUserVendorStatus($user);
-            return $this->success($user, 'User Vendor Status Updated!');
-        } catch (\Throwable $th) {
-            Log::error("Vendor request: $th");
-            return $this->error([], $th->getMessage(), 400);
-        }
-    }
-
     public function affiliateEarnings($id)
     {
         $totalAmount = Transaction::where('user_id', $id)->sum('org_aff');

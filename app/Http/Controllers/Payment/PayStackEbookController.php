@@ -56,10 +56,14 @@ class PaystackEbookController extends Controller
         }
         
 
-        // Calculate shares
-        $org_company_share = $amount * 0.05; // 5% to company
-        $org_vendor_share = $amount * 0.45;  // 45% to vendor
-        $org_aff_share = $amount * 0.50;     // 50% to affiliate
+        
+          // Fetch the product's affiliate commission percentage
+    $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0; // Default to 35% if not set
+
+    // Calculate shares
+    $org_company_share = $amount * 0.05; // 5% to company (admin)
+    $org_aff_share = $amount * $aff_commission_percentage;  // Dynamic affiliate share
+    $org_vendor_share = $amount - ($org_company_share + $org_aff_share);  // Vendor gets the rest
 
         
         // Initialize payment with Paystack

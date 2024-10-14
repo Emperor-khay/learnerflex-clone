@@ -33,9 +33,7 @@ Route::post('/payment/callback', [PaystackController::class, 'payment_callback']
 Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
 // Route for handling the payment callback
 Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback'])->name('callback');
-Route::get('/user/{id}/balance', [UserController::class, 'affiliateEarnings']);
-//new marketplace
-Route::get('/user/{id}/product/{reffer_id}', [ProductController::class, 'getProduct']);
+
 //view all products from a particular vendor
 Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
 //get product by id
@@ -56,6 +54,11 @@ Route::post('/admin/login', [SuperAdminAuthController::class, 'login']);
 Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->group(function () {
 
     Route::get('/dashboard', [AffiliateController::class, 'affiliateDashboardMetrics']);
+
+    Route::get('/{id}/balance', [UserController::class, 'affiliateEarnings']);
+
+    //new marketplace
+    Route::get('/{id}/product/{reffer_id}', [ProductController::class, 'getProduct']);
 
     //profile routes
     Route::post('/update/image', [UserController::class, 'handleUserImage']);

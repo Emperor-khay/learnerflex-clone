@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Payment;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Unicodeveloper\Paystack\Facades\Paystack;
-use App\Models\Transaction; 
+use Exception;
 use App\Models\Sale; 
 use App\Models\User; 
 use App\Models\Product; 
-use Exception;
+use App\Models\Transaction; 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
+use Unicodeveloper\Paystack\Facades\Paystack;
 
 class PaystackController extends Controller
 {
@@ -48,15 +49,18 @@ class PaystackController extends Controller
         // Retrieve Affiliate ID
 
         if($request->has('aff_id')){
-            $getAffiliateId = User::where('aff_id', request('aff_id'))->first();
-            $affiliate_id = $getAffiliateId ? $getAffiliateId->id : 0;
+             // Retrieve Affiliate ID
+    $affiliate_id = User::where('aff_id', $request->aff_id)->value('id') ?? "";
         }
         
 
-        // Calculate shares
-        $org_company_share = $amount * 0.05; // 5% to company
-        $org_vendor_share = $amount * 0.45;  // 45% to vendor
-        $org_aff_share = $amount * 0.50;     // 50% to affiliate
+          // Fetch the product's affiliate commission percentage
+    $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0; // Default to 35% if not set
+
+    // Calculate shares
+    $org_company_share = $amount * 0.05; // 5% to company (admin)
+    $org_aff_share = $amount * $aff_commission_percentage;  // Dynamic affiliate share
+    $org_vendor_share = $amount - ($org_company_share + $org_aff_share);  // Vendor gets the rest
 
         
         // Initialize payment with Paystack
@@ -166,7 +170,7 @@ class PaystackController extends Controller
                 'product_id' => $transactionProductId, // Get product ID from request
                 'user_id' => $transactionUserId, // Get user ID from request
                 'transaction_id' => $reference,
-                'amount' => $transactionAmount / 100,
+                'amount' => $transactionAmount,
             ]);
             
             
