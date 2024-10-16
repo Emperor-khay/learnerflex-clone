@@ -128,17 +128,6 @@ class UserController extends Controller
         }
     }
 
-    public function affiliateEarnings($id)
-    {
-        $totalAmount = Transaction::where('user_id', $id)->sum('org_aff');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'total earnings for withdrawal',
-            'Total sale' => $totalAmount
-        ]);
-    }
-
 
     public function getBalance(Request $request)
     {

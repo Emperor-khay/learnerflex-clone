@@ -33,6 +33,10 @@ Route::post('/payment/callback', [PaystackController::class, 'payment_callback']
 Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
 // Route for handling the payment callback
 Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback'])->name('callback');
+// unlock market
+//one time payment
+Route::post('/marketplace/payment', [MarketplacePaymentController::class,'payment'])->name('marketplace.payment');
+Route::get('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
 
 
 //User Authentication
@@ -49,17 +53,12 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 
     Route::get('/dashboard', [AffiliateController::class, 'affiliateDashboardMetrics']);
 
-    // Route::get('/{id}/balance', [UserController::class, 'affiliateEarnings']);
-
-    //new marketplace
+    // marketplace
     Route::get('/{id}/product/{reffer_id}', [ProductController::class, 'getProduct']);
 
     //profile routes
     Route::post('/update/image', [UserController::class, 'handleUserImage']);
     Route::post('/update/profile', [UserController::class, 'handleUserProfile']);
-
-    // products
-    Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
     //vendor requesting to be a vendor
@@ -70,16 +69,12 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     Route::get('/withdrawals', [WithdrawalController::class, 'index']);
     Route::get('/withdrawals/amount', [WithdrawalController::class, 'userWithdrawSum']);
     //transactions
-    Route::get('/users/{user}/transactions', [UserController::class, 'transactions']);
+    Route::get('/transactions', [UserController::class, 'transactions']);
     //view all products from a particular vendor
     Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
     //get product by id
     Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
     Route::delete('/product/delete/{id}', [ProductController::class, 'deleteProduct']);
-    // unlock market
-    //one time payment
-    Route::post('/payment/initialize-marketplace', [MarketplacePaymentController::class, 'make_payment']);
-    Route::post('/payment/callback-marketplace', [MarketplacePaymentController::class, 'payment_callback'])->name('payment.callback');
     // Route::get('/unlock/market', [ProductController::class, 'unlockMarketAccess']); this route is using flutterwave
 
     // check bank account route and update user account

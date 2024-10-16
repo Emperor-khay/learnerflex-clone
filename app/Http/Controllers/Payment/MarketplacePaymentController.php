@@ -2,319 +2,178 @@
 
 namespace App\Http\Controllers\Payment;
 
-use App\Models\User; 
-use App\Models\Product; 
+use Log;
+use App\Models\User;
+use App\Models\Product;
+use App\Models\Transaction;
 use Illuminate\Support\Str;
-use App\Models\Transaction; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Redirect;
+use Unicodeveloper\Paystack\Facades\Paystack;
 
 class MarketplacePaymentController extends Controller
 {
 
-    public function make_payment()
-    {
-        // User must be logged in, and we get their email from the authenticated user
-        $user = auth()->user();
-        $email = $user->email;
 
-        // Amount to be paid (in NGN kobo)
-        $amount = 1000; // Amount in NGN
-        $amountKobo = $amount * 100; // Convert NGN to kobo (1 NGN = 100 kobo)
+    public function payment(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'email' => 'required|string|email',
+            // Add other necessary validation rules if needed
+        ]);
+
+        
+
+        // Generate a unique order ID for each transaction
+        $orderID = strtoupper(Str::random(10));  // Random 10 character string for the order ID
 
         // Prepare the data for the payment
         $formData = [
-            'email' => $email, // User's email
-            'amount' => $amountKobo, // Amount in kobo
-            'currency' => 'NGN', // Currency is NGN (Nigerian Naira)
-            'callback_url' => route('payment.callback'), // Generate callback URL
+            'email' => $request->email,  // Use validated email
+            'amount' => 5100 * 100, // Amount in cents (NGN)
+            'currency' => 'NGN',
+            'callback_url' => route('marketplace.payment.callback') . '?email=' . urlencode($request->email),
+            "orderID" => $orderID,
         ];
 
-        // Initialize payment with Paystack
-        $pay = json_decode($this->initialize_payment($formData));
 
-        if ($pay && $pay->status) {
-            // Payment initialization successful
+        try {
+            // Initialize payment with Paystack using Unicodeveloper package
+            $paymentData = Paystack::getAuthorizationUrl($formData);
 
-            // Create a new transaction record
+            // Store transaction in DB
             Transaction::create([
-                'user_id' => $user->id, // Use the authenticated user's ID
-                'email' => $email, // User's email
+                'user_id' => 0,
+                'email' =>  $request->email,
                 'affiliate_id' => 0,
                 'product_id' => 0,
-                'amount' => $amount, // Amount in NGN
-                'currency' => 'NGN',
-                'status' => 'pending', // Set transaction as pending
+                'amount' => $formData['amount'],
+                'currency' => $formData['currency'],
+                'status' => 'pending',
                 'org_company' => 0,
                 'org_vendor' => 0,
                 'org_aff' => 0,
                 'is_onboard' => 0,
                 'tx_ref' => null,
+                'transaction_id' => $orderID, // Save the dynamic order ID
             ]);
 
             // Return the authorization URL in the JSON response
             return response()->json([
                 'success' => true,
-                'authorization_url' => $pay->data->authorization_url
+                'authorization_url' => $paymentData, // Authorization URL
             ], 200);
-        } else {
-            // Payment initialization failed
-            Log::error('Paystack payment initialization failed: ' . json_encode($pay));
+        } catch (\Exception $e) {
+            \Log::error('Payment Initialization Error: ' . $e->getMessage());
+            // Handle exception
             return response()->json([
                 'success' => false,
-                'message' => "Something went wrong with the payment initialization."
-            ], 401);
+                'message' => 'Failed to initialize payment. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
     public function payment_callback(Request $request)
     {
-        // Verify the payment using the provided reference
-        $reference = $request->input('reference');
+        $email = $request->get('email');
+        $reference = request('reference');  // Get reference from the callback
+        $paymentDetails = Paystack::getPaymentData();  // Use Paystack package to get payment details
 
-        if (!$reference) {
-            return response()->json(['success' => false, 'message' => 'No payment reference provided'], 400);
-        }
+        // Check if payment was successful
+        if ($paymentDetails['data']['status'] == "success") {
 
-        // Verify the payment with Paystack
-        $response = json_decode($this->verify_payment($reference));
+            // Create the user record
+            $user = User::create([
+                'name' => null,
+                'email' => $email,
+                'phone' => null,
+                'password' => null,
+                'country' => null,
+                'refferal_id' => 0,
+                'image' => null,
+                'has_paid_onboard' => 1,
+                'is_vendor' => 0,
+                'vendor_status' => 'down',
+                'otp' => $reference,  // Store the dynamic OTP
+                'market_access' => 1,
+                'bank_account' => null,
+                'bank_name' => null
+            ]);
 
-        if ($response && $response->status == "success") {
-            // Payment was successful
-            $user = auth()->user(); // Get the logged-in user
-
-            // Ensure that the transaction exists and is updated
-            $transaction = Transaction::where('email', $user->email)->latest()->first();
+            // Update the transaction record
+            $transaction = Transaction::where('email', request('email'))->latest()->first();
 
             if ($transaction) {
                 $transaction->update([
-                    'tx_ref' => $reference,
-                    'status' => 'success',
-                    'is_onboard' => 1, // User has paid
+                    'tx_ref' => request('reference'),
+                    'status' => $paymentDetails['data']['status'],
+                    'is_onboard' => 1,
                 ]);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Transaction successful. User has access to the marketplace.',
+                'message' => 'Transaction successful. User recorded with OTP.',
                 'user' => $user,
-                'status' => $response->status
+                'status' => $paymentDetails['data']['status']
             ]);
         } else {
-            // Payment failed or was incomplete
-            $status = $response->status ?? 'failed';
+            $status = $paymentDetails['data']['status'] == "pending" ? 'pending' : 'failed';
+
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction failed or incomplete',
-                'status' => $status
+                'message' => 'Transaction failed',
+                'status' => $status,
             ]);
         }
     }
 
-    private function initialize_payment($formData)
-    {
-        // Paystack API initialization URL
-        $url = "https://api.paystack.co/transaction/initialize";
-        $fields_string = http_build_query($formData);
 
-        // cURL request for payment initialization
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-            "Cache-Control: no-cache"
-        ]);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-        // Execute cURL and return the result
-        $result = curl_exec($ch);
-        curl_close($ch);
-
-        return $result;
-    }
-
-    private function verify_payment($reference)
-    {
-        // Paystack API verification URL
-        $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
-
-        // cURL request to verify payment
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-            "Cache-Control: no-cache"
-        ]);
-
-        // Execute cURL and return the result
-        $result = curl_exec($ch);
-        curl_close($ch);
-
-        return $result;
-    }
-    //
-    // public function make_payment()
+    // public function redirectToGateway()
     // {
-    //     $amount = 1000;
-    //     $amountKobo = $amount * 100;
-    //     // Prepare the data for the payment
     //     $formData = [
-    //         'email' => request('email'),
-    //         'amount' => 50 * 100, 
-    //         'currency' => request('currency'),
-    //         'callback_url' => "https://learnerflex.com/auth/signup?otp=sggd63vx7td3dydg3", 
+    //         'email' => 'user@mail.com', // User's email
+    //         'amount' => 7100 * 100, // Amount in kobo
+    //         'currency' => 'NGN', // Currency is NGN (Nigerian Naira)
+    //         'callback_url' => route('payment.go'), // Generate callback URL
+    //         "orderID" => 215387,
     //     ];
-
- 
-    //     // Initialize payment with Paystack
-    //     $pay = json_decode($this->initialize_payment($formData));
-    
-    //     if ($pay) {
-    //         // Check if payment initialization was successful
-    //         if ($pay->status) {
-
-    //             Transaction::create([
-    //                 'user_id' => 0, 
-    //                 'email' => request('email'),
-    //                 'affiliate_id' => 0,
-    //                 'product_id' => 0,
-    //                 'amount' => $amount,
-    //                 'currency' => request('currency'),
-    //                 'status' => 'pending',
-    //                 'org_company' => 0,
-    //                 'org_vendor' => 0,
-    //                 'org_aff' => 0,
-    //                 'is_onboard' => 0,
-    //                 'tx_ref' => null,
-    //             ]);
-
-    //             // Return the authorization URL in the JSON response
-    //             return response()->json([
-    //                 'success' => true,
-    //                 'authorization_url' => $pay->data->authorization_url
-    //             ], 200);
-
-    //         } else {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => "Something went wrong with the payment initialization."
-    //             ], 401);
-    //         }
-    //     } else {
+    //     try {
+    //         $paymentData =  Paystack::getAuthorizationUrl($formData);
+    //         return response()->json([
+    //             'success' => true,
+    //             'authorization_url' => $paymentData // Return the authorization URL in the response
+    //         ], 200);
+    //     } catch (\Exception $e) {
     //         return response()->json([
     //             'success' => false,
-    //             'message' => "Something went wrong with the payment initialization."
-    //         ], 401);
+    //             'message' => 'The Paystack token has expired. Please refresh the page and try again.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
     //     }
     // }
 
-    // public function initialize_payment($formData)
+    // /**
+    //  * Obtain Paystack payment information
+    //  * @return void
+    //  */
+    // public function handleGatewayCallback()
     // {
-    //     $url = "https://api.paystack.co/transaction/initialize";
-    //     $fields_string = http_build_query($formData);
+    //     $paymentDetails = Paystack::getPaymentData();
 
-    //     $ch = curl_init();
-    //     curl_setopt($ch, CURLOPT_URL, $url);
-    //     curl_setopt($ch, CURLOPT_POST, true);
-    //     curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
-    //     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    //         "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-    //         "Cache-Control: no-cache"
-    //     ));
-    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    //     $result = curl_exec($ch);
-
-    //     return $result;
-    // }
-
-    // public function payment_callback()
-    // {
-    //     $reference = request('reference');
-    //     $response = json_decode($this->verify_payment($reference));
-        
-    //     do {
-    //         $aff_id = Str::random(20);
-    //         $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
-    //     } while ($exists);
-            
-    //     if ($response && $response->status == "success") {
-
-    //         $user = User::create([
-    //             'aff_id' => $aff_id,
-    //             'name' => null,
-    //             'email' => request('email'),
-    //             'phone' => null,
-    //             'password' => null,
-    //             'country' => null,
-    //             'refferal_id' => 0,
-    //             'image' => null,
-    //             'has_paid_onboard' => 1,
-    //             'is_vendor' => 0,
-    //             'vendor_status' => 'down',
-    //             'otp' => 'sggd63vx7td3dydg3',
-    //             'market_access' => 1,
-    //             'bank_account' => null,
-    //             'bank_name' => null
-    //         ]);
-
-
-    //         $transaction = Transaction::where('email', request('email'))->latest()->first();
-
-    //         if ($transaction) {
-    //             $transaction->update([
-    //                 'tx_ref' => request('reference'),
-    //                 'status' => $response->status,
-    //                 'is_onboard' => 1,
-    //             ]);
-    //         }
-                
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'transaction successful. User has been recorded in database with otp',
-    //             'user' => $user,
-    //             'status' => $response->status
-    //         ]);
-            
-    //     } else {
-
-    //         $status = $response->status == "pending" ? 'pending' : 'failed';
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'transaction not successful',
-    //             'status' => $status,
-    //         ]);
-    //     }
-    // }
-
-    // public function verify_payment($reference)
-    // {
-    //     $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
-
-    //     $ch = curl_init();
-    //     curl_setopt($ch, CURLOPT_URL, $url);
-    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    //     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    //         "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-    //         "Cache-Control: no-cache"
-    //     ));
-
-    //     $result = curl_exec($ch);
-
-
-    //     curl_close($ch);
-
-    //     return $result;
+    //     return response()->json([
+    //         'success' => false,
+    //         'message' => $paymentDetails,
+    //         'error' => 'error not'
+    //     ], 500);
+    //     //dd($paymentDetails);
+    //     // Now you have the payment details,
+    //     // you can store the authorization_code in your db to allow for recurrent subscriptions
+    //     // you can then redirect or do whatever you want
     // }
 }
-
-
-
-

@@ -2,3 +2,9 @@
 
 ####################################################
 has_paid_onboard in users table is checking if you have paid #5100
+
+1. Marketplace Payment
+POST /marketplace/payment
+Name: marketplace.payment
+
+Description: This endpoint is used to initiate a payment process for one time payment to unlock market.
