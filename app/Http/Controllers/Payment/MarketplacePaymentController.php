@@ -133,15 +133,16 @@ class MarketplacePaymentController extends Controller
 
     public function redirectToGateway()
     {
+        $email = strtolower(Str::random(6)); 
         $formData = [
-            'email' => 'user@mail.com', // User's email
+            'email' =>  $email . '@mail.com', // User's email
             'amount' => 7100 * 100, // Amount in kobo
             'currency' => 'NGN', // Currency is NGN (Nigerian Naira)
             'callback_url' => route('ohyes'), // Generate callback URL
-            "orderID" => 215387,
+            "orderID" => uniqid('order_') . '_' . time(),
         ];
         try {
-            $paymentData =  Paystack::getAuthorizationUrl($formData)->redirectNow();
+            $paymentData =  Paystack::getAuthorizationUrl($formData);
             return response()->json([
                 'success' => true,
                 'authorization_url' => $paymentData // Return the authorization URL in the response
@@ -164,7 +165,7 @@ class MarketplacePaymentController extends Controller
         $paymentDetails = Paystack::getPaymentData();
 
         return response()->json([
-            'success' => false,
+            'success' => true,
             'message' => $paymentDetails,
             'error' => 'error not'
         ], 500);
