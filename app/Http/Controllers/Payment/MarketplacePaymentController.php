@@ -17,7 +17,6 @@ use Unicodeveloper\Paystack\Facades\Paystack;
 class MarketplacePaymentController extends Controller
 {
 
-
     public function payment(Request $request)
     {
         // Validate the incoming request data
@@ -129,6 +128,118 @@ class MarketplacePaymentController extends Controller
             ]);
         }
     }
+
+    // public function payment(Request $request)
+    // {
+    //     // Validate the incoming request data
+    //     $request->validate([
+    //         'email' => 'required|string|email',
+    //         // Add other necessary validation rules if needed
+    //     ]);
+
+    //     // Generate a unique order ID for each transaction
+    //     $orderID = strtoupper(Str::random(10));  // Random 10 character string for the order ID
+
+    //     // Prepare the data for the payment
+    //     $formData = [
+    //         'email' => $request->email,  // Use validated email
+    //         'amount' => 5100 * 100, // Amount in cents (NGN)
+    //         'currency' => 'NGN',
+    //         'callback_url' => route('marketplace.payment.callback') . '?email=' . urlencode($request->email),
+    //         "orderID" => $orderID,
+    //     ];
+
+    //     try {
+    //         // Initialize payment with Paystack using Unicodeveloper package
+    //         $paymentData = Paystack::getAuthorizationUrl($formData);
+
+    //         // Store transaction in DB
+    //         Transaction::create([
+    //             'user_id' => 0,
+    //             'email' =>  $request->email,
+    //             'affiliate_id' => 0,
+    //             'product_id' => 0,
+    //             'amount' => $formData['amount'],
+    //             'currency' => $formData['currency'],
+    //             'status' => 'pending',
+    //             'org_company' => 0,
+    //             'org_vendor' => 0,
+    //             'org_aff' => 0,
+    //             'is_onboard' => 0,
+    //             'tx_ref' => null,
+    //             'transaction_id' => $orderID, // Save the dynamic order ID
+    //         ]);
+
+    //         // Return the authorization URL in the JSON response
+    //         return response()->json([
+    //             'success' => true,
+    //             'authorization_url' => $paymentData, // Authorization URL
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         \Log::error('Payment Initialization Error: ' . $e->getMessage());
+    //         // Handle exception
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to initialize payment. Please try again.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+    // public function payment_callback(Request $request)
+    // {
+    //     $email = $request->get('email');
+    //     $reference = request('reference');  // Get reference from the callback
+    //     $paymentDetails = Paystack::getPaymentData();  // Use Paystack package to get payment details
+
+    //     // Check if payment was successful
+    //     if ($paymentDetails['data']['status'] == "success") {
+
+    //         // Create the user record
+    //         $user = User::create([
+    //             'name' => null,
+    //             'email' => $email,
+    //             'phone' => null,
+    //             'password' => null,
+    //             'country' => null,
+    //             'refferal_id' => 0,
+    //             'image' => null,
+    //             'has_paid_onboard' => 1,
+    //             'is_vendor' => 0,
+    //             'vendor_status' => 'down',
+    //             'otp' => $reference,  // Store the dynamic OTP
+    //             'market_access' => 1,
+    //             'bank_account' => null,
+    //             'bank_name' => null
+    //         ]);
+
+    //         // Update the transaction record
+    //         $transaction = Transaction::where('email', request('email'))->latest()->first();
+
+    //         if ($transaction) {
+    //             $transaction->update([
+    //                 'tx_ref' => request('reference'),
+    //                 'status' => $paymentDetails['data']['status'],
+    //                 'is_onboard' => 1,
+    //             ]);
+    //         }
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Transaction successful. User recorded with OTP.',
+    //             'user' => $user,
+    //             'status' => $paymentDetails['data']['status']
+    //         ]);
+    //     } else {
+    //         $status = $paymentDetails['data']['status'] == "pending" ? 'pending' : 'failed';
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Transaction failed',
+    //             'status' => $status,
+    //         ]);
+    //     }
+    // }
 
 
     public function redirectToGateway()

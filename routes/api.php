@@ -35,17 +35,18 @@ Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, '
 Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback'])->name('callback');
 // unlock market
 //one time payment
-Route::post('/marketplace/payment', [MarketplacePaymentController::class,'payment'])->name('marketplace.payment');
-Route::get('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
+// Route::post('/marketplace/payment', [MarketplacePaymentController::class,'payment'])->name('marketplace.payment');
+// Route::get('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
 
 Route::post('/oh', [MarketplacePaymentController::class,'redirectToGateway'])->name('oh');
 Route::get('/ohyes', [MarketplacePaymentController::class, 'handleGatewayCallback'])->name('ohyes');
 
 //User Authentication
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [RegisterController::class, 'store']);
+    Route::post('/register', [RegisterController::class, 'initiateRegistration']);
+    Route::match(['get', 'post'], '/payment/callback', [RegisterController::class, 'handlePaymentCallback'])->name('auth.payment.callback');
     Route::post('/login', [LoginController::class, 'attemptUser']);
-    Route::post('/logout', [LogoutController::class, 'logout']);
+    
 });
 //Admin Authentication
 Route::post('/admin/login', [SuperAdminAuthController::class, 'login']);
@@ -81,6 +82,8 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     //password resetting routes
     Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
     Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
+
+    Route::post('/logout', [LogoutController::class, 'logout']);
 
 
     // //gets sales data

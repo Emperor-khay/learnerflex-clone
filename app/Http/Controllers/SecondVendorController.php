@@ -17,47 +17,48 @@ class SecondVendorController extends Controller
     public function vendorDashboardMetrics(Request $request)
     {
         try {
-            // Get authenticated vendor
+            // Get authenticated affiliate
             $vendor = Auth::guard('sanctum')->user();
 
-            if (!$vendor->is_vendor) {
-                return response()->json(['error' => 'Unauthorized or not a vendor'], 403);
+            if (!$vendor) {
+                return response()->json(['error' => 'Unauthorized'], 403);
             }
 
             // Optional date filters for metrics
             $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
             $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
 
-            // 1. Available Vendor Earnings (Total earnings for the vendor)
-            $availableEarnings = Transaction::where('vendor_id', $vendor->id)
-                ->where('status', 'success')  // Only successful transactions
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('org_vendor');  // Sum of vendor earnings
-
-            // 2. Today's Vendor Sales (Sales for the current day - both count and amount)
-            $todaySalesData = Transaction::where('vendor_id', $vendor->id)
-                ->where('status', 'success')  // Only successful transactions
-                ->whereDate('created_at', Carbon::today())  // Today's sales
-                ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
-                ->first();
-
-            // 3. Total Vendor Sales (All-time or filtered by date - both count and amount)
-            $totalSalesData = Transaction::where('vendor_id', $vendor->id)
-                ->where('status', 'success')  // Only successful transactions
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
-                ->first();
-
             // 4. Total Withdrawals (Sum all withdrawals for the vendor)
             $totalWithdrawals = Withdrawal::where('user_id', $vendor->id)
+                ->where('status', 'approved')
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
                 ->sum('amount');
+
+            // 1. Available vendor Earnings (Total earnings for the vendor)
+            $availableEarn = Earning::where('user_id', $vendor->id) // Query Earnings model instead of Transaction
+                ->when($startDate, function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->sum('amount');  // Sum of earnings amount
+
+            // Calculate available earnings
+            $availableEarnings = $totalWithdrawals - $availableEarn;
+
+            // 2. Today's vendor Sales (Sales with vendor for the current day - both count and amount)
+            $todaySalesData = Sale::where('vendor_id', $vendor->id) // Query Sales model
+                ->whereDate('created_at', Carbon::today())  // Today's sales
+                ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+                ->first();
+
+            // 3. Total vendor Sales (All-time or filtered by date sales with vendor - both count and amount)
+            $totalSalesData = Sale::where('vendor_id', $vendor->id) // Query Sales model
+                ->when($startDate, function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+                ->first();
 
             // Return all data in JSON format
             return response()->json([
@@ -79,6 +80,7 @@ class SecondVendorController extends Controller
     }
 
 
+
     public function affiliateDashboardMetrics(Request $request)
     {
         try {
@@ -93,35 +95,37 @@ class SecondVendorController extends Controller
             $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
             $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
 
-            // 1. Available Affiliate Earnings (Total earnings for the affiliate)
-            $availableEarnings = Earning::where('user_id', $affiliate->id)
+            // 4. Total Withdrawals (Sum all withdrawals for the affiliate)
+            $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
+                ->where('status', 'approved')
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
                 ->sum('amount');
 
+            // 1. Available Affiliate Earnings (Total earnings for the affiliate)
+            $availableEarn = Earning::where('user_id', $affiliate->id) // Query Earnings model instead of Transaction
+                ->when($startDate, function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->sum('amount');  // Sum of earnings amount
+
+            // Calculate available earnings
+            $availableEarnings = $totalWithdrawals - $availableEarn;
+
             // 2. Today's Affiliate Sales (Sales with affiliate for the current day - both count and amount)
-            $todaySalesData = Sale::where('user_id', $affiliate->id)
-                ->whereNotNull('affiliate_id') // Affiliate sales only
-                ->whereDate('created_at', Carbon::today())
+            $todaySalesData = Sale::where('affiliate_id', $affiliate->aff_id) // Query Sales model
+                ->whereDate('created_at', Carbon::today())  // Today's sales
                 ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
                 ->first();
 
             // 3. Total Affiliate Sales (All-time or filtered by date sales with affiliate - both count and amount)
-            $totalSalesData = Sale::where('user_id', $affiliate->id)
-                ->whereNotNull('affiliate_id')
+            $totalSalesData = Sale::where('affiliate_id', $affiliate->id) // Query Sales model
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
                 ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
                 ->first();
-
-            // 4. Total Withdrawals (Sum all withdrawals for the affiliate)
-            $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('amount');
 
             // Return all data in JSON format
             return response()->json([

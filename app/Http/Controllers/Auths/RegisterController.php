@@ -2,20 +2,23 @@
 
 namespace App\Http\Controllers\Auths;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\RegisterRequest;
-use App\Service\AuthService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Request;
+use Log;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use App\Enums\VendorStatusEnum;
 use App\Models\Transaction;
 use Illuminate\Support\Str;
+use App\Service\AuthService;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use App\Models\TemporaryUsers;
+use App\Enums\VendorStatusEnum;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\RegisterRequest;
+use Illuminate\Support\Facades\Session;
+use Unicodeveloper\Paystack\Facades\Paystack;
 
 
 class RegisterController extends Controller
@@ -163,120 +166,194 @@ class RegisterController extends Controller
         ], 201);
     }
 
-    // public function store(Request $request)
-    // {
-    //     // Validate the incoming request data
-    //     $validate = $request->validate([
-    //         'name' => 'required|string',
-    //         'email' => 'required|string|email',
-    //         'phone_number' => 'required|string',
-    //         'password' => 'required|string|confirmed',
-    //     ]);
-    //     // Hash the password
-    //     $hashedPassword = Hash::make($validate['password']);
-
-    //     $phoneExist = User::where('phone', $request->phone_number)->first();
-
-    //     if ($phoneExist) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'messsage' => 'Phone number already exist'
-    //         ]);
-    //     }
-
-    //     // Initialize referral_id as null
-    //     $referral_id = null;
-
-    //     // Check if the user exists with the provided email
-    //     $userExists = User::where('email', $request->email)->first();
-
-    //     if ($userExists) {
-    //         // Check if the user has a stored OTP
-    //         if ($userExists->otp) {
-    //             // Check if the stored OTP matches a successful transaction reference
-    //             $transaction = Transaction::where('tx_ref', $userExists->otp)
-    //                 ->where('email', $request->email)
-    //                 ->where('status', 'success') // Ensure the transaction was successful
-    //                 ->first();
-
-    //             if ($transaction) {
-    //                 // Update the user details
-    //                 $userExists->update([
-    //                     'name' => $validate['name'],
-    //                     'phone' => $validate['phone_number'],
-    //                     'password' => $hashedPassword,
-    //                     'refferal_id' => null,
-    //                     'has_paid_onboard' => 1,
-    //                     'role' => 'affiliate',
-    //                     'otp' => null, // Clear OTP after registration
-    //                     'market_access' => 1,
-    //                 ]);
-
-    //                 $user = $userExists;
-    //             } else {
-    //                 return response()->json([
-    //                     'message' => 'Invalid OTP or transaction not successful',
-    //                     'success' => false
-    //                 ], 400);
-    //             }
-    //         } else {
-    //             return response()->json([
-    //                 'message' => 'User not eligible to register; OTP not found',
-    //                 'success' => false
-    //             ], 400);
-    //         }
-    //     } elseif ($request->has('aff_id')) {
-
-    //         // // Check if aff_id is valid
-    //         $referrer = User::where('aff_id', $request->input('aff_id'))->first();
-    //         if ($referrer) {
-    //             $referral_id = $referrer->id;
-    //         } else {
-    //             return response()->json([
-    //                 'message' => 'Invalid referral code',
-    //                 'success' => false
-    //             ], 400);
-    //         }
-    //          // Generate a unique aff_id for the new user
-    //     do {
-    //         $aff_id = Str::random(20);
-    //         $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
-    //     } while ($exists);
+    public function initiateRegistration(Request $request)
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'phone' => 'required|string|max:15|unique:users', // Changed to `phone`
+            'password' => 'required|string|confirmed|min:4',
+            'aff_id' => 'nullable|string|max:30', // aff_id is optional
+        ]);
 
 
-    //         // // Create the new user
-    //         $user = User::create([
-    //             'aff_id' => $aff_id,
-    //             'name' => $validate['name'],
-    //             'email' => $validate['email'],
-    //             'phone' => $validate['phone_number'],
-    //             'password' => $hashedPassword,
-    //             'country' => null,
-    //             'refferal_id' => $referral_id,
-    //             'image' => null,
-    //             'has_paid_onboard' => 1,
-    //             'is_vendor' => 0,
-    //             'vendor_status' => 'down',
-    //             'role' => 'affiliate',
-    //             'otp' => null,
-    //             'market_access' => 0,
-    //         ]);
-    //     } else {
-    //         return response()->json([
-    //             'message' => 'OTP or referral code required',
-    //             'success' => false
-    //         ], 400);
-    //     }
+        // If aff_id is present, register the user directly
+        if ($request->filled('aff_id')) {
+            $this->storeUser($validatedData, $request->aff_id);
+        } else {
+            // Hash password before storing in session (for security)
+            $hashedPassword = Hash::make($validatedData['password']);
 
-    //     // Generate token and send confirmation email
-    //     $token = $user->createToken('YourAppName')->plainTextToken;
-    //     Mail::to($validate['email'])->send(new \App\Mail\RegisterSuccess());
 
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Registration successful',
-    //         'user' => $user,
-    //         'token' => $token,
-    //     ], 201);
-    // }
+
+            // Proceed to initiate payment
+            try {
+                // Generate a unique order ID
+                $orderID = strtoupper(Str::random(10));
+
+                // Prepare the payment data
+                $formData = [
+                    'email' => $validatedData['email'],  // Use validated email
+                    'amount' => 5100 * 100, // Amount in kobo (NGN)
+                    'currency' => 'NGN',
+                    'callback_url' => route('auth.payment.callback') . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
+                    'orderID' => $orderID,
+                ];
+
+                // Initialize payment with Paystack using Unicodeveloper package
+                $paymentData = Paystack::getAuthorizationUrl($formData);
+
+                // Store the user data in the temporary users table
+                TemporaryUsers::create([
+                    'name' => $validatedData['name'],
+                    'email' => $validatedData['email'],
+                    'phone' => $validatedData['phone'],
+                    'password' => $hashedPassword, // Store hashed password
+                    'aff_id' => null,
+                    'order_id' => $orderID,
+                ]);
+
+                // Store transaction details in the database
+                Transaction::create([
+                    'user_id' => 0, // User ID not yet available
+                    'email' =>  $validatedData['email'],
+                    'affiliate_id' => 0,
+                    'product_id' => 0,
+                    'amount' => $formData['amount'],
+                    'currency' => $formData['currency'],
+                    'status' => 'pending',
+                    'org_company' => 0,
+                    'org_vendor' => 0,
+                    'org_aff' => 0,
+                    'is_onboard' => 0,
+                    'tx_ref' => null,
+                    'transaction_id' => $orderID, // Save the dynamic order ID
+                ]);
+
+                // Return the authorization URL in the response
+                return response()->json([
+                    'success' => true,
+                    'authorization_url' => $paymentData, // Correct response for the payment URL
+                ], 200);
+            } catch (\Exception $e) {
+                \Log::error('Payment Initialization Error: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to initialize payment. Please try again.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        }
+    }
+
+
+    public function storeUser($validatedData, $referral)
+    {
+        // Hash the password
+        $hashedPassword = Hash::make($validatedData['password']);
+
+        $aff_id = null;
+        // Generate a unique aff_id for the new user
+        do {
+            $aff_id = Str::random(8);
+            $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+        } while ($exists);
+        // Create the new user
+        $user = User::create([
+            'aff_id' => $aff_id,
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'phone' => $validatedData['phone_number'],
+            'password' => $hashedPassword,
+            'country' => null,
+            'refferal_id' =>  $referral,
+            'image' => null,
+            'has_paid_onboard' => 1,
+            'is_vendor' => 0,
+            'vendor_status' => 'down',
+            'role' => 'affiliate',
+            'otp' => null,
+            'market_access' => 0,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Registration successful', 'user' => $user]);
+    }
+
+    public function handlePaymentCallback(Request $request)
+    {
+        $orderID = $request->get('orderID');
+        $email = urldecode($request->get('email'));
+        $reference = request('reference'); // Get reference from the callback
+
+        // Fetch payment details from Paystack
+        $paymentDetails = Paystack::getPaymentData();
+
+        // Check if payment was successful
+        if ($paymentDetails['data']['status'] == "success") {
+
+            // Retrieve user data from the temporary_users table
+            $temporaryUser = TemporaryUsers::where('email', $email)->first();
+
+            if (!$temporaryUser) {
+                return redirect()->route('auth.login')->withErrors([
+                    'message' => 'User registration data not found.',
+                ]);
+            }
+
+            // Create the new user
+            $user = User::create([
+                'aff_id' => null,
+                'name' => $temporaryUser->name,
+                'email' => $temporaryUser->email,
+                'phone' => $temporaryUser->phone,
+                'password' => $temporaryUser->password, // Already hashed
+                'country' => null,
+                'refferal_id' => null,
+                'image' => null,
+                'has_paid_onboard' => 1,
+                'is_vendor' => 0,
+                'vendor_status' => 'down',
+                'role' => 'affiliate',
+                'otp' => null,
+                'market_access' => 1,
+            ]);
+
+            // Update the transaction record in the database
+            $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
+
+            if ($transaction) {
+                $transaction->update([
+                    'tx_ref' => $reference,
+                    'status' => $paymentDetails['data']['status'],
+                    'is_onboard' => 1,
+                ]);
+            }
+
+            // Delete the temporary user data
+            $temporaryUser->delete();
+
+            // Redirect the user to the login page with a success message and their email
+            // return redirect('/')->with('success', 'Registration successful! You can now log in.');
+            // Generate token and send confirmation email
+            $token = $user->createToken('YourAppName')->plainTextToken;
+            Mail::to($email)->send(new \App\Mail\RegisterSuccess());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registration successful',
+                'user' => $user,
+                'token' => $token,
+            ], 201);
+        } else {
+            // Redirect to the login page with an error message if the payment fails
+            // return redirect()->route('/')->withErrors([
+            //     'message' => 'Payment failed or incomplete. Please try again.',
+            // ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment failed or incomplete.',
+                'status' => $paymentDetails['data']['status'],
+            ]);
+        }
+    }
 }
