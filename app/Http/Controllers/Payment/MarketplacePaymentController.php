@@ -26,8 +26,6 @@ class MarketplacePaymentController extends Controller
             // Add other necessary validation rules if needed
         ]);
 
-        
-
         // Generate a unique order ID for each transaction
         $orderID = strtoupper(Str::random(10));  // Random 10 character string for the order ID
 
@@ -39,7 +37,6 @@ class MarketplacePaymentController extends Controller
             'callback_url' => route('marketplace.payment.callback') . '?email=' . urlencode($request->email),
             "orderID" => $orderID,
         ];
-
 
         try {
             // Initialize payment with Paystack using Unicodeveloper package
@@ -134,46 +131,46 @@ class MarketplacePaymentController extends Controller
     }
 
 
-    // public function redirectToGateway()
-    // {
-    //     $formData = [
-    //         'email' => 'user@mail.com', // User's email
-    //         'amount' => 7100 * 100, // Amount in kobo
-    //         'currency' => 'NGN', // Currency is NGN (Nigerian Naira)
-    //         'callback_url' => route('payment.go'), // Generate callback URL
-    //         "orderID" => 215387,
-    //     ];
-    //     try {
-    //         $paymentData =  Paystack::getAuthorizationUrl($formData);
-    //         return response()->json([
-    //             'success' => true,
-    //             'authorization_url' => $paymentData // Return the authorization URL in the response
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'The Paystack token has expired. Please refresh the page and try again.',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+    public function redirectToGateway()
+    {
+        $formData = [
+            'email' => 'user@mail.com', // User's email
+            'amount' => 7100 * 100, // Amount in kobo
+            'currency' => 'NGN', // Currency is NGN (Nigerian Naira)
+            'callback_url' => route('ohyes'), // Generate callback URL
+            "orderID" => 215387,
+        ];
+        try {
+            $paymentData =  Paystack::getAuthorizationUrl($formData)->redirectNow();
+            return response()->json([
+                'success' => true,
+                'authorization_url' => $paymentData // Return the authorization URL in the response
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The Paystack token has expired. Please refresh the page and try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
-    // /**
-    //  * Obtain Paystack payment information
-    //  * @return void
-    //  */
-    // public function handleGatewayCallback()
-    // {
-    //     $paymentDetails = Paystack::getPaymentData();
+    /**
+     * Obtain Paystack payment information
+     * @return void
+     */
+    public function handleGatewayCallback()
+    {
+        $paymentDetails = Paystack::getPaymentData();
 
-    //     return response()->json([
-    //         'success' => false,
-    //         'message' => $paymentDetails,
-    //         'error' => 'error not'
-    //     ], 500);
-    //     //dd($paymentDetails);
-    //     // Now you have the payment details,
-    //     // you can store the authorization_code in your db to allow for recurrent subscriptions
-    //     // you can then redirect or do whatever you want
-    // }
+        return response()->json([
+            'success' => false,
+            'message' => $paymentDetails,
+            'error' => 'error not'
+        ], 500);
+        //dd($paymentDetails);
+        // Now you have the payment details,
+        // you can store the authorization_code in your db to allow for recurrent subscriptions
+        // you can then redirect or do whatever you want
+    }
 }

@@ -20,6 +20,8 @@ class Sale extends Model
         'affiliate_id',
         'amount',
         'transaction_id',
+        'status',
+        'vendor_id',
     ];
 
     /**

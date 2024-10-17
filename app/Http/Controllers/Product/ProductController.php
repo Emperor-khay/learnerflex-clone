@@ -260,15 +260,15 @@ class ProductController extends Controller
         }
     }
 
-    public function unlockMarketAccess(Request $request)
-    {
-        try {
-            $user = $request->user();
-            $result = $this->productService->generateMarketAccessPayment($user);
-            return $this->success($result, 'unlock market');
-        } catch (\Throwable $th) {
-            Log::error("unlock market: $th");
-            return $this->error([], $th->getMessage(), 400);
-        }
-    }
+    // public function unlockMarketAccess(Request $request)
+    // {
+    //     try {
+    //         $user = $request->user();
+    //         $result = $this->productService->generateMarketAccessPayment($user);
+    //         return $this->success($result, 'unlock market');
+    //     } catch (\Throwable $th) {
+    //         Log::error("unlock market: $th");
+    //         return $this->error([], $th->getMessage(), 400);
+    //     }
+    // }
 }

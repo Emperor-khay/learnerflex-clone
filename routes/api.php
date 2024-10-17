@@ -38,6 +38,8 @@ Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paym
 Route::post('/marketplace/payment', [MarketplacePaymentController::class,'payment'])->name('marketplace.payment');
 Route::get('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
 
+// Route::post('/oh', [MarketplacePaymentController::class,'redirectToGateway'])->name('oh');
+// Route::get('/ohyes', [MarketplacePaymentController::class, 'handleGatewayCallback'])->name('ohyes');
 
 //User Authentication
 Route::prefix('auth')->group(function () {
@@ -59,30 +61,37 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     //profile routes
     Route::post('/update/image', [UserController::class, 'handleUserImage']);
     Route::post('/update/profile', [UserController::class, 'handleUserProfile']);
-    Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
-    Route::get('/products/{product}', [ProductController::class, 'show']);
+
     //vendor requesting to be a vendor
     Route::post('/request-vendor', [VendorController::class, 'sendVendorRequest']);
-    //gets sales data
-    Route::get('/affiliate/sales', [UserController::class, 'salesAffiliate']);
+    
     // withdrawals
-    Route::get('/withdrawals', [WithdrawalController::class, 'index']);
-    Route::get('/withdrawals/amount', [WithdrawalController::class, 'userWithdrawSum']);
+    Route::get('/request/withdrawal', [WithdrawalController::class, 'index']);
+    Route::get('/withdrawals', [WithdrawalController::class, 'WithdrawRecord']);
     //transactions
     Route::get('/transactions', [UserController::class, 'transactions']);
-    //view all products from a particular vendor
-    Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
-    //get product by id
-    Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
-    Route::delete('/product/delete/{id}', [ProductController::class, 'deleteProduct']);
-    // Route::get('/unlock/market', [ProductController::class, 'unlockMarketAccess']); this route is using flutterwave
-
-    // check bank account route and update user account
-    Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
+    //products routes
+    Route::get('/products', [AffiliateController::class, 'affiliateproducts']);
+    
+    Route::get('/products/{id}', [AffiliateController::class, 'showAffiliateProducts']);
+    
+    Route::post('/unlock/market', [AffiliateController::class, 'unlockMarketAccess']);
+    Route::get('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
 
     //password resetting routes
     Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
     Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
+
+
+    // //gets sales data
+    // Route::get('/affiliate/sales', [UserController::class, 'salesAffiliate']);
+    // // check bank account route and update user account
+    // Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
+    // Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
+    //view all products from a particular vendor
+    // Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
+    //get product by id
+    // Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
 });
 
 

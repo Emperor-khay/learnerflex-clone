@@ -16,7 +16,7 @@ class ProductService
         });
     }
 
-    public function getProductById(int|string $id): Product
+    public function getProductById(int $id): Product
     {
         return Product::with('vendor')->findOrFail($id);
     }
