@@ -25,38 +25,40 @@ class Sale extends Model
     ];
 
     /**
-     * Get the product that was sold.
-     */
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
-
-    /**
      * Get the user who made the purchase.
      */
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
-     * Get the affiliate who promoted the sale.
+     * A sale may involve an affiliate earning commission.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function affiliate()
     {
         return $this->belongsTo(User::class, 'affiliate_id');
     }
-    
-    public function affiliateID()
+
+    /**
+     * A sale is associated with a product.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function product()
     {
-        return $this->belongsTo(User::class, 'affiliate_id', 'id');
-    }
-    
-    public function productID()
-    {
-        return $this->belongsTo(Product::class, 'product_id', 'id');
+        return $this->belongsTo(Product::class, 'product_id');
     }
 
-
+    /**
+     * A sale is associated with a transaction.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class, 'transaction_id');
+    }
 }

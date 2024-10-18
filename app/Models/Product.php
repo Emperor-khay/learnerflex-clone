@@ -59,13 +59,14 @@ class Product extends Model
     /**
      * Get the vendor that owns the product.
      */
-    public function vendor(): BelongsTo
-    {
-        return $this->belongsTo(Vendor::class);
-    }
-
-    public function reviews(): HasMany
-    {
-        return $this->hasMany(Review::class);
-    }
+     // The product belongs to a vendor (which is a user with a vendor role)
+     public function vendor()
+     {
+         return $this->belongsTo(User::class, 'vendor_id');
+     }
+ 
+     public function reviews()
+     {
+         return $this->hasMany(Review::class);
+     }
 }

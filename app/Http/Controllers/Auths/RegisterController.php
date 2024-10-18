@@ -300,9 +300,15 @@ class RegisterController extends Controller
                 ]);
             }
 
+             // Generate a unique aff_id for the new user
+             do {
+                $aff_id = Str::random(20);
+                $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+            } while ($exists);
+
             // Create the new user
             $user = User::create([
-                'aff_id' => null,
+                'aff_id' => $aff_id,
                 'name' => $temporaryUser->name,
                 'email' => $temporaryUser->email,
                 'phone' => $temporaryUser->phone,

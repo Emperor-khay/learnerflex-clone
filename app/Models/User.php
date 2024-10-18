@@ -37,6 +37,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'country',
+        'role',
         'image',
         'has_paid_onboard',
         'is_vendor',
@@ -74,21 +75,73 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Get the transactions for the user.
-     */
-    public function transactions(): HasMany
+    public function isVendor(): bool
     {
-        return $this->hasMany(Transaction::class);
+        return $this->role === 'vendor';
     }
 
     /**
-     * Get the vendor associated with the user.
+     * Check if the user is an affiliate.
+     *
+     * @return bool
      */
-    public function vendor(): HasOne
+    public function isAffiliate(): bool
     {
-        return $this->hasOne(Vendor::class);
+        return $this->role === 'affiliate';
     }
+
+    /**
+     * Check if the user is an admin.
+     *
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+
+    /**
+     * A vendor (user) can have many products.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'vendor_id');
+    }
+
+    /**
+     * A vendor or affiliate can have many sales.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'user_id');
+    }
+
+    /**
+     * A vendor or affiliate can have many earnings.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function earnings()
+    {
+        return $this->hasMany(Earning::class, 'user_id');
+    }
+
+    /**
+     * A user (vendor or affiliate) can have transactions.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'user_id');
+    }
+
+    
 
     /**
      * Get the reviews of the user.
@@ -115,14 +168,7 @@ class User extends Authenticatable
         return $this->hasOne(Account::class);
     }
 
-    /**
-     * Get the affiliates of the user.
-     * These are the 
-     */
-    public function affiliates(): HasMany
-    {
-        return $this->hasMany(Affiliate::class);
-    }
+
 
     // user is considered an affiliate once one purchases a 
     // product from a vendor, they are entitled to all the products of the vendor. As for the marketplace they can only see the products that they are affiliated with their vendor. The rest needs to be paid before unlocking them to be able to promote it. You can use ur own link to make purchase for urself. Upon purchasing a product, the user has to fill their details in, to create an account for them if it doesnt exist and send the account details to their email.

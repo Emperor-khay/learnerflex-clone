@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users');
             $table->string('sale_url');
+            $table->enum('status', ['active', 'inactive', 'pending'])->default('pending');
             $table->timestamps();
         });
     }

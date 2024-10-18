@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users');
             $table->decimal('amount', 15, 2);
+            $table->string('transaction_ref')->nullable();
             $table->timestamps();
         });
     }

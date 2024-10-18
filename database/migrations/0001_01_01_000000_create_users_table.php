@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('aff_id')->unique()->nullable();
             $table->string('name')->nullable();
             $table->string('email')->unique();
+            $table->string('role')->default('affiliate');
             $table->string('refferal_id')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('phone')->unique()->nullable();
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->boolean('has_paid_onboard')->default(0);
             $table->boolean('is_vendor')->default(0);
             $table->string('vendor_status');
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->string('otp')->nullable();
             $table->string('bank_name')->nullable();
             $table->string('bank_account')->nullable();

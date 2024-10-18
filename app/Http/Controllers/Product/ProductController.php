@@ -196,39 +196,6 @@ class ProductController extends Controller
         }
     }
 
-    public function createDigitalProduct(DigitalProductRequest $digitalProductRequest): JsonResponse
-    {
-        try {
-            $user = $digitalProductRequest->user();
-            $productData = $digitalProductRequest->validated();
-            $productData['user_id'] = $user->id;
-            $digitalProduct = $this->vendorService->newVendorProduct($user->vendor, $productData);
-            return $this->success($digitalProduct, 'Digital Product Pending!', Response::HTTP_CREATED);
-        } catch (\Throwable $th) {
-            return $this->error([], $th->getMessage(), Response::HTTP_BAD_REQUEST);
-        }
-    }
-
-    public function createOtherProduct(OtherProductRequest $otherProductRequest): JsonResponse
-    {
-        try {
-            $user = $otherProductRequest->user();
-            $productData = $otherProductRequest->validated();
-            if ($otherProductRequest->hasFile('image') && $otherProductRequest->file('image')->isValid()) {
-                $path = $otherProductRequest->file('image')->store('images/products', 'public');
-                $productData['image'] = $path;
-            } else {
-                $productData['image'] = null;
-            }
-            $productData['user_id'] = $user->id;
-            $otherProduct = $this->vendorService->newVendorProduct($user->vendor, $productData);
-            $otherProduct['image'] = $otherProduct->image ? Storage::url($otherProduct->image) : null;
-            return $this->success($otherProduct, 'Other Product Created!', Response::HTTP_CREATED);
-        } catch (\Throwable $th) {
-            Log::error('other product creation failed', ['error' => $th->getMessage()]);
-            return $this->error(null, $th->getMessage(), Response::HTTP_BAD_REQUEST);
-        }
-    }
 
     public function show(int $product): JsonResponse
     {

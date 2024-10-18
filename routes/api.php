@@ -107,27 +107,21 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::post('/update/image', [UserController::class, 'handleUserImage']);
     Route::post('/update/profile', [UserController::class, 'handleUserProfile']);
 
-    Route::get('/users/{user}/vendor', [VendorController::class, 'index']);
+    Route::get('/data', [VendorController::class, 'getAuthenticatedVendorData']);
 
-    // check bank account route and update user account
-    Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
+    
     //view all products from a particular vendor
-    Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
-    //get product by id
-    Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
-    Route::delete('/product/delete/{id}', [ProductController::class, 'deleteProduct']);
+    Route::get('/products', [VendorController::class, 'viewProductsByVendor']);
+    Route::get('product/{id}', [VendorController::class, 'viewProductById']);
+    Route::delete('/product/delete/{id}', [VendorController::class, 'deleteProduct']);
+    Route::post('/product/digital/create', [VendorController::class, 'createDigitalProduct']);
+    Route::post('/product/other/create', [VendorController::class, 'createOtherProduct']);
+    Route::patch('/products/digital/{id}/update', [VendorController::class, 'editDigitalProduct']);
+    Route::patch('/products/other/{id}/update', [VendorController::class, 'editOtherProduct']);
+    Route::delete('/products/{id}/delete', [VendorController::class, 'destroy']);
 
-    // products
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
-    Route::get('/products/{product}', [ProductController::class, 'show']);
-    Route::post('/product/digital/create', [ProductController::class, 'createDigitalProduct']);
-    Route::post('/product/other/create', [ProductController::class, 'createOtherProduct']);
-    Route::patch('/products/{product}/update', [ProductController::class, 'edit']);
-    Route::delete('/products/{product}/delete', [ProductController::class, 'destroy']);
-
-    Route::get('/{id}/transactions', [VendorController::class, 'getVendorSales']);
-    Route::post('/students', [VendorController::class, 'students']);
+    Route::get('/transactions', [VendorController::class, 'getVendorSales']);
+    
     Route::post('/product-performance', [VendorController::class, 'productPerformance']);
     Route::get('/affiliate-details/{aff_id}', [VendorController::class, 'getAffDetails']);
 
@@ -138,12 +132,20 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::get('/affiliate/sales', [UserController::class, 'salesAffiliate']);
 
     // withdrawals
-    Route::get('/withdrawals', [WithdrawalController::class, 'index']);
-    Route::get('/withdrawals/amount', [WithdrawalController::class, 'userWithdrawSum']);
+    Route::get('/make/withdrawal', [VendorController::class, 'withdrawal']);
+    Route::get('/withdrawals', [VendorController::class, 'allWithdrawal']);
 
     //password resetting routes
     Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
     Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
+
+    // check bank account route and update user account
+    // Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
+    // products
+    // Route::get('/products', [ProductController::class, 'index']);
+    // Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
+    // Route::get('/products/{product}', [ProductController::class, 'show']);
+    // Route::post('/students', [VendorController::class, 'students']);
 });
 
 
@@ -181,7 +183,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('/vendor/create', [VendorController::class, 'store']);
     Route::delete('/vendors/{vendor}/delete', [VendorController::class, 'delete']);
 
-    Route::post('/admin/logout', [SuperAdminAuthController::class, 'logout']);
+    Route::post('/logout', [SuperAdminAuthController::class, 'logout']);
 });
 
 
