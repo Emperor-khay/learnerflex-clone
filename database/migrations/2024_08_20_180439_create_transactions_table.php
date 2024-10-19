@@ -15,14 +15,15 @@ return new class extends Migration
             $table->id();
             $table->string('tx_ref')->unique()->nullable();
             $table->string('transaction_id')->nullable();
-            $table->integer('product_id');
-            $table->integer('affiliate_id');
-            $table->integer('user_id');
+            $table->integer('product_id')->nullable();
+            $table->string('affiliate_id')->nullable();
+            $table->string('user_id')->nullable();//buyer
+            $table->foreignId('vendor_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->decimal('amount', 15, 2);
-            $table->string('currency', 10);
+            $table->string('currency', 10)->nullable();
             $table->string('status')->default('pending');
             $table->boolean('is_onboard')->default(0);
-            $table->string('email');
+            $table->string('email')->nullable();
             $table->integer('org_vendor')->nullable();
             $table->integer('org_aff')->nullable();
             $table->integer('org_company')->nullable();

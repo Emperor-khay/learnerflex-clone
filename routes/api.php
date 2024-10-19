@@ -64,7 +64,9 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     Route::post('/update/profile', [UserController::class, 'handleUserProfile']);
 
     //vendor requesting to be a vendor
-    Route::post('/request-vendor', [VendorController::class, 'sendVendorRequest']);
+    Route::post('/request-vendor', [AffiliateController::class, 'sendVendorRequest']);
+    Route::get('/check-sale', [AffiliateController::class, 'checkSaleByEmail']);
+
     
     // withdrawals
     Route::get('/request/withdrawal', [WithdrawalController::class, 'index']);
@@ -178,7 +180,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
     Route::post('/affiliate/bulk-upload', [SuperAdminAffiliateController::class, 'bulkUpload']); // Bulk upload affiliates
     //set affiliates to vendor
-    Route::patch('/user/accept-vendor-request/{id}', [UserController::class, 'upgradeAffiliateToVendor']);
+    Route::get('/vendor-requests', [SuperAdminUserController::class, 'requestToBeVendor']);
+    Route::patch('/accept-vendor-request/{id}', [SuperAdminUserController::class, 'upgradeAffiliateToVendor']);
 
     Route::post('/vendor/create', [VendorController::class, 'store']);
     Route::delete('/vendors/{vendor}/delete', [VendorController::class, 'delete']);

@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use Log;
 use Carbon\Carbon;
 use App\Models\Sale;
+use App\Models\User;
 use App\Models\Earning;
 use App\Models\Product;
 use App\Models\Withdrawal;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Mail\VendorAccountWanted;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Unicodeveloper\Paystack\Facades\Paystack;
+use Illuminate\Validation\ValidationException;
 
 class AffiliateController extends Controller
 {
-
     public function affiliateDashboardMetrics(Request $request)
     {
         try {
@@ -39,23 +43,26 @@ class AffiliateController extends Controller
                 ->sum('amount');
 
             // 1. Available Affiliate Earnings (Total earnings for the affiliate)
-            $availableEarn = Earning::where('user_id', $affiliate->id) // Query Earnings model instead of Transaction
+            $availableEarn = Transaction::where('affiliate_id', $affiliate->aff_id)
+                ->where('status', 'success') // Transaction must be successful
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
-                ->sum('amount');  // Sum of earnings amount
+                ->sum('org_aff');  // Sum of earnings amount (affiliate share)
 
             // Calculate available earnings
-            $availableEarnings = $totalWithdrawals - $availableEarn;
+            $availableEarnings = $availableEarn - $totalWithdrawals;
 
             // 2. Today's Affiliate Sales (Sales with affiliate for the current day - both count and amount)
-            $todaySalesData = Sale::where('affiliate_id', $affiliate->id) // Query Sales model
+            $todaySalesData = Transaction::where('affiliate_id', $affiliate->aff_id)
+                ->where('status', 'success') // Query Sales model
                 ->whereDate('created_at', Carbon::today())  // Today's sales
                 ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
                 ->first();
 
             // 3. Total Affiliate Sales (All-time or filtered by date sales with affiliate - both count and amount)
-            $totalSalesData = Sale::where('affiliate_id', $affiliate->id) // Query Sales model
+            $totalSalesData = Transaction::where('affiliate_id', $affiliate->aff_id) // Fixed to use aff_id
+                ->where('status', 'success')
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
@@ -81,6 +88,75 @@ class AffiliateController extends Controller
         }
     }
 
+
+    // public function affiliateDashboardMetrics(Request $request)
+    // {
+    //     try {
+    //         // Get authenticated affiliate
+    //         $affiliate = Auth::guard('sanctum')->user();
+
+    //         if (!$affiliate) {
+    //             return response()->json(['error' => 'Unauthorized'], 403);
+    //         }
+
+    //         // Optional date filters for metrics
+    //         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
+    //         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
+
+    //         // 4. Total Withdrawals (Sum all withdrawals for the affiliate)
+    //         $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
+    //             ->where('status', 'approved')
+    //             ->when($startDate, function ($query) use ($startDate, $endDate) {
+    //                 $query->whereBetween('created_at', [$startDate, $endDate]);
+    //             })
+    //             ->sum('amount');
+
+    //         // 1. Available Affiliate Earnings (Total earnings for the affiliate)
+    //         $availableEarn = Transaction::where('affiliate_id', $affiliate->aff_id)
+    //             ->where('status', 'success') //  Transaction
+    //             ->when($startDate, function ($query) use ($startDate, $endDate) {
+    //                 $query->whereBetween('created_at', [$startDate, $endDate]);
+    //             })
+    //             ->sum('org_aff');  // Sum of earnings amount
+
+    //         // Calculate available earnings
+    //         $availableEarnings = $totalWithdrawals - $availableEarn;
+
+    //         // 2. Today's Affiliate Sales (Sales with affiliate for the current day - both count and amount)
+    //         $todaySalesData = Transaction::where('affiliate_id', $affiliate->aff_id)
+    //             ->where('status', 'success') // Query Sales model
+    //             ->whereDate('created_at', Carbon::today())  // Today's sales
+    //             ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+    //             ->first();
+
+    //         // 3. Total Affiliate Sales (All-time or filtered by date sales with affiliate - both count and amount)
+    //         $totalSalesData = Transaction::where('affiliate_id', $affiliate->id)
+    //         ->where('status', 'success')
+    //             ->when($startDate, function ($query) use ($startDate, $endDate) {
+    //                 $query->whereBetween('created_at', [$startDate, $endDate]);
+    //             })
+    //             ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+    //             ->first();
+
+    //         // Return all data in JSON format
+    //         return response()->json([
+    //             'available_affiliate_earnings' => $availableEarnings,
+    //             'todays_affiliate_sales' => [
+    //                 'total_amount' => $todaySalesData->total_amount ?? 0,
+    //                 'sale_count' => $todaySalesData->sale_count ?? 0
+    //             ],
+    //             'total_affiliate_sales' => [
+    //                 'total_amount' => $totalSalesData->total_amount ?? 0,
+    //                 'sale_count' => $totalSalesData->sale_count ?? 0
+    //             ],
+    //             'total_withdrawals' => $totalWithdrawals,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         // Error handling
+    //         return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
+    //     }
+    // }
+
     //get all transactions
     public function transactions(Request $request)
     {
@@ -89,7 +165,7 @@ class AffiliateController extends Controller
             $user = Auth::user();
 
             // Fetch transactions for the authenticated user
-            $transactions = Transaction::where('user_id', $user->id)->get();
+            $transactions = Transaction::where('email', $user->email)->get();
 
             // Return success response with the transactions
             return response()->json([
@@ -233,8 +309,8 @@ class AffiliateController extends Controller
             $products = Product::query();
         } else {
             // Find all successful transactions for the user associated with vendors
-            $transactions = Sale::where('user_id', $user->id)
-                ->where('status', 'approved')
+            $transactions = Transaction::where('user_id', $user->id)
+                ->where('status', 'success')
                 ->get();
 
             if ($transactions->isEmpty()) {
@@ -303,5 +379,69 @@ class AffiliateController extends Controller
 
         // User does not have permission to view this product
         return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
+    }
+
+    public function sendVendorRequest(Request $request)
+    {
+        $validate = $request->validate([
+            'email' => 'required|string',
+            'sale_url' => 'required|string',
+        ]);
+
+        $user = User::where('email', $validate['email'])->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'Not a user. Cannot request for vendor, sign up as an affiliate'], 400);
+        }
+
+
+        $user_id = $user->id;
+        $saleurl = $validate['sale_url'];
+
+        DB::table('vendor_status')->insert([
+            'user_id' => $user_id,
+            'sale_url' => $validate['sale_url'],
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+
+        Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
+
+        return response()->json(['success' => true, 'message' => 'Vendor Request sent successfully'], 201);
+    }
+
+    public function checkSaleByEmail(Request $request)
+    {
+        //Validate the email field directly from the request
+        $request->validate([
+            'email' => ['required', 'email']
+        ]);
+
+        // Get the authenticated user
+        $authUser = Auth::user();
+        $email = $request->input('email');
+
+        // Fetch transactions where the affiliate is responsible for the sale by matching aff_id and email
+        $transactions = Transaction::where('affiliate_id', $authUser->aff_id)
+            ->where('email', $email)
+            ->where('status', 'success')
+            ->get();
+
+        // Check if any transactions exist for the given email
+        if ($transactions->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No sales found for the provided email by you.',
+            ], 404);
+        }
+
+        // Return the transaction data if found
+        return response()->json([
+            'success' => true,
+            'message' => 'Transactions found for this affiliate and email.',
+            'data' => $transactions
+        ], 200);
     }
 }

@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Vendor;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 
 class SuperAdminVendorController extends Controller
 {
@@ -41,4 +42,6 @@ class SuperAdminVendorController extends Controller
 
         return response()->json(['message' => 'Vendor updated successfully', 'vendor' => $vendor]);
     }
+
+    
 }

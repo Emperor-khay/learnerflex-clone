@@ -18,10 +18,21 @@ class SuperAdminUserController extends Controller
     public function index(Request $request)
     {
         // Get the 'per_page' query parameter or default to 10
-        $perPage = $request->get('per_page', 10); // Default is 10 users per page
+        $perPage = $request->get('per_page', 20); // Default is 20 users per page
 
-        // Paginate users based on the query parameter
-        $users = User::paginate($perPage);
+        // Get the 'role' query parameter to filter users by role (if provided)
+        $role = $request->get('role');
+
+        // Build the query for users
+        $query = User::query();
+
+        // If a role is provided, filter the users by their role
+        if ($role) {
+            $query->where('role', $role); // Assuming 'role' is a column in the users table
+        }
+
+        // Paginate users based on the query parameters
+        $users = $query->paginate($perPage);
 
         // Return a JSON response with pagination metadata
         return response()->json([
@@ -32,10 +43,10 @@ class SuperAdminUserController extends Controller
                 'last_page' => $users->lastPage(),
                 'total' => $users->total(),
                 'per_page' => $users->perPage(),
-
             ]
         ]);
     }
+
 
 
     public function show($userId)
@@ -80,7 +91,7 @@ class SuperAdminUserController extends Controller
     public function showuser($role, $id)
     {
         switch ($role) {
-            case 'user':
+            case 'admin':
                 $entity = User::findOrFail($id);
                 break;
             case 'vendor':
@@ -151,55 +162,83 @@ class SuperAdminUserController extends Controller
     }
 
     public function upgradeAffiliateToVendor(Request $request, $id)
-{
-    // Find the user by ID
-    $user = User::findOrFail($id);
+    {
+        // Find the user by ID
+        $user = User::findOrFail($id);
 
-    // Check if the user is already a vendor
-    if ($user->is_vendor) {
-        return response()->json(['error' => 'User is already a vendor!'], 422);
+        // Check if the user is already a vendor
+        if ($user->is_vendor) {
+            return response()->json(['error' => 'User is already a vendor!'], 422);
+        }
+
+        try {
+            DB::transaction(function () use ($user) {
+                // Update the user's details to reflect vendor status
+                $user->update([
+                    'is_vendor' => true,
+                    'vendor_status' => 'up', // Adjust according to your enum values
+                    'role' => 'vendor',
+                ]);
+
+                // Insert or update the vendor details in the vendor table
+                DB::table('vendors')->insert([
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'description' => "New Vendor",
+                    'photo' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Update the vendor_status table for the user
+                DB::table('vendor_status')->where('user_id', $user->id)->updateOrInsert(
+                    ['user_id' => $user->id],
+                    ['status' => 'active', 'updated_at' => now()]
+                );
+
+                // Send email notification to the affiliate
+                Mail::to($user->email)->send(new VendorAccountUpgraded($user));
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Affiliate upgraded to vendor successfully',
+                'user' => $user->refresh()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to upgrade affiliate to vendor',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    try {
-        DB::transaction(function () use ($user) {
-            // Update the user's details to reflect vendor status
-            $user->update([
-                'is_vendor' => true,
-                'vendor_status' => 'up', // Adjust according to your enum values
-                'role' => 'vendor',
-            ]);
+    public function requestToBeVendor(Request $request)
+    {
+        // Validate the filter for status, if provided
+        $request->validate([
+            'status' => ['nullable', 'in:active,inactive,pending']
+        ]);
 
-            // Insert or update the vendor details in the vendor table
-            DB::table('vendors')->insert([
-                'user_id' => $user->id,
-                'name' => $user->name,
-                'description' => "New Vendor",
-                'photo' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        // Fetch all vendor requests, optionally filtering by status
+        $query = DB::table('vendor_status')->orderBy('created_at', 'desc');
 
-            // Update the vendor_status table for the user
-            DB::table('vendor_status')->where('user_id', $user->id)->updateOrInsert(
-                ['user_id' => $user->id],
-                ['status' => 'active', 'updated_at' => now()]
-            );
+        if ($request->has('status') && $request->input('status') !== null) {
+            $query->where('status', $request->input('status'));
+        }
 
-            // Send email notification to the affiliate
-            Mail::to($user->email)->send(new VendorAccountUpgraded($user));
-        });
+        // Paginate the results
+        $paginatedRequests = $query->paginate(20); // Adjust the per-page limit as needed
 
         return response()->json([
             'success' => true,
-            'message' => 'Affiliate upgraded to vendor successfully',
-            'user' => $user->refresh()
-        ], 200);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Failed to upgrade affiliate to vendor',
-            'message' => $e->getMessage(),
-        ], 500);
+            'data' => $paginatedRequests->items(),
+            'pagination' => [
+                'current_page' => $paginatedRequests->currentPage(),
+                'last_page' => $paginatedRequests->lastPage(),
+                'total' => $paginatedRequests->total(),
+                'per_page' => $paginatedRequests->perPage(),
+            ]
+        ]);
     }
-}
 }
