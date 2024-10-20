@@ -12,7 +12,7 @@
         To manage your vendor account, visit your vendor dashboard by clicking the button below.
     </div>
 
-    <a href="{{ url('/vendor') }}" style="background-color: #3490dc; color: white; padding: 10px 20px; text-decoration: none; display: inline-block;">Go to Vendor Dashboard</a>
+    <a href="{{ url('/vendor/dashboard') }}" style="background-color: #3490dc; color: white; padding: 10px 20px; text-decoration: none; display: inline-block;">Go to Vendor Dashboard</a>
 
     <br><br>
     <p>If you have any questions, feel free to contact us at support@example.com.</p>

@@ -22,11 +22,12 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->string('currency', 10)->nullable();
             $table->string('status')->default('pending');
-            $table->boolean('is_onboard')->default(0);
             $table->string('email')->nullable();
             $table->integer('org_vendor')->nullable();
             $table->integer('org_aff')->nullable();
             $table->integer('org_company')->nullable();
+            $table->string('description')->nullable();
+
             
             $table->json('meta')->nullable();  // To store any additional data
             $table->timestamps();

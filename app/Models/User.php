@@ -20,7 +20,7 @@ class User extends Authenticatable
         parent::boot();
 
         static::creating(function ($user) {
-            $user->aff_id = Str::uuid7();
+            $user->aff_id = substr(Str::uuid7()->toString(), 0, 8);
         });
     }
 
@@ -39,7 +39,6 @@ class User extends Authenticatable
         'country',
         'role',
         'image',
-        'has_paid_onboard',
         'is_vendor',
         'vendor_status',
         'otp',
@@ -121,15 +120,6 @@ class User extends Authenticatable
         return $this->hasMany(Sale::class, 'user_id');
     }
 
-    /**
-     * A vendor or affiliate can have many earnings.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function earnings()
-    {
-        return $this->hasMany(Earning::class, 'user_id');
-    }
 
     /**
      * A user (vendor or affiliate) can have transactions.

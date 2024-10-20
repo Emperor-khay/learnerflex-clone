@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use App\Mail\VendorAccountWanted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Mail\AffiliateVendorRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Unicodeveloper\Paystack\Facades\Paystack;
@@ -157,36 +158,11 @@ class AffiliateController extends Controller
     //     }
     // }
 
-    //get all transactions
-    public function transactions(Request $request)
-    {
-        try {
-            // Get the authenticated user
-            $user = Auth::user();
-
-            // Fetch transactions for the authenticated user
-            $transactions = Transaction::where('email', $user->email)->get();
-
-            // Return success response with the transactions
-            return response()->json([
-                'success' => true,
-                'message' => 'User transactions retrieved successfully!',
-                'transactions' => $transactions,
-            ], 200);
-        } catch (\Throwable $th) {
-            // Return error response in case of exception
-            return response()->json([
-                'success' => false,
-                'message' => $th->getMessage(),
-            ], 400);
-        }
-    }
-
     public function unlockMarketAccess(Request $request)
     {
         $user = auth()->user();
         // Check if the user is eligible for market access (has not paid and has a referral ID)
-        if ($user->market_access && $user->has_paid_onboard && !is_null($user->refferal_id)) {
+        if ($user->market_access && $user->has_paid_onboard && is_null($user->refferal_id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You already have market access or have already paid for onboarding.',
@@ -201,7 +177,7 @@ class AffiliateController extends Controller
             'email' => $user->email,  // Authenticated user's email
             'amount' => 1100 * 100, // Amount in kobo (NGN)
             'currency' => 'NGN',
-            'callback_url' => route('marketplace.payment.callback') . '?email=' . urlencode($user->email),
+            'callback_url' => route('unlock.market.callback') . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
             'metadata' => json_encode([
                 'description' => 'Unlock Market Access - Full access to promote products',
                 'orderID' => $orderID,
@@ -224,7 +200,6 @@ class AffiliateController extends Controller
                 'org_company' => 0,
                 'org_vendor' => 0,
                 'org_aff' => 0,
-                'is_onboard' => 0,
                 'tx_ref' => null,
                 'transaction_id' => $orderID, // Save the generated order ID
                 'meta' => json_encode([
@@ -253,6 +228,8 @@ class AffiliateController extends Controller
     {
 
         try {
+            $email = urldecode($request->get('email'));
+            $orderID = urldecode($request->get('order_id'));
             $reference = request('reference');  // Get reference from the callback
             $paymentDetails = Paystack::getPaymentData();
             // Verify transaction using Paystack reference
@@ -262,12 +239,12 @@ class AffiliateController extends Controller
                 $user = auth()->user();
                 // Update user to grant market access
                 $user->update([
-                    'market_access' => 1,
-                    'refferal_id' => 0,
+                    'market_access' => true,
+                    'refferal_id' => null,
 
                 ]);
                 // Update the transaction record
-                $transaction = Transaction::where('email', request('email'))->latest()->first();
+                $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
 
                 if ($transaction) {
                     $transaction->update([
@@ -304,13 +281,15 @@ class AffiliateController extends Controller
         $perPage = $request->get('per_page', 20); // Default is 20 products per page
 
         // Check if user has market access, paid onboard, and does not have a referral ID
-        if ($user->market_access && $user->has_paid_onboard &&  is_null($user->refferal_id)) {
+        if ($user->market_access &&  is_null($user->refferal_id)) {
             // User can see all products
             $products = Product::query();
         } else {
             // Find all successful transactions for the user associated with vendors
-            $transactions = Transaction::where('user_id', $user->id)
+            $transactions = Transaction::where('email', $user->email)
                 ->where('status', 'success')
+                ->whereNotNull('vendor_id')
+                ->whereNotNull('product_id')
                 ->get();
 
             if ($transactions->isEmpty()) {
@@ -360,47 +339,41 @@ class AffiliateController extends Controller
             return response()->json(['message' => 'Product not found', 'success' => false], 404);
         }
 
-        // Check if user has market access, paid onboard, and does not have a referral ID
-        if ($user->market_access && $user->has_paid_onboard && is_null($user->refferal_id)) {
+        // Check if the user has market access, paid onboard, and does not have a referral ID
+        if ($user->market_access && is_null($user->refferal_id)) {
             // User can see all products, no further conditions needed
             return response()->json(['success' => true, 'data' => $product], 200);
         }
 
-        // If user doesn't meet all conditions, check if they have purchased from this vendor before
-        $sales = Sale::where('user_id', $user->id)
+        // Check if the user has purchased from this vendor before, regardless of the specific product
+        $hasPurchasedFromVendor = Transaction::where('user_id', $user->id)
             ->where('vendor_id', $product->vendor_id)
-            ->where('status', 'approved')
+            ->where('status', 'success')  // Use 'success' to ensure only successful transactions count
             ->exists();
 
-        if ($sales) {
-            // User has previously purchased from this vendor, allow access to product
+        if ($hasPurchasedFromVendor) {
+            // User has previously purchased from this vendor, allow access to the product
             return response()->json(['success' => true, 'data' => $product], 200);
         }
 
-        // User does not have permission to view this product
+        // If the user hasn't purchased from this vendor, deny access
         return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
     }
+
 
     public function sendVendorRequest(Request $request)
     {
         $validate = $request->validate([
-            'email' => 'required|string',
             'sale_url' => 'required|string',
+            'description' => 'nullable|string',
         ]);
-
-        $user = User::where('email', $validate['email'])->first();
-
-        if (!$user) {
-            return response()->json(['error' => 'Not a user. Cannot request for vendor, sign up as an affiliate'], 400);
-        }
-
-
-        $user_id = $user->id;
+        $user = Auth::user();
         $saleurl = $validate['sale_url'];
 
         DB::table('vendor_status')->insert([
-            'user_id' => $user_id,
+            'user_id' => $user->id,
             'sale_url' => $validate['sale_url'],
+            'description' => $validate['description'],
             'status' => 'pending',
             'created_at' => now(),
             'updated_at' => now(),
@@ -408,6 +381,8 @@ class AffiliateController extends Controller
 
 
         Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
+        // Send email to the affiliate
+        Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
 
         return response()->json(['success' => true, 'message' => 'Vendor Request sent successfully'], 201);
     }
@@ -426,6 +401,7 @@ class AffiliateController extends Controller
         // Fetch transactions where the affiliate is responsible for the sale by matching aff_id and email
         $transactions = Transaction::where('affiliate_id', $authUser->aff_id)
             ->where('email', $email)
+            ->whereNotNull('product_id')
             ->where('status', 'success')
             ->get();
 
@@ -442,6 +418,46 @@ class AffiliateController extends Controller
             'success' => true,
             'message' => 'Transactions found for this affiliate and email.',
             'data' => $transactions
+        ], 200);
+    }
+
+    public function transactions(Request $request)
+    {
+        // Get the authenticated user
+        $user = auth()->user();
+
+        // Optional: Retrieve the status filter from request
+        $status = $request->input('status');
+
+        // Query the transactions where email or user_id matches
+        $transactionsQuery = Transaction::where(function ($query) use ($user) {
+            $query->where('user_id', $user->id)
+                ->orWhere('email', $user->email);
+        });
+
+        // If a status is provided, filter by it
+        if ($status) {
+            $transactionsQuery->where('status', $status);
+        }
+
+        // Execute the transaction query
+        $transactions = $transactionsQuery->get();
+
+        // Query the withdrawals where user_id matches
+        $withdrawalsQuery = Withdrawal::where('user_id', $user->id);
+
+        // If a status is provided, filter by it
+        if ($status) {
+            $withdrawalsQuery->where('status', $status);
+        }
+
+        // Execute the withdrawal query
+        $withdrawals = $withdrawalsQuery->get();
+
+        // Return the combined results in a JSON response
+        return response()->json([
+            'transactions' => $transactions,
+            'withdrawals' => $withdrawals,
         ], 200);
     }
 }

@@ -161,13 +161,13 @@ class SuperAdminUserController extends Controller
         }
     }
 
-    public function upgradeAffiliateToVendor(Request $request, $id)
+    public function upgradeAffiliateToVendor($id)
     {
         // Find the user by ID
         $user = User::findOrFail($id);
 
         // Check if the user is already a vendor
-        if ($user->is_vendor) {
+        if ($user->is_vendor && $user->role == "vendor") {
             return response()->json(['error' => 'User is already a vendor!'], 422);
         }
 
@@ -178,16 +178,6 @@ class SuperAdminUserController extends Controller
                     'is_vendor' => true,
                     'vendor_status' => 'up', // Adjust according to your enum values
                     'role' => 'vendor',
-                ]);
-
-                // Insert or update the vendor details in the vendor table
-                DB::table('vendors')->insert([
-                    'user_id' => $user->id,
-                    'name' => $user->name,
-                    'description' => "New Vendor",
-                    'photo' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
 
                 // Update the vendor_status table for the user

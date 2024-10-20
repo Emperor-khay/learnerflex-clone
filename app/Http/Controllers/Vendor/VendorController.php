@@ -36,10 +36,9 @@ class VendorController extends Controller
     protected $userService;
     protected $vendorService;
 
-    public function __construct(UserService $userService, VendorService $vendorService)
+    public function __construct(UserService $userService)
     {
         $this->userService = $userService;
-        $this->vendorService = $vendorService;
     }
 
     public function index(User $user): JsonResponse
@@ -150,8 +149,10 @@ class VendorController extends Controller
         $userId = $request->user()->id;
 
         // Fetch the sales for the authenticated vendor with pagination
-        $paginatedSales = Sale::where('user_id', $userId)
-            ->paginate(10); // Adjust the number 10 to change the number of items per page
+        $paginatedSales = Transaction::where('vendor_id', $userId)
+        ->where('status', 'success')
+        ->whereNotNull('product_id')
+            ->paginate(20); // Adjust the number 10 to change the number of items per page
 
         return response()->json([
             'success' => true,

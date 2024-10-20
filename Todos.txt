@@ -3,20 +3,23 @@
 ####################################################
 has_paid_onboard in users table is checking if you have paid #5100
 
-Description: This endpoint is used to initiate a payment process for one time payment to unlock market.
-1. Marketplace Payment
-POST /marketplace/payment
-Name: marketplace.payment
-
-
-\
 
     UNDER AFFILIATE ROUTE GROUPS
 
-Get: /request/withdrawal => Amount is mandatory
-EXAMPLE
 
+Profile routes:
 
+POST /update/image: Updates the authenticated user's profile image. The request should include the new image file. The server will store the image and update the user's profile.
+POST /update/profile: Updates the user's profile information such as name, bio, or other personal details. Expects a JSON body with the profile fields.
+Vendor request:
+
+POST /request-vendor: Allows an affiliate to request vendor status. Expects email and sale_url in the request body. On successful submission, an email is sent to notify the admin.
+GET /check-sale: Checks whether the user has made any sales. The request requires an email and will return sales information linked to that user.
+Withdrawal routes:
+
+GET /request/withdrawal: Amount is mandatory Initiates a withdrawal request for the authenticated user. If the user has bank details saved, they will be auto-filled. Otherwise, they will be prompted to provide them.
+GET /withdrawals: Retrieves a list of past withdrawals for the user, including details like the amount and status of each request.
+Transaction routes:
 
 6. Get Withdrawal Requests
 Endpoint: GET /withdrawals
@@ -28,3 +31,21 @@ b-approved
 c-rejected
 Response:
 Success: List of withdrawal records.
+
+GET /transactions: Fetches the transaction history for the authenticated user, including both successful and failed transactions.
+Product routes:
+
+GET /products: Retrieves a list of products available for affiliates to promote. The products are filtered based on affiliate status and availability.
+GET /products/{id}: Retrieves detailed information about a specific product, including its price, description, and commission rate for affiliates.
+Market access routes:
+
+POST /unlock/market: Initiates the process for affiliates to unlock market access by making a payment. Expects payment details in the request body.
+GET /unlock/market/callback: Paystack callback URL for confirming payment and unlocking market access. This endpoint processes the payment result and updates the user's access accordingly.
+Logout route:
+
+POST /logout: Logs out the authenticated user, invalidating their session or token.
+
+
+
+
+

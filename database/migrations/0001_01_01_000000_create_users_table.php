@@ -24,14 +24,10 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->string('country')->nullable();
             $table->string('image')->nullable();
-            $table->boolean('has_paid_onboard')->default(0);
-            $table->boolean('is_vendor')->default(0);
-            $table->string('vendor_status');
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->string('otp')->nullable();
             $table->string('bank_name')->nullable();
             $table->string('bank_account')->nullable();
-            $table->boolean('market_access')->default(0);
+            $table->boolean('market_access')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

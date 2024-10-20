@@ -55,16 +55,6 @@ class UserController extends Controller
     }
 
 
-    public function transactions(User $user)
-    {
-        try {
-            $users = $this->userService->getTransactionsForUser($user);
-            return $this->success($users, 'User transactions!');
-        } catch (\Throwable $th) {
-            return $this->error([], $th->getMessage(), 400);
-        }
-    }
-
     public function displayCurrency(User $user, Request $request)
     {
         try {
@@ -202,13 +192,13 @@ class UserController extends Controller
 
     public function salesAffiliate(Request $request)
     {
-        $totalNoSales = Sale::where('affiliate_id', $request->affiliate_id)->where('user_id', $request->user_id)->count();
+        $totalNoSales = Transaction::where('affiliate_id', $request->affiliate_id)->where('user_id', $request->user_id)->where('status', 'success')->count();
 
 
         return response()->json([
             'message' => "affilaite number of sales",
             'success' => true,
-            'no of sales' => $totalNoSales
+            'no of sales' => 'I aint sure i know what this does'
         ]);
     }
 
