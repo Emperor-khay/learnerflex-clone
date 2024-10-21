@@ -35,7 +35,7 @@ class SuperAdminTransactionController extends Controller
         $query->orderBy('created_at', 'desc');
 
         // Paginate the results (default 10 per page or any per_page you provide in the query)
-        $perPage = $request->input('per_page', 10); // Default to 10 if not provided
+        $perPage = $request->input('per_page', 20); // Default to 10 if not provided
         $transactions = $query->paginate($perPage);
 
         // Return the data in a simplified format

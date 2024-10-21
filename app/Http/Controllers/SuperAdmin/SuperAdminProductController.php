@@ -13,7 +13,7 @@ class SuperAdminProductController extends Controller
     public function index(Request $request)
 {
     // Get the 'per_page' query parameter or default to 15
-    $perPage = $request->get('per_page', 15); // Default is 15 products per page
+    $perPage = $request->get('per_page', 25); // Default is 15 products per page
     
     // Fetch the products with pagination
     $products = Product::paginate($perPage);

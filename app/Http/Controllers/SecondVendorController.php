@@ -241,4 +241,17 @@ class SecondVendorController extends Controller
         return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
     }
 
+    public function salesAffiliate()
+    {
+        $user = Auth::user();
+        $totalNoSales = Transaction::whereNotNull('affiliate_id')->where('vendor_id', $user->id)->where('status', 'success')->count();
+
+
+        return response()->json([
+            'message' => "affilaite number of sales",
+            'success' => true,
+            'no of sales' => $totalNoSales
+        ]);
+    }
+
 }

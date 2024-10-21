@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Users;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\UpdateProfileRequest;
-use App\Http\Requests\WantVendorRequest;
-use App\Mail\VendorAccountWanted;
+use App\Models\Sale;
 use App\Models\User;
-use App\Service\UserService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use App\Models\Withdrawal;
 use App\Models\Transaction;
-use App\Models\Sale;
+use App\Service\UserService;
+use Illuminate\Http\Request;
+use App\Mail\VendorAccountWanted;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\WantVendorRequest;
+use App\Http\Requests\UpdateProfileRequest;
 
 class UserController extends Controller
 {
@@ -190,17 +191,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function salesAffiliate(Request $request)
-    {
-        $totalNoSales = Transaction::where('affiliate_id', $request->affiliate_id)->where('user_id', $request->user_id)->where('status', 'success')->count();
-
-
-        return response()->json([
-            'message' => "affilaite number of sales",
-            'success' => true,
-            'no of sales' => 'I aint sure i know what this does'
-        ]);
-    }
+    
 
 
     public function totalSaleAff(Request $request)

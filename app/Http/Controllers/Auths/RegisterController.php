@@ -18,7 +18,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Notifications\Notification;
 use Unicodeveloper\Paystack\Facades\Paystack;
+use App\Notifications\RegistrationIssueNotification;
 
 
 class RegisterController extends Controller
@@ -187,7 +189,7 @@ class RegisterController extends Controller
             // Proceed to initiate payment
             try {
                 // Generate a unique order ID
-                $orderID = strtoupper(Str::random(10). time());
+                $orderID = strtoupper(Str::random(5). time());
 
                 // Prepare the payment data
                 $formData = [
@@ -224,6 +226,7 @@ class RegisterController extends Controller
                     'org_vendor' => 0,
                     'org_aff' => 0,
                     'market_access' => true,
+                    'description' => 'Registeration fee',
                     'tx_ref' => null,
                     'transaction_id' => $orderID, // Save the dynamic order ID
                 ]);
@@ -275,7 +278,7 @@ class RegisterController extends Controller
 
     public function handlePaymentCallback(Request $request)
     {
-        $orderID = urldecode($request->get('orderID'));
+        $orderID = $request->get('orderID');
         $email = urldecode($request->get('email'));
         $reference = request('reference'); // Get reference from the callback
 
@@ -289,6 +292,12 @@ class RegisterController extends Controller
             $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id',  $orderID)->first();
 
             if (!$temporaryUser) {
+                // Notify admin about the issue with registration
+                Notification::send(
+                    User::where('role', 'admin')->get(), // Assuming admins are marked with 'role' as 'admin'
+                    new RegistrationIssueNotification($email, $orderID) // Create a notification class
+                );
+        
                 return redirect()->route('auth.login')->withErrors([
                     'message' => 'User registration data not found.',
                 ]);
@@ -341,15 +350,29 @@ class RegisterController extends Controller
                 'token' => $token,
             ], 201);
         } else {
-            // Redirect to the login page with an error message if the payment fails
-            // return redirect()->route('/')->withErrors([
-            //     'message' => 'Payment failed or incomplete. Please try again.',
-            // ]);
+            // Payment failed, retrieve temporary user data to repopulate the registration form
+            $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
+        
+            if ($temporaryUser) {
+                // Pass temporary user data back to the frontend to repopulate the form
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment failed or incomplete.',
+                    'status' => $paymentDetails['data']['status'],
+                    'formData' => [
+                        'name' => $temporaryUser->name,
+                        'email' => $temporaryUser->email,
+                        'phone' => $temporaryUser->phone,
+                        // Add any other fields that need to be repopulated
+                    ],
+                ], 400);
+            }
+        
             return response()->json([
                 'success' => false,
-                'message' => 'Payment failed or incomplete.',
+                'message' => 'Payment failed or incomplete, and no temporary user data found.',
                 'status' => $paymentDetails['data']['status'],
-            ]);
+            ], 400);
         }
     }
 }
