@@ -278,7 +278,7 @@ class RegisterController extends Controller
 
     public function handlePaymentCallback(Request $request)
     {
-        $orderID = $request->get('orderID');
+        $orderID = $request->get('orderId');
         $email = urldecode($request->get('email'));
         $reference = request('reference'); // Get reference from the callback
 
@@ -293,10 +293,10 @@ class RegisterController extends Controller
 
             if (!$temporaryUser) {
                 // Notify admin about the issue with registration
-                Notification::send(
-                    User::where('role', 'admin')->get(), // Assuming admins are marked with 'role' as 'admin'
-                    new RegistrationIssueNotification($email, $orderID) // Create a notification class
-                );
+                // Notification::send(
+                //     User::where('role', 'admin')->get(), // Assuming admins are marked with 'role' as 'admin'
+                //     new RegistrationIssueNotification($email, $orderID) // Create a notification class
+                // );
         
                 return redirect()->route('auth.login')->withErrors([
                     'message' => 'User registration data not found.',
@@ -330,7 +330,6 @@ class RegisterController extends Controller
                 $transaction->update([
                     'tx_ref' => $reference,
                     'status' => $paymentDetails['data']['status'],
-                    'is_onboard' => 1,
                 ]);
             }
 
