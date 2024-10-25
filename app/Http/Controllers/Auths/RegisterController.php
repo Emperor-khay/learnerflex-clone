@@ -196,7 +196,7 @@ class RegisterController extends Controller
                     'email' => $validatedData['email'],  // Use validated email
                     'amount' => 5100 * 100, // Amount in kobo (NGN)
                     'currency' => 'NGN',
-                    'callback_url' => route('auth.payment.callback') . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
+                    'callback_url' => url('https://learnerflex.com/auth/signup') . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
                     'orderID' => $orderID,
                 ];
 

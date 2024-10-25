@@ -16,13 +16,17 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens;
 
     protected static function boot()
-    {
-        parent::boot();
+{
+    parent::boot();
 
-        static::creating(function ($user) {
-            $user->aff_id = substr(Str::uuid7()->toString(), 0, 8);
-        });
-    }
+    static::creating(function ($user) {
+        // Generate a unique 8-character aff_id
+        do {
+            $user->aff_id = Str::random(8);
+            $exists = User::where('aff_id', $user->aff_id)->exists();
+        } while ($exists); // Ensure it's unique before setting
+    });
+}
 
     /**
      * The attributes that are mass assignable.
@@ -55,7 +59,6 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'otp',
     ];
 
     /**

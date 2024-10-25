@@ -3,6 +3,26 @@
 ####################################################
 has_paid_onboard in users table is checking if you have paid #5100
 
+######  Public Routes ########################
+
+POST /payment/make-payment: Initiates the payment process for a product using Paystack.
+
+POST /payment/callback: Handles the payment callback from Paystack after a transaction is completed.
+
+POST /ebook-mentorship/make-payment: Initiates payment for the ebook mentorship program using Paystack.
+
+POST /ebook-mentorship/callback: Handles the payment callback for the ebook mentorship program.
+
+POST /password/reset-link: Sends a password reset link to the user's registered email address.
+
+POST /password/new-password: Resets the vendor's password with the new credentials.
+
+POST /auth/register: Initiates user registration for new affiliates.
+
+GET/POST /auth/payment/callback: Handles the payment callback after a successful registration transaction. We need talk about how the response will be handle
+
+POST /auth/login: Handles user login for authentication with email and password.
+
 
     UNDER AFFILIATE ROUTE GROUPS
 
@@ -36,7 +56,7 @@ GET /transactions: Fetches the transaction history for the authenticated user, i
 Product routes:
 
 GET /products: Retrieves a list of products available for affiliates to promote. The products are filtered based on affiliate status and availability.
-GET /products/{id}: Retrieves detailed information about a specific product, including its price, description, and commission rate for affiliates.
+GET /products/{id}: Retrieves detailed information about a specific product, including its price, description, and commission rate for affiliates. I will include vendor details in it
 Market access routes:
 
 POST /unlock/market: Initiates the process for affiliates to unlock market access by making a payment. Expects payment details in the request body.
@@ -45,7 +65,103 @@ Logout route:
 
 POST /logout: Logs out the authenticated user, invalidating their session or token.
 
+############## Vendors routes #############
+
+Here is a two-line documentation for each of the vendor routes:
+
+GET /vendor/dashboard: Retrieves vendor-specific dashboard metrics such as sales and product performance.
+
+GET /vendor/affiliate/dashboard: Fetches metrics related to affiliates promoting the vendor's products.
+
+POST /vendor/update/image: Updates the vendor's profile image.
+
+POST /vendor/update/profile: Updates the vendor's profile information.
+
+GET /vendor/data: Retrieves the authenticated vendor's data. you can leave this for now
+
+GET /vendor/affiliate/products: Lists products available for vendor to promote.
+
+GET /vendor/affiliate/product/{id}: Displays detailed information about a specific affiliate product.
+
+GET /vendor/affiliate/sales: Retrieves sales data for the vendor's affiliate promotions.
+
+GET /vendor/products: Lists all products by the authenticated vendor.
+
+GET /vendor/product/{id}: Fetches detailed information for a specific product by its ID.
+
+DELETE /vendor/product/delete/{id}: Deletes the specified product from the vendor's catalog.
+
+POST /vendor/product/digital/create: Creates a new digital product for the vendor.
+
+POST /vendor/product/other/create: Creates a new non-digital product for the vendor.
+
+PATCH /vendor/products/digital/{id}/update: Updates an existing digital product.
+
+PATCH /vendor/products/other/{id}/update: Updates an existing non-digital product.
+
+DELETE /vendor/products/{id}/delete: Permanently deletes the specified product from the system.
+
+GET /vendor/transactions: Retrieves the vendor's sales transactions.
+
+POST /vendor/product-performance: Sends product performance data for analysis.
+
+GET /vendor/affiliate-details/{aff_id}: Retrieves details of an affiliate by their affiliate ID.
+
+POST /vendor/product/add-product: Adds a new product to the vendor's catalog.
+
+GET /vendor/make/withdrawal: Initiates a withdrawal request for the vendor.
+
+GET /vendor/withdrawals: Retrieves all past withdrawal records for the vendor.
+
+############## ADMIN ROutes #########
+
+Here is the documentation for the admin routes:
+
+GET /admin/dashboard: Retrieves dashboard metrics and data for the super admin.
+
+GET /admin/products: Lists all products for the super admin to view.
+
+GET /admin/product/{id}: Retrieves details of a single product by its ID.
+
+PUT /admin/product/{id}: Updates the product details based on its ID.
+
+POST /admin/product/{id}/approve: Approves a product for publishing.
+
+DELETE /admin/product/{id}: Deletes a product by its ID.
+
+GET /admin/users: Lists all users, including affiliates, vendors, and admins.
+
+GET /admin/users/{role}/{id}: Retrieves user details by role and user ID.
+
+POST /admin/users/{role}: Creates a new user or entity based on the role.
+
+PUT /admin/users/{role}/{id}: Updates user details based on role and ID.
+
+DELETE /admin/users/{role}/{id}: Deletes a user by role and ID.
+
+GET /admin/transactions: Retrieves all transaction records.
+
+POST /admin/affiliate/bulk-upload: Uploads affiliates in bulk to the system.
+
+GET /admin/vendor-requests: Lists all vendor upgrade requests from affiliates.
+
+PATCH /admin/accept-vendor-request/{id}: Approves an affiliate's request to become a vendor.
+
+POST /admin/logout: Logs out the currently authenticated super admin.
 
 
+############## Affiliate routes ####################
 
-
+GET /affiliate/dashboard: Fetch metrics and data specific to the affiliate's dashboard.
+POST /affiliate/update/image: Updates the affiliate’s profile image.
+POST /affiliate/update/profile: Updates the affiliate's profile information.
+POST /affiliate/request-vendor: Submits a vendor request on behalf of the affiliate.
+GET /affiliate/check-sale: Retrieves sale data using the buyer's email.
+GET /affiliate/request/withdrawal: Initiates a withdrawal request for the affiliate.
+GET /affiliate/withdrawals: Retrieves the affiliate's withdrawal history.
+GET /affiliate/transactions: Fetches the affiliate's transaction records.
+GET /affiliate/products: Lists the available products for the affiliate to promote.
+GET /affiliate/products/{id}: Shows details of a specific product.
+POST /affiliate/unlock/market: Triggers the payment unlocking of marketplace access for the affiliate.
+GET /affiliate/unlock/market/callback: Manages the Paystack callback after market access purchase.
+POST /affiliate/logout: Logs out the affiliate from the system.

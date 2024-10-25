@@ -49,7 +49,7 @@ Route::get('/ohyes', [MarketplacePaymentController::class, 'handleGatewayCallbac
 //User Authentication
 Route::prefix('auth')->group(function () {
     Route::post('/register', [RegisterController::class, 'initiateRegistration']);
-    Route::match(['get', 'post'], '/payment/callback', [RegisterController::class, 'handlePaymentCallback'])->name('auth.payment.callback');
+    Route::post('/payment/callback', [RegisterController::class, 'handlePaymentCallback'])->name('auth.payment.callback');
     Route::post('/login', [LoginController::class, 'attemptUser']);
 });
 //Admin Authentication
@@ -103,7 +103,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 // Vendor routes group
 Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function () {
     Route::get('/dashboard', [SecondVendorController::class, 'vendorDashboardMetrics']);
-    Route::get('/affiliate/dashboard', [SecondVendorController::class, 'vendorAffiliiateDashboardMetrics']);
+    Route::get('/affiliate/dashboard', [SecondVendorController::class, 'affiliateDashboardMetrics']);
 
     //profile routes
     Route::post('/update/image', [UserController::class, 'handleUserImage']);
@@ -168,8 +168,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::delete('/{role}/{id}', [SuperAdminUserController::class, 'destroy']); // Delete by role and id
     });
 
- 
-
     // Route::get('/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User
 
     // Transactions Route
@@ -188,12 +186,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 Route::get('/users', [UserController::class, 'index']);
 //test endpoints
 Route::get('/test', function () {
-    Mail::raw('This is a test email!', function ($message) {
-        $message->to('recipient@example.com')  // Change to your test recipient
-            ->subject('Test Email');
-    });
-
-    return 'Test email sent!';
+    return 'Test checked successfully!';
 });
 //not sure what these are used for
 // Route::post('/user/get-balance', [UserController::class, 'getBalance']);

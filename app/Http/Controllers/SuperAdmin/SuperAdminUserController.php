@@ -95,10 +95,10 @@ class SuperAdminUserController extends Controller
                 $entity = User::findOrFail($id);
                 break;
             case 'vendor':
-                $entity = Vendor::where('user_id', $id)->firstOrFail();
+                $entity = User::with('products', $id)->firstOrFail($id);
                 break;
             case 'affiliate':
-                $entity = Affiliate::where('user_id', $id)->firstOrFail();
+                $entity = User::firstOrFail($id);
                 break;
             default:
                 return response()->json(['error' => 'Invalid role'], 400);
@@ -110,9 +110,6 @@ class SuperAdminUserController extends Controller
     public function store(Request $request, $role)
     {
         switch ($role) {
-            case 'user':
-                $user = User::create($request->all());
-                return response()->json($user, 201);
             case 'vendor':
                 $vendor = Vendor::create($request->all());
                 return response()->json($vendor, 201);

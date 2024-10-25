@@ -341,6 +341,10 @@ class VendorController extends Controller
 
     public function createDigitalProduct(DigitalProductRequest $digitalProductRequest): JsonResponse
     {
+        if ($digitalProductRequest->fails()) {
+            return response()->json($digitalProductRequest->errors(), Response::HTTP_BAD_REQUEST);
+        }
+        
         try {
             $user = $digitalProductRequest->user(); // Get authenticated user
             $productData = $digitalProductRequest->validated(); // Validate and get data

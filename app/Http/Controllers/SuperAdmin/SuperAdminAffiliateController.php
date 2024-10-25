@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Affiliate;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use App\Models\Affiliate;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 
 class SuperAdminAffiliateController extends Controller
 {
@@ -81,126 +82,266 @@ class SuperAdminAffiliateController extends Controller
     }
 
     // Bulk upload affiliates from CSV
+    // public function bulkUpload(Request $request)
+    // {
+    //     // Validate if the file is uploaded and is a CSV
+    //     $request->validate([
+    //         'csv_file' => 'required|file|mimes:csv,txt'
+    //     ]);
+
+    //     // Read the file
+    //     $file = $request->file('csv_file');
+    //     $csvData = file_get_contents($file->getRealPath());
+
+    //     // Remove BOM if present
+    //     $csvData = preg_replace('/^\xEF\xBB\xBF/', '', $csvData);
+
+    //     // Process the CSV data
+    //     $rows = array_map('str_getcsv', explode("\n", $csvData));
+    //     $header = array_shift($rows); // Remove and get the header
+
+    //     $affiliates = [];
+    //     $errors = [];
+
+    //     foreach ($rows as $index => $row) {
+    //         // Skip empty rows
+    //         if (empty(array_filter($row))) {
+    //             continue;
+    //         }
+
+    //         // Check if the row has the same number of columns as the header
+    //         if (count($header) != count($row)) {
+    //             $errors[] = "Row " . ($index + 2) . " does not match header column count.";
+    //             continue; // Skip invalid rows
+    //         }
+
+    //         // Create associative array using header as keys and row values as data
+    //         $affiliateData = array_combine($header, $row);
+
+    //         // Generate or retrieve a unique aff_id for the new user
+    //         if (isset($affiliateData['aff_id']) && !empty($affiliateData['aff_id'])) {
+    //             $aff_id = $affiliateData['aff_id'];
+    //         } else {
+    //             do {
+    //                 $aff_id = Str::random(8);
+    //                 $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+    //             } while ($exists);
+    //         }
+
+    //         // Validate each row data
+    //         $validator = Validator::make($affiliateData, [
+    //             'name' => 'required|string',
+    //             'email' => 'required|string|email',
+    //             'phone_number' => 'required|string',
+    //             'password' => 'required|string',
+    //             'refferal_id' => 'nullable|string',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             $errors[] = "Validation failed for row " . ($index + 2) . ": " . json_encode($validator->errors());
+    //             continue;
+    //         }
+
+    //         // Check if the user exists
+    //         $existingUser = User::where('email', $affiliateData['email'])->first();
+
+    //         // Prepare data for insert or update
+    //         $hashedPassword = isset($affiliateData['password']) ? Hash::make($affiliateData['password']) : null;
+
+    //         $ref_id = null;
+    //         if ($affiliateData['refferal_id']) {
+    //             $referrer = User::where('aff_id', $affiliateData['refferal_id'])->first();
+    //             if ($referrer) {
+    //                 $ref_id = $referrer->id;
+    //             }
+    //         }
+
+    //         // If the user exists, update the user
+    //         if ($existingUser) {
+    //             $existingUser->update([
+    //                 'name' => $affiliateData['name'],
+    //                 'phone' => $affiliateData['phone_number'],
+    //                 'password' => $hashedPassword ? $hashedPassword : $existingUser->password,
+    //                 'refferal_id' => $ref_id,
+    //             ]);
+    //         } else {
+    //             // If the user doesn't exist, create a new user
+    //             $affiliates[] = [
+    //                 'aff_id' => $aff_id,
+    //                 'name' => $affiliateData['name'],
+    //                 'email' => $affiliateData['email'],
+    //                 'phone' => $affiliateData['phone_number'],
+    //                 'password' => $hashedPassword,
+    //                 'country' => null,
+    //                 'refferal_id' => $ref_id,
+    //                 'image' => null,
+    //                 'has_paid_onboard' => 1,
+    //                 'is_vendor' => 0,
+    //                 'vendor_status' => 'down',
+    //                 'otp' => null,
+    //                 'market_access' => 1,
+    //             ];
+    //         }
+    //     }
+
+    //     // Insert all new valid data into the database
+    //     if (!empty($affiliates)) {
+    //         User::insert($affiliates);
+    //     }
+
+    //     // Return success message or errors if any
+    //     if (!empty($errors)) {
+    //         return response()->json([
+    //             'message' => 'Some rows failed to upload',
+    //             'errors' => $errors
+    //         ], 422);
+    //     }
+
+    //     return response()->json([
+    //         'message' => 'Affiliates uploaded successfully',
+    //         'new_records' => count($affiliates),
+    //     ], 201);
+    // }
+
+    //     public function bulkUpload(Request $request)
+    // {
+    //     // Validate incoming request to ensure a file and vendor email is provided
+    //     $validator = Validator::make($request->all(), [
+    //         'file' => 'required|file|mimes:csv,txt',
+    //         'vendor_email' => 'required|email',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json(['error' => $validator->errors()], 400);
+    //     }
+
+    //     // Search for the vendor using the provided email
+    //     $vendor = User::where('email', $request->input('vendor_email'))->where('role', 'vendor')->first();
+    //     if (!$vendor) {
+    //         return response()->json(['error' => 'Vendor not found'], 404);
+    //     }
+
+    //     // Open and read the CSV file
+    //     $file = fopen($request->file('file'), 'r');
+    //     $header = fgetcsv($file); // Read the header
+
+    //     // Begin database transaction
+    //     DB::beginTransaction();
+        
+    //     try {
+    //         // Loop through the CSV rows
+    //         while ($row = fgetcsv($file)) {
+    //             $data = array_combine($header, $row); // Map the header to each row data
+
+    //             // Check if email and name are present in the row
+    //             if (!isset($data['email']) || !isset($data['name'])) {
+    //                 continue; // Skip row if required data is missing
+    //             }
+
+    //             // Check if the user with the email already exists to avoid duplication
+    //             if (User::where('email', $data['email'])->exists()) {
+    //                 continue; // Skip row if email already exists
+    //             }
+
+    //             $aff_id = null;
+    //             // Generate a unique aff_id for the new user within the transaction
+    //             do {
+    //                 $aff_id = substr(Str::uuid7()->toString(), 0, 12);
+    //             } while (User::where('aff_id', $aff_id)->exists());
+
+    //             // Create a new affiliate user with the vendor's user_id as referral_id
+    //             User::create([
+    //                 'aff_id' => $aff_id,
+    //                 'name' => $data['name'],
+    //                 'email' => $data['email'],
+    //                 'currency' => $data['currency'] ?? 'NGN', // Default to 'NGN' if not provided
+    //                 'referral_id' => $vendor->id,
+    //                 'role' => 'affiliate',
+    //             ]);
+    //         }
+
+    //         // Commit the transaction if everything is fine
+    //         DB::commit();
+    //     } catch (\Exception $e) {
+    //         // Rollback the transaction on error
+    //         DB::rollBack();
+    //         return response()->json(['error' => 'An error occurred during upload: ' . $e->getMessage()], 500);
+    //     } finally {
+    //         fclose($file); // Close the file after reading
+    //     }
+
+    //     return response()->json(['message' => 'Affiliates uploaded successfully'], 200);
+    // }
+
     public function bulkUpload(Request $request)
-    {
-        // Validate if the file is uploaded and is a CSV
-        $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt'
-        ]);
+{
+    // Validate incoming request to ensure a file and vendor email is provided
+    $validator = Validator::make($request->all(), [
+        'file' => 'required|file|mimes:csv,txt',
+        'vendor_email' => 'required|email',
+    ]);
 
-        // Read the file
-        $file = $request->file('csv_file');
-        $csvData = file_get_contents($file->getRealPath());
-
-        // Remove BOM if present
-        $csvData = preg_replace('/^\xEF\xBB\xBF/', '', $csvData);
-
-        // Process the CSV data
-        $rows = array_map('str_getcsv', explode("\n", $csvData));
-        $header = array_shift($rows); // Remove and get the header
-
-        $affiliates = [];
-        $errors = [];
-
-        foreach ($rows as $index => $row) {
-            // Skip empty rows
-            if (empty(array_filter($row))) {
-                continue;
-            }
-
-            // Check if the row has the same number of columns as the header
-            if (count($header) != count($row)) {
-                $errors[] = "Row " . ($index + 2) . " does not match header column count.";
-                continue; // Skip invalid rows
-            }
-
-            // Create associative array using header as keys and row values as data
-            $affiliateData = array_combine($header, $row);
-
-            // Generate or retrieve a unique aff_id for the new user
-            if (isset($affiliateData['aff_id']) && !empty($affiliateData['aff_id'])) {
-                $aff_id = $affiliateData['aff_id'];
-            } else {
-                do {
-                    $aff_id = Str::random(20);
-                    $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
-                } while ($exists);
-            }
-
-            // Validate each row data
-            $validator = Validator::make($affiliateData, [
-                'name' => 'required|string',
-                'email' => 'required|string|email',
-                'phone_number' => 'required|string',
-                'password' => 'required|string',
-                'refferal_id' => 'nullable|string',
-            ]);
-
-            if ($validator->fails()) {
-                $errors[] = "Validation failed for row " . ($index + 2) . ": " . json_encode($validator->errors());
-                continue;
-            }
-
-            // Check if the user exists
-            $existingUser = User::where('email', $affiliateData['email'])->first();
-
-            // Prepare data for insert or update
-            $hashedPassword = isset($affiliateData['password']) ? Hash::make($affiliateData['password']) : null;
-
-            $ref_id = null;
-            if ($affiliateData['refferal_id']) {
-                $referrer = User::where('aff_id', $affiliateData['refferal_id'])->first();
-                if ($referrer) {
-                    $ref_id = $referrer->id;
-                }
-            }
-
-            // If the user exists, update the user
-            if ($existingUser) {
-                $existingUser->update([
-                    'name' => $affiliateData['name'],
-                    'phone' => $affiliateData['phone_number'],
-                    'password' => $hashedPassword ? $hashedPassword : $existingUser->password,
-                    'refferal_id' => $ref_id,
-                ]);
-            } else {
-                // If the user doesn't exist, create a new user
-                $affiliates[] = [
-                    'aff_id' => $aff_id,
-                    'name' => $affiliateData['name'],
-                    'email' => $affiliateData['email'],
-                    'phone' => $affiliateData['phone_number'],
-                    'password' => $hashedPassword,
-                    'country' => null,
-                    'refferal_id' => $ref_id,
-                    'image' => null,
-                    'has_paid_onboard' => 1,
-                    'is_vendor' => 0,
-                    'vendor_status' => 'down',
-                    'otp' => null,
-                    'market_access' => 1,
-                ];
-            }
-        }
-
-        // Insert all new valid data into the database
-        if (!empty($affiliates)) {
-            User::insert($affiliates);
-        }
-
-        // Return success message or errors if any
-        if (!empty($errors)) {
-            return response()->json([
-                'message' => 'Some rows failed to upload',
-                'errors' => $errors
-            ], 422);
-        }
-
-        return response()->json([
-            'message' => 'Affiliates uploaded successfully',
-            'new_records' => count($affiliates),
-        ], 201);
+    if ($validator->fails()) {
+        return response()->json(['error' => $validator->errors()], 400);
     }
+
+    // Search for the vendor using the provided email
+    $vendor = User::where('email', $request->input('vendor_email'))->where('role', 'vendor')->first();
+    if (!$vendor) {
+        return response()->json(['error' => 'Vendor not found'], 404);
+    }
+
+    // Open and read the CSV file
+    $file = fopen($request->file('file'), 'r');
+    $header = fgetcsv($file); // Read the header
+
+    $skippedEmails = []; // Store skipped emails
+
+    // Loop through the CSV rows
+    while ($row = fgetcsv($file)) {
+        $data = array_combine($header, $row); // Map the header to each row data
+
+        // Check if email and name are present in the row
+        if (!isset($data['email']) || !isset($data['name'])) {
+            continue; // Skip row if required data is missing
+        }
+
+        // Check if the email already exists
+        if (User::where('email', $data['email'])->exists()) {
+            // Add to skipped emails if the email already exists
+            $skippedEmails[] = $data['email'];
+            continue; // Skip this record
+        }
+
+        $aff_id = null;
+         // Generate a unique aff_id for the new user
+         do {
+            $aff_id = Str::random(8);
+            $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+        } while ($exists);
+
+        // Create a new affiliate user with the vendor's user_id as referral_id
+        User::create([
+            'aff_id' => $aff_id,
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'currency' => $data['currency'] ?? 'NGN', // Default to 'NGN' if not provided
+            'referral_id' => $vendor->id,
+            'role' => 'affiliate',
+        ]);
+    }
+
+    fclose($file); // Close the file after reading
+
+    // If there are skipped emails, send them to the admin email
+    if (!empty($skippedEmails)) {
+        Mail::to('admin1@gmail.com')->send(new \App\Mail\SkippedEmails($skippedEmails));
+    }
+
+    return response()->json(['message' => 'Affiliates uploaded successfully'], 200);
+}
+
+
 
 
     // Update an affiliate
