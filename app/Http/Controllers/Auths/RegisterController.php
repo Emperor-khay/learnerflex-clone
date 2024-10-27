@@ -377,82 +377,83 @@ class RegisterController extends Controller
     // }
 
     public function handlePaymentCallback(Request $request)
-    {
-        $orderID = $request->get('orderId');
-        $email = urldecode($request->get('email'));
-        $reference = request('reference'); // Get reference from the callback
+{
+    $orderID = $request->get('orderId');
+    $email = urldecode($request->get('email'));
+    $reference = $request->get('reference'); // Get reference from the callback
 
-        // Fetch payment details from Paystack
-        $paymentDetails = Paystack::getPaymentData();
+    // Fetch payment details from Paystack
+    $paymentDetails = Paystack::getPaymentData();
 
-        // Check if payment was successful
-        if ($paymentDetails['data']['status'] == "success") {
-            // Retrieve user data from the temporary_users table
-            $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
+    // Check if payment was successful
+    if ($paymentDetails['data']['status'] === "success") {
+        // Retrieve user data from the temporary_users table
+        $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
 
-            if (!$temporaryUser) {
-                // Notify admin about the issue with registration
-                // Notification::send(
-                //     User::where('role', 'admin')->get(), // Assuming admins are marked with 'role' as 'admin'
-                //     new RegistrationIssueNotification($email, $orderID) // Create a notification class
-                // );
+        if (!$temporaryUser) {
+            // Notify admin about the issue with registration
+            // Notification::send(
+            //     User::where('role', 'admin')->get(), // Assuming admins are marked with 'role' as 'admin'
+            //     new RegistrationIssueNotification($email, $orderID) // Create a notification class
+            // );
 
-                // Redirect to login with error message as query parameters
-                return redirect('/transaction-status?status=error&message=' . urlencode('User registration data not found.') . '&email=' . urlencode($email));
-            }
-
-            // Generate a unique aff_id for the new user
-            do {
-                $aff_id = Str::random(8);
-                $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
-            } while ($exists);
-
-            // Create the new user
-            $user = User::create([
-                'aff_id' => $aff_id,
-                'name' => $temporaryUser->name,
-                'email' => $temporaryUser->email,
-                'phone' => $temporaryUser->phone,
-                'password' => $temporaryUser->password, // Already hashed
-                'country' => null,
-                'refferal_id' => null,
-                'image' => null,
-                'role' => 'affiliate',
-                'market_access' => true,
-            ]);
-
-            // Update the transaction record in the database
-            $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
-
-            if ($transaction) {
-                $transaction->update([
-                    'tx_ref' => $reference,
-                    'status' => $paymentDetails['data']['status'],
-                ]);
-            }
-
-            // Delete the temporary user data
-            $temporaryUser->delete();
-
-            // Generate token and send confirmation email
-            $token = $user->createToken('YourAppName')->plainTextToken;
-            Mail::to($email)->send(new \App\Mail\RegisterSuccess());
-
-            // Redirect the user to the transaction-status page with a success message
-            return redirect('/transaction-status?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
-        } else {
-            // Payment failed, retrieve temporary user data to repopulate the registration form
-            $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
-
-            if ($temporaryUser) {
-                // Redirect back with error message and user data as query parameters to repopulate the registration form
-                return redirect('/transaction-status?status=error&message=' . urlencode('Payment failed or incomplete.') . '&email=' . urlencode($email) . '&name=' . urlencode($temporaryUser->name) . '&phone=' . urlencode($temporaryUser->phone));
-            }
-
-            // If no temporary user data is found
-            return redirect('/transaction-status?status=error&message=' . urlencode('Payment failed or incomplete, and no temporary user data found.') . '&email=' . urlencode($email));
+            // Redirect with error message
+            return redirect('https://learnerflex.com/auth/signup?status=error&message=' . urlencode('User registration data not found.') . '&email=' . urlencode($email));
         }
+
+        // Generate a unique aff_id for the new user
+        do {
+            $aff_id = Str::random(8);
+            $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+        } while ($exists);
+
+        // Create the new user
+        $user = User::create([
+            'aff_id' => $aff_id,
+            'name' => $temporaryUser->name,
+            'email' => $temporaryUser->email,
+            'phone' => $temporaryUser->phone,
+            'password' => $temporaryUser->password, // Already hashed
+            'country' => null,
+            'refferal_id' => null,
+            'image' => null,
+            'role' => 'affiliate',
+            'market_access' => true,
+        ]);
+
+        // Update the transaction record in the database
+        $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
+
+        if ($transaction) {
+            $transaction->update([
+                'tx_ref' => $reference,
+                'status' => $paymentDetails['data']['status'],
+            ]);
+        }
+
+        // Delete the temporary user data
+        $temporaryUser->delete();
+
+        // Generate token and send confirmation email
+        $token = $user->createToken('YourAppName')->plainTextToken;
+        Mail::to($email)->send(new \App\Mail\RegisterSuccess());
+
+        // Redirect to signup with success message
+        return redirect('https://learnerflex.com/auth/signup?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
+    } else {
+        // Payment failed, retrieve temporary user data to repopulate the registration form
+        $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
+
+        if ($temporaryUser) {
+            // Redirect with error message and user data
+            return redirect('https://learnerflex.com/auth/signup?status=error&message=' . urlencode('Payment failed or incomplete.') . '&email=' . urlencode($email) . '&name=' . urlencode($temporaryUser->name) . '&phone=' . urlencode($temporaryUser->phone));
+        }
+
+        // If no temporary user data is found
+        return redirect('https://learnerflex.com/auth/signup?status=error&message=' . urlencode('Payment failed or incomplete, and no temporary user data found.') . '&email=' . urlencode($email));
     }
+}
+
 
 
     // for frontend handling the callback request
