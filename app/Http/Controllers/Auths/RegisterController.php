@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Session;
@@ -189,14 +190,14 @@ class RegisterController extends Controller
             // Proceed to initiate payment
             try {
                 // Generate a unique order ID
-                $orderID = strtoupper(Str::random(5). time());
+                $orderID = strtoupper(Str::random(5) . time());
 
                 // Prepare the payment data
                 $formData = [
                     'email' => $validatedData['email'],  // Use validated email
                     'amount' => 5100 * 100, // Amount in kobo (NGN)
                     'currency' => 'NGN',
-                    'callback_url' => url('https://learnerflex.com/auth/signup') . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
+                    'callback_url' => route("auth.payment.callback") . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
                     'orderID' => $orderID,
                 ];
 
@@ -276,6 +277,105 @@ class RegisterController extends Controller
         return response()->json(['success' => true, 'message' => 'Registration successful', 'user' => $user]);
     }
 
+    // public function handlePaymentCallback(Request $request)
+    // {
+    //     $orderID = $request->get('orderId');
+    //     $email = urldecode($request->get('email'));
+    //     $reference = request('reference'); // Get reference from the callback
+
+    //     // Fetch payment details from Paystack
+    //     $paymentDetails = Paystack::getPaymentData();
+
+    //     // Check if payment was successful
+    //     if ($paymentDetails['data']['status'] == "success") {
+
+    //         // Retrieve user data from the temporary_users table
+    //         $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id',  $orderID)->first();
+
+    //         if (!$temporaryUser) {
+    //             // Notify admin about the issue with registration
+    //             // Notification::send(
+    //             //     User::where('role', 'admin')->get(), // Assuming admins are marked with 'role' as 'admin'
+    //             //     new RegistrationIssueNotification($email, $orderID) // Create a notification class
+    //             // );
+
+    //             return redirect()->route('auth.login')->withErrors([
+    //                 'message' => 'User registration data not found.',
+    //             ]);
+    //         }
+
+    //         // Generate a unique aff_id for the new user
+    //         do {
+    //             $aff_id = Str::random(8);
+    //             $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+    //         } while ($exists);
+
+    //         // Create the new user
+    //         $user = User::create([
+    //             'aff_id' => $aff_id,
+    //             'name' => $temporaryUser->name,
+    //             'email' => $temporaryUser->email,
+    //             'phone' => $temporaryUser->phone,
+    //             'password' => $temporaryUser->password, // Already hashed
+    //             'country' => null,
+    //             'refferal_id' => null,
+    //             'image' => null,
+    //             'role' => 'affiliate',
+    //             'market_access' => true,
+    //         ]);
+
+    //         // Update the transaction record in the database
+    //         $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
+
+    //         if ($transaction) {
+    //             $transaction->update([
+    //                 'tx_ref' => $reference,
+    //                 'status' => $paymentDetails['data']['status'],
+    //             ]);
+    //         }
+
+    //         // Delete the temporary user data
+    //         $temporaryUser->delete();
+
+    //         // Redirect the user to the login page with a success message and their email
+    //         // return redirect('/')->with('success', 'Registration successful! You can now log in.');
+    //         // Generate token and send confirmation email
+    //         $token = $user->createToken('YourAppName')->plainTextToken;
+    //         Mail::to($email)->send(new \App\Mail\RegisterSuccess());
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Registration successful',
+    //             'user' => $user,
+    //             'token' => $token,
+    //         ], 201);
+    //     } else {
+    //         // Payment failed, retrieve temporary user data to repopulate the registration form
+    //         $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
+
+    //         if ($temporaryUser) {
+    //             // Pass temporary user data back to the frontend to repopulate the form
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Payment failed or incomplete.',
+    //                 'status' => $paymentDetails['data']['status'],
+    //                 'formData' => [
+    //                     'name' => $temporaryUser->name,
+    //                     'email' => $temporaryUser->email,
+    //                     'phone' => $temporaryUser->phone,
+    //                     // Add any other fields that need to be repopulated
+    //                 ],
+    //             ], 400);
+    //         }
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Payment failed or incomplete, and no temporary user data found.',
+    //             'status' => $paymentDetails['data']['status'],
+    //         ], 400);
+    //     }
+    // }
+
     public function handlePaymentCallback(Request $request)
     {
         $orderID = $request->get('orderId');
@@ -287,9 +387,8 @@ class RegisterController extends Controller
 
         // Check if payment was successful
         if ($paymentDetails['data']['status'] == "success") {
-
             // Retrieve user data from the temporary_users table
-            $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id',  $orderID)->first();
+            $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
 
             if (!$temporaryUser) {
                 // Notify admin about the issue with registration
@@ -297,14 +396,13 @@ class RegisterController extends Controller
                 //     User::where('role', 'admin')->get(), // Assuming admins are marked with 'role' as 'admin'
                 //     new RegistrationIssueNotification($email, $orderID) // Create a notification class
                 // );
-        
-                return redirect()->route('auth.login')->withErrors([
-                    'message' => 'User registration data not found.',
-                ]);
+
+                // Redirect to login with error message as query parameters
+                return redirect('/transaction-status?status=error&message=' . urlencode('User registration data not found.') . '&email=' . urlencode($email));
             }
 
-             // Generate a unique aff_id for the new user
-             do {
+            // Generate a unique aff_id for the new user
+            do {
                 $aff_id = Str::random(8);
                 $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
             } while ($exists);
@@ -336,42 +434,131 @@ class RegisterController extends Controller
             // Delete the temporary user data
             $temporaryUser->delete();
 
-            // Redirect the user to the login page with a success message and their email
-            // return redirect('/')->with('success', 'Registration successful! You can now log in.');
             // Generate token and send confirmation email
             $token = $user->createToken('YourAppName')->plainTextToken;
             Mail::to($email)->send(new \App\Mail\RegisterSuccess());
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Registration successful',
-                'user' => $user,
-                'token' => $token,
-            ], 201);
+            // Redirect the user to the transaction-status page with a success message
+            return redirect('/transaction-status?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
         } else {
             // Payment failed, retrieve temporary user data to repopulate the registration form
             $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
-        
+
             if ($temporaryUser) {
-                // Pass temporary user data back to the frontend to repopulate the form
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment failed or incomplete.',
-                    'status' => $paymentDetails['data']['status'],
-                    'formData' => [
-                        'name' => $temporaryUser->name,
-                        'email' => $temporaryUser->email,
-                        'phone' => $temporaryUser->phone,
-                        // Add any other fields that need to be repopulated
-                    ],
-                ], 400);
+                // Redirect back with error message and user data as query parameters to repopulate the registration form
+                return redirect('/transaction-status?status=error&message=' . urlencode('Payment failed or incomplete.') . '&email=' . urlencode($email) . '&name=' . urlencode($temporaryUser->name) . '&phone=' . urlencode($temporaryUser->phone));
             }
-        
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment failed or incomplete, and no temporary user data found.',
-                'status' => $paymentDetails['data']['status'],
-            ], 400);
+
+            // If no temporary user data is found
+            return redirect('/transaction-status?status=error&message=' . urlencode('Payment failed or incomplete, and no temporary user data found.') . '&email=' . urlencode($email));
         }
+    }
+
+
+    // for frontend handling the callback request
+
+    // public function handlePaymentCallback(Request $request)
+    // {
+    //     // Validate the incoming request data
+    //     $request->validate([
+    //         'orderId' => 'required|string', // Ensure orderId is required and a string
+    //         'email' => 'required|email', // Ensure email is required and in a valid email format
+    //         'reference' => 'required|string', // Ensure reference is required and a string
+    //     ]);
+
+    //     // Retrieve orderID, email, and reference from form data
+    //     $orderID = $request->input('orderId');
+    //     $email = $request->input('email');
+    //     $reference = $request->input('reference');
+
+    //     // Fetch payment details from Paystack
+    //     $paymentDetails = json_decode($this->verify_payment($reference));
+
+    //     // Check if the payment details are valid and successful
+    //     if ($paymentDetails && $paymentDetails['data']['status'] == "success" && $paymentDetails['data']['reference'] === $reference) {
+    //         // Validate if the email matches the one from Paystack
+    //         if ($paymentDetails['data']['customer']['email'] !== $email) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Payment verification failed due to mismatched email.'
+    //             ], 403);
+    //         }
+
+    //         // Retrieve user data from the temporary_users table
+    //         $temporaryUser = TemporaryUsers::where('email', $email)->where('order_id', $orderID)->first();
+
+    //         if (!$temporaryUser) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'User registration data not found.'
+    //             ], 404);
+    //         }
+
+    //         // Proceed with user creation and transaction update
+    //         do {
+    //             $aff_id = Str::random(8);
+    //             $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+    //         } while ($exists);
+
+    //         $user = User::create([
+    //             'aff_id' => $aff_id,
+    //             'name' => $temporaryUser->name,
+    //             'email' => $temporaryUser->email,
+    //             'phone' => $temporaryUser->phone,
+    //             'password' => $temporaryUser->password,
+    //             'country' => null,
+    //             'refferal_id' => null,
+    //             'image' => null,
+    //             'role' => 'affiliate',
+    //             'market_access' => true,
+    //         ]);
+
+    //         // Update the transaction record
+    //         $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
+
+    //         if ($transaction) {
+    //             $transaction->update([
+    //                 'tx_ref' => $reference,
+    //                 'status' => $paymentDetails['data']['status'],
+    //             ]);
+    //         }
+
+    //         $temporaryUser->delete();
+
+    //         $token = $user->createToken('YourAppName')->plainTextToken;
+    //         Mail::to($email)->send(new \App\Mail\RegisterSuccess());
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Registration successful',
+    //             'user' => $user,
+    //             'token' => $token,
+    //         ], 201);
+    //     }
+
+    //     return response()->json([
+    //         'success' => false,
+    //         'message' => 'Payment verification failed or incomplete.',
+    //     ], 400);
+    // }
+
+
+    public function verify_payment($reference)
+    {
+        $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
+            "Cache-Control: no-cache"
+        ));
+
+        $result = curl_exec($ch);
+
+        curl_close($ch);
+
+        return $result;
     }
 }

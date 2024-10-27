@@ -49,7 +49,7 @@ Route::get('/ohyes', [MarketplacePaymentController::class, 'handleGatewayCallbac
 //User Authentication
 Route::prefix('auth')->group(function () {
     Route::post('/register', [RegisterController::class, 'initiateRegistration']);
-    Route::post('/payment/callback', [RegisterController::class, 'handlePaymentCallback'])->name('auth.payment.callback');
+    Route::match(['get', 'post'], '/payment/callback', [RegisterController::class, 'handlePaymentCallback'])->name('auth.payment.callback');
     Route::post('/login', [LoginController::class, 'attemptUser']);
 });
 //Admin Authentication
