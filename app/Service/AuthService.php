@@ -80,14 +80,6 @@ class AuthService
                 throw new \Exception('Credentials Invalid', 422);
             }
 
-            if (!$user->has_paid_onboard) {
-                $paymentUrl = $this->generateOnboardPaymentLink($user);
-                return [
-                    'user' => $user,
-                    'payment_url' => $paymentUrl
-                ];
-            }
-
             return [
                 'user' => $user,
                 'token' => $user->createToken('lfT')->plainTextToken
