@@ -362,30 +362,34 @@ class AffiliateController extends Controller
 
 
     public function sendVendorRequest(Request $request)
-    {
-        $validate = $request->validate([
-            'sale_url' => 'required|string',
-            'description' => 'nullable|string',
-        ]);
-         $user = auth()->user();
-        $saleurl = $validate['sale_url'];
+{
+    $validate = $request->validate([
+        'sale_url' => 'required|string',
+        'description' => 'nullable|string',
+    ]);
 
-        DB::table('vendor_status')->insert([
-            'user_id' => $user->id,
-            'sale_url' => $validate['sale_url'],
-            'description' => $validate['description'],
-            'status' => 'pending',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+    $user = auth()->user();
+    $saleurl = $validate['sale_url'];
 
+    // Use null as a default if 'description' is not provided
+    $description = $validate['description'] ?? null;
 
-        Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
-        // Send email to the affiliate
-        Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
+    DB::table('vendor_status')->insert([
+        'user_id' => $user->id,
+        'sale_url' => $saleurl,
+        'description' => $description,
+        'status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 
-        return response()->json(['success' => true, 'message' => 'Vendor Request sent successfully'], 201);
-    }
+    Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
+    // Send email to the affiliate
+    Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
+
+    return response()->json(['success' => true, 'message' => 'Vendor Request sent successfully'], 201);
+}
+
 
     public function checkSaleByEmail(Request $request)
     {

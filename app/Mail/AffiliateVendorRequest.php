@@ -27,7 +27,7 @@ class AffiliateVendorRequest extends Mailable
 
     public function build()
     {
-        return $this->view('notify_affiliate_of_vendor_request')
+        return $this->view('mail.notify_affiliate_of_vendor_request')
                     ->subject('Your Vendor Request Submission')
                     ->with([
                         'userName' => $this->user->name,
