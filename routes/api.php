@@ -33,7 +33,7 @@ Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']
 Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('callback');
 Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
 // Route for handling the payment callback
-Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback'])->name('callback');
+Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback']);
 //password resetting routes
 Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
 Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
@@ -73,7 +73,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 
 
     // withdrawals
-    Route::get('/request/withdrawal', [WithdrawalController::class, 'index']);
+    Route::post('/request/withdrawal', [WithdrawalController::class, 'index']);
     Route::get('/withdrawals', [WithdrawalController::class, 'WithdrawRecord']);
     //transactions
     Route::get('/transactions', [AffiliateController::class, 'transactions']);

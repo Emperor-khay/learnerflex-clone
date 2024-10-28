@@ -367,7 +367,7 @@ class AffiliateController extends Controller
             'sale_url' => 'required|string',
             'description' => 'nullable|string',
         ]);
-        $user = Auth::user();
+         $user = auth()->user();
         $saleurl = $validate['sale_url'];
 
         DB::table('vendor_status')->insert([

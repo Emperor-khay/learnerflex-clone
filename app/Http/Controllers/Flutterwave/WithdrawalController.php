@@ -47,7 +47,7 @@ class WithdrawalController extends Controller
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'amount' => $request->amount,
-                'old_balance' => $user->balance, // Assuming there's a balance field in the user table
+                'old_balance' => null, 
                 'bank_name' => $bankName,
                 'bank_account' => $bankAccount,
                 'status' => 'pending',

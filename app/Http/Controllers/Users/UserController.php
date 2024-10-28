@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Service\UserService;
 use Illuminate\Http\Request;
 use App\Mail\VendorAccountWanted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -69,25 +70,50 @@ class UserController extends Controller
     public function handleUserImage(Request $request)
     {
         try {
-            $data = $request->all();
+            $user = auth()->user(); // Get the authenticated user
+
+            // Check if a new image is uploaded
             if ($request->hasFile('image') && $request->file('image')->isValid()) {
+                // Store the new image and get its storage path
                 $path = $request->file('image')->store('images/users', 'public');
-                $data['image'] = $path;
-            } else {
-                $data['image'] = null;
+
+                // Begin transaction to safely update image path
+                DB::transaction(function () use ($user, $path) {
+                    // Delete old image if it exists and a new one is uploaded
+                    if ($user->image) {
+                        Storage::disk('public')->delete($user->image);
+                    }
+
+                    // Update user with new image path
+                    $user->image = $path;
+                    $user->save();
+                });
+
+                // Convert the path to a public URL
+                $imageUrl = Storage::url($path);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Profile image updated!',
+                    'image_url' => $imageUrl
+                ], 201);
             }
-            $user = $request->user();
-            $result = $this->userService->updateUserImage($user, $data['image']);
-            $result['image'] = $result->image ? Storage::url($result->image) : null;
-            if ($user->image) {
-                Storage::disk('public')->delete($user->photo);
-            }
-            return $this->success($result, 'profile image updated!', 201);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid image uploaded.',
+            ], 400);
         } catch (\Throwable $th) {
-            Log::error("user image update error: $th");
-            return $this->error([], $th->getMessage(), 400);
+            Log::error("User image update error: {$th->getMessage()}");
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile image.',
+                'error' => $th->getMessage()
+            ], 400);
         }
     }
+
+
 
     public function handleUserProfile(UpdateProfileRequest $updateProfileRequest)
     {
@@ -191,7 +217,7 @@ class UserController extends Controller
         ]);
     }
 
-    
+
 
 
     public function totalSaleAff(Request $request)
