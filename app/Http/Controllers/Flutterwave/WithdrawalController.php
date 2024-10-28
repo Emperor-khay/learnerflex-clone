@@ -21,51 +21,55 @@ class WithdrawalController extends Controller
      * Request for latest withdrawals
      */
     public function index(Request $request)
-    {
-        try {
-            $user = auth()->user();
+{
+    try {
+        $user = auth()->user();
 
-            // Check if amount is provided
-            $request->validate([
-                'amount' => 'required|numeric|min:1',
-            ]);
+        // Validate the request to ensure 'amount' is present and numeric
+        $validatedData = $request->validate([
+            'amount' => 'required|numeric|min:1',
+        ]);
 
-            // Use bank details from the user's profile if available
-            $bankName = $user->bank_name ?? $request->input('bank_name');
-            $bankAccount = $user->bank_account ?? $request->input('bank_account');
+        // Retrieve the validated 'amount'
+        $amount = $validatedData['amount'];
 
-            // If bank details are missing from both the user profile and the request, return an error
-            if (!$bankName || !$bankAccount) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Bank name and account are required to proceed with the withdrawal request.',
-                ], 400);
-            }
+        // Use bank details from the user's profile only
+        $bankName = $user->bank_name;
+        $bankAccount = $user->bank_account;
 
-            // Create the withdrawal request
-            $withdrawal = Withdrawal::create([
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'amount' => $request->amount,
-                'old_balance' => null, 
-                'bank_name' => $bankName,
-                'bank_account' => $bankAccount,
-                'status' => 'pending',
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Withdrawal request submitted successfully.',
-                'withdrawal' => $withdrawal,
-            ], 201);
-        } catch (\Throwable $th) {
+        // If bank details are missing in the user's profile, return an error
+        if (!$bankName || !$bankAccount) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while submitting the withdrawal request.',
-                'error' => $th->getMessage(),
-            ], 500);
+                'message' => 'Bank name and account are required in the user profile to proceed with the withdrawal request.',
+            ], 400);
         }
+
+        // Create the withdrawal request
+        $withdrawal = Withdrawal::create([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'amount' => $amount,
+            'old_balance' => null, 
+            'bank_name' => $bankName,
+            'bank_account' => $bankAccount,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Withdrawal request submitted successfully.',
+            'withdrawal' => $withdrawal,
+        ], 201);
+    } catch (\Throwable $th) {
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while submitting the withdrawal request.',
+            'error' => $th->getMessage(),
+        ], 500);
     }
+}
+
 
 
     /**
