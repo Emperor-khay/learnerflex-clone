@@ -85,7 +85,7 @@ class SuperAdminProductController extends Controller
 
 
     // Edit a product
-    public function update(DigitalProductRequest $request, $id)
+    public function update(AlternativeProductRequest $request, $id)
     {
         try {
             $product = Product::findOrFail($id);

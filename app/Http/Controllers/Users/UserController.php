@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Users;
 
+use Exception;
 use App\Models\Sale;
 use App\Models\User;
 use App\Models\Withdrawal;
@@ -9,6 +10,7 @@ use App\Models\Transaction;
 use App\Service\UserService;
 use Illuminate\Http\Request;
 use App\Mail\VendorAccountWanted;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -216,5 +218,23 @@ class UserController extends Controller
             'no of sales' => $totalNoSales,
             'total commission' => $totalCommission
         ]);
+    }
+
+    public function getUserById($id): JsonResponse
+    {
+        try {
+            // Find the user by ID
+            $user = User::findOrFail($id);
+
+            return response()->json([
+                'message' => 'User retrieved successfully',
+                'user' => $user
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'User not found or an error occurred',
+                'error' => $e->getMessage()
+            ], 404);
+        }
     }
 }

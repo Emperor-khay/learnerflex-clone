@@ -37,6 +37,7 @@ Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paym
 //password resetting routes
 Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
 Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
+Route::get('/user/{id}', [UserController::class, 'getUserById']);
 
 // unlock market
 //one time payment
@@ -183,7 +184,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
 
 //test routes
-Route::get('/users', [UserController::class, 'index']);
+
 //test endpoints
 Route::get('/test', function () {
     return 'Test checked successfully!';
