@@ -65,7 +65,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 
     //profile routes
     Route::post('/update/image', [UserController::class, 'handleUserImage']);
-    Route::post('/update/profile', [UserController::class, 'handleUserProfile']);
+    Route::post('/update/profile', [SecondVendorController::class, 'handleUserProfile']);
 
     //vendor requesting to be a vendor
     Route::post('/request-vendor', [AffiliateController::class, 'sendVendorRequest']);
@@ -107,10 +107,10 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
 
     //profile routes
     Route::post('/update/image', [UserController::class, 'handleUserImage']);
-    Route::post('/update/profile', [UserController::class, 'handleUserProfile']);
+    Route::post('/update/profile', [SecondVendorController::class, 'handleUserProfile']);
 
     Route::get('/data', [VendorController::class, 'getAuthenticatedVendorData']);
-    Route::get('/affiliate/products', [SecondVendorController::class, 'promoteProducts']);
+    Route::get('/affiliate/products', [AffiliateController::class, 'affiliateproducts']);
     Route::get('/affiliate/product/{id}', [SecondVendorController::class, 'viewAffiliateProducts']);
     //gets sales data
     Route::get('/affiliate/sales', [SecondVendorController::class, 'salesAffiliate']);
@@ -119,7 +119,7 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::get('/products', [VendorController::class, 'viewProductsByVendor']);
     Route::get('/product/{id}', [VendorController::class, 'viewProductById']);
     Route::delete('/product/delete/{id}', [VendorController::class, 'deleteProduct']);
-    Route::post('/product/digital/create', [VendorController::class, 'createDigitalProduct']);
+    Route::post('/product/digital/create', [SuperAdminProductController::class, 'store']);
     Route::post('/product/other/create', [VendorController::class, 'createOtherProduct']);
     Route::patch('/products/digital/{id}/update', [VendorController::class, 'editDigitalProduct']);
     Route::patch('/products/other/{id}/update', [VendorController::class, 'editOtherProduct']);
@@ -154,7 +154,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
     // Product Management Routes
     Route::get('/products', [SuperAdminProductController::class, 'index']); // View Products
-    // Route::post('/products', [SuperAdminProductController::class, 'store']); // Create Products
+    Route::post('/products/create', [SuperAdminProductController::class, 'store']); // Create Products
     Route::get('/product/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
     Route::put('/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
     Route::post('/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product

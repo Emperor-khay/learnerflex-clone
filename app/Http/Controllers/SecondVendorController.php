@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\Earning;
@@ -9,8 +10,10 @@ use App\Models\Product;
 use App\Models\Withdrawal;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Flutterwave\Service\Transactions;
+use App\Http\Requests\UserProfileUpdateRequest;
 
 class SecondVendorController extends Controller
 {
@@ -154,61 +157,6 @@ class SecondVendorController extends Controller
         }
     }
 
-    public function promoteProducts(Request $request)
-    {
-        $user = auth()->user();
-
-        // Set default pagination size or get it from the request
-        $perPage = $request->get('per_page', 20); // Default is 20 products per page
-
-        // Check if user has market access, paid onboard, and does not have a referral ID
-        if ($user->market_access &&  is_null($user->refferal_id)) {
-            // User can see all products
-            $products = Product::query();
-        } else {
-            // Find all successful transactions for the user associated with vendors
-            $transactions = Transaction::where('email', $user->email)
-                ->where('status', 'success')
-                ->whereNotNull('vendor_id')
-                ->whereNotNull('product_id')
-                ->get();
-
-            if ($transactions->isEmpty()) {
-                return response()->json(['message' => 'No products available for you.', 'success' => false], 403);
-            }
-
-            // Extract vendor IDs from the transactions
-            $vendorIds = $transactions->pluck('vendor_id')->unique();
-
-            // Filter products by all vendors the user has purchased from
-            $products = Product::whereIn('vendor_id', $vendorIds);
-        }
-
-        // Apply additional filters for commission and name if provided
-        // Apply commission range filter if provided
-        if ($request->has('min_commission') && $request->has('max_commission')) {
-            $products->whereBetween('commission', [(float)$request->min_commission, (float)$request->max_commission]);
-        }
-
-        if ($request->has('name')) {
-            $products->where('name', 'LIKE', '%' . $request->name . '%');
-        }
-
-        // Fetch the products with pagination
-        $paginatedProducts = $products->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'data' => $paginatedProducts->items(), // The products data
-            'pagination' => [
-                'current_page' => $paginatedProducts->currentPage(),
-                'last_page' => $paginatedProducts->lastPage(),
-                'total' => $paginatedProducts->total(),
-                'per_page' => $paginatedProducts->perPage(),
-            ]
-        ]);
-    }
-
     public function viewAffiliateProducts($id)
     {
         $user = auth()->user();  // Get the authenticated user
@@ -254,4 +202,28 @@ class SecondVendorController extends Controller
         ]);
     }
 
+    public function handleUserProfile(UserProfileUpdateRequest $request): JsonResponse
+    {
+        try {
+            // Get the authenticated user
+            $user = auth()->user();
+
+            // Prepare data for update
+            $data = $request->validated();
+
+            // Handle the image upload if provided
+            if ($request->hasFile('image')) {
+                // Store the image and save the path
+                $imagePath = $request->file('image')->store('public/users');
+                $data['image'] = basename($imagePath); // Store only the file name
+            }
+
+            // Update user details
+            $user->update($data);
+
+            return response()->json(['message' => 'Profile updated successfully', 'user' => $user], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' => 'An error occurred while updating profile', 'error' => $e->getMessage()], 500);
+        }
+    }
 }

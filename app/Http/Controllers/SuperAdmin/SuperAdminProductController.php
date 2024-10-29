@@ -2,33 +2,36 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Product;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\DigitalProductRequest;
+use App\Http\Requests\AlternativeProductRequest;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class SuperAdminProductController extends Controller
 {
     public function index(Request $request)
-{
-    // Get the 'per_page' query parameter or default to 15
-    $perPage = $request->get('per_page', 25); // Default is 15 products per page
-    
-    // Fetch the products with pagination
-    $products = Product::paginate($perPage);
+    {
+        // Get the 'per_page' query parameter or default to 15
+        $perPage = $request->get('per_page', 25); // Default is 15 products per page
 
-    return response()->json([
-        'success' => true,
-        'data' => $products->items(), // The products data
-        'pagination' => [
-            'current_page' => $products->currentPage(),
-            'last_page' => $products->lastPage(),
-            'total' => $products->total(),
-            'per_page' => $products->perPage(),
-        ]
-    ]);
-}
+        // Fetch the products with pagination
+        $products = Product::paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $products->items(), // The products data
+            'pagination' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'total' => $products->total(),
+                'per_page' => $products->perPage(),
+            ]
+        ]);
+    }
 
 
     public function show($id)
@@ -42,80 +45,94 @@ class SuperAdminProductController extends Controller
         return response()->json($product);
     }
 
-    
-    public function store(Request $request)
+
+    public function store(AlternativeProductRequest $request)
     {
+        try {
+            $authUser = auth()->user();
 
-        $vendor = Vendor::where('user_id', $request->user_id)->first();
-        $firstUser = User::first();
+            // Prepare validated data
+            $productData = $request->validated();
+            $productData['user_id'] = $authUser->id;
+            $productData['status'] = 'approved';
+            $productData['is_partnership'] = false;
+            $productData['is_affiliated'] = true;
 
-        if (!$firstUser) {
-            return response()->json(['message' => 'No users found in the database'], 400);
-        }
+            // Handle image upload if provided
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imageName = time() . '_' . $image->getClientOriginalName();
+                $image->move(public_path('images/products'), $imageName);
+                $productData['image'] = asset('images/products/' . $imageName); // Save full URL path
+            }
 
-        if(!$vendor){
+            // Create the product
+            $product = Product::create($productData);
+
             return response()->json([
-                'message' => 'vendor not found'
-            ]);
+                'message' => 'Product created successfully',
+                'product' => $product
+            ], 201);
+        } catch (\Exception $e) {
+            // Catch and handle any errors
+            return response()->json([
+                'message' => 'Failed to create product',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $vendor_id = $vendor->id;
-        
-        $request->validate([
-            'user_id' => $firstUser->id,
-            'vendor_id' => $vendor_id,
-            'name' => $request->input('name'),
-            'description' => $request->input('description'),
-            'image' => null, // Save the image name in the database
-            'price' => $request->input('price'),
-            'old_price' => $request->input('price'),
-            'type' => $request->input('type'),
-            'commission' => $request->input('commission'),
-            'contact_email' => $request->input('contact_email'),
-            'vsl_pa_link' => $request->input('vsl_pa_link'),
-            'access_link' => $request->input('access_link'),
-            'sale_page_link' => $request->input('sale_page_link'),
-            'sale_challenge_link' => $request->input('sale_challenge_link'),
-            'promotional_material' => $request->input('promotional_material'),
-            'is_partnership' => 0,
-            'is_affiliated' => 1,
-            'x_link' => $request->input('x_link'),
-            'ig_link' => $request->input('ig_link'),
-            'yt_link' => $request->input('yt_link'),
-            'tt_link' => $request->input('tt_link'),
-            'fb_link' => $request->input('fb_link'),
-            'status' => 'approved',
-        ]);
-
-        $product = Product::create($request->all());
-        return response()->json($product, 201);
     }
+
+
 
     // Edit a product
-    public function update(Request $request, $id)
+    public function update(DigitalProductRequest $request, $id)
     {
-        // Validate the incoming request
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric',
-        ]);
+        try {
+            $product = Product::findOrFail($id);
 
-        // Find the product
-        $product = Product::find($id);
-        if (!$product) {
-            return response()->json(['error' => 'Product not found'], 404);
+            // Gather input data for update, only updating fields that are present
+            $inputData = $request->only([
+                'name',
+                'description',
+                'price',
+                'old_price',
+                'type',
+                'commission',
+                'contact_email',
+                'vsl_pa_link',
+                'access_link',
+                'sale_page_link',
+                'sale_challenge_link',
+                'promotional_material',
+                'is_partnership',
+                'is_affiliated',
+                'x_link',
+                'ig_link',
+                'yt_link',
+                'fb_link',
+                'tt_link',
+                'status'
+            ]);
+
+            // Handle image upload if provided
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imagePath = $image->store('public/products');
+                $inputData['image'] = basename($imagePath);
+            }
+
+            // Update the product with new data
+            $product->update($inputData);
+
+            return response()->json(['message' => 'Product updated successfully', 'product' => $product], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Product not found'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'An error occurred', 'error' => $e->getMessage()], 500);
         }
-
-        // Update the product fields
-        $product->update([
-            'name' => $validatedData['name'],
-            'description' => $validatedData['description'],
-            'price' => $validatedData['price'],
-        ]);
-
-        return response()->json(['message' => 'Product updated successfully', 'product' => $product], 200);
     }
+
+
 
     // Delete a product
     public function destroy($id)

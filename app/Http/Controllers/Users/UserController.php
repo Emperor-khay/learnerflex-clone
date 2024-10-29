@@ -114,22 +114,6 @@ class UserController extends Controller
     }
 
 
-
-    public function handleUserProfile(UpdateProfileRequest $updateProfileRequest)
-    {
-        try {
-            $profile = $updateProfileRequest->validated();
-            if (empty($profile)) {
-                return $this->error([], 'Missing details!', 400);
-            }
-            $user = $this->userService->updateUserDetails($updateProfileRequest->user(), $profile);
-            return $this->success($user, 'Profile updated!', 201);
-        } catch (\Throwable $th) {
-            Log::error("Profile update: $th");
-            return $this->error([], $th->getMessage(), 400);
-        }
-    }
-
     public function handleVendorRequest(WantVendorRequest $wantVendorRequest)
     {
         try {

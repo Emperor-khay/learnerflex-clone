@@ -104,77 +104,6 @@ class ProductController extends Controller
         ], 200);
     }
 
-        
-  public function addProduct(Request $request) {
-
-        $validate = $request->validate([
-            '*' => 'sometimes|nullable',
-        ]);
-        
-        
-        $image = null;
-        
-        // Handle the image upload
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-    
-            // Generate a unique file name
-            $imageName = time() . '.' . $image->getClientOriginalExtension();
-    
-            // Store the image in the 'public/images' directory
-            $image->storeAs('public/images', $imageName);
-    
-            // Save the image path in the database
-            $vendor->image_path = 'images/' . $imageName;
-            $vendor->save();
-        }
-
-
-        $vendor = Vendor::where('user_id', $request->user_id)->first();
-
-        if(!$vendor){
-            return response()->json([
-                'message' => 'vendor not found'
-            ]);
-        }
-        
-        
-        $vendor_id = $vendor->id;
-    
-        //Create a new product with the validated data
-        $product = Product::create([
-            'user_id' => $request->input('user_id'),
-            'vendor_id' => $vendor_id,
-            'name' => $request->input('name'),
-            'description' => $request->input('description'),
-            'image' => $image, // Save the image name in the database
-            'price' => $request->input('price'),
-            'old_price' => $request->input('price'),
-            'type' => $request->input('type'),
-            'commission' => $request->input('commission'),
-            'contact_email' => $request->input('contact_email'),
-            'vsl_pa_link' => $request->input('vsl_pa_link'),
-            'access_link' => $request->input('access_link'),
-            'sale_page_link' => $request->input('sale_page_link'),
-            'sale_challenge_link' => $request->input('sale_challenge_link'),
-            'promotional_material' => $request->input('promotional_material'),
-            'is_partnership' => 0,
-            'is_affiliated' => 1,
-            'x_link' => $request->input('x_link'),
-            'ig_link' => $request->input('ig_link'),
-            'yt_link' => $request->input('yt_link'),
-            'tt_link' => $request->input('tt_link'),
-            'fb_link' => $request->input('fb_link'),
-            'status' => 'pending', // Default status
-        ]);
-    
-        return response()->json([
-            'success' => true,
-            'message' => 'Product created successfully!',
-            'product' => $product
-        ], 201);
-
-}
 
     public function index(): JsonResponse
     {
@@ -226,16 +155,4 @@ class ProductController extends Controller
             return $this->error([], $th->getMessage(), Response::HTTP_BAD_REQUEST);
         }
     }
-
-    // public function unlockMarketAccess(Request $request)
-    // {
-    //     try {
-    //         $user = $request->user();
-    //         $result = $this->productService->generateMarketAccessPayment($user);
-    //         return $this->success($result, 'unlock market');
-    //     } catch (\Throwable $th) {
-    //         Log::error("unlock market: $th");
-    //         return $this->error([], $th->getMessage(), 400);
-    //     }
-    // }
 }

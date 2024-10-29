@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\ProductType;
 
 class DigitalProductRequest extends FormRequest
+
 {
     /**
      * Determine if the user is authorized to make this request.
