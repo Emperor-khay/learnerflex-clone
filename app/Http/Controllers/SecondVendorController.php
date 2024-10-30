@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Exception;
 use Carbon\Carbon;
 use App\Models\Sale;
+use App\Models\Vendor;
 use App\Models\Earning;
 use App\Models\Product;
 use App\Models\Withdrawal;
@@ -13,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Flutterwave\Service\Transactions;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\UserProfileUpdateRequest;
 
 class SecondVendorController extends Controller
@@ -157,38 +160,6 @@ class SecondVendorController extends Controller
         }
     }
 
-    public function viewAffiliateProducts($id)
-    {
-        $user = auth()->user();  // Get the authenticated user
-
-        // Fetch the product by ID
-        $product = Product::find($id);
-
-        if (!$product) {
-            return response()->json(['message' => 'Product not found', 'success' => false], 404);
-        }
-
-        // Check if the user has market access, paid onboard, and does not have a referral ID
-        if ($user->market_access && is_null($user->refferal_id)) {
-            // User can see all products, no further conditions needed
-            return response()->json(['success' => true, 'data' => $product], 200);
-        }
-
-        // Check if the user has purchased from this vendor before, regardless of the specific product
-        $hasPurchasedFromVendor = Transaction::where('user_id', $user->id)
-            ->where('vendor_id', $product->vendor_id)
-            ->where('status', 'success')  // Use 'success' to ensure only successful transactions count
-            ->exists();
-
-        if ($hasPurchasedFromVendor) {
-            // User has previously purchased from this vendor, allow access to the product
-            return response()->json(['success' => true, 'data' => $product], 200);
-        }
-
-        // If the user hasn't purchased from this vendor, deny access
-        return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
-    }
-
     public function salesAffiliate()
     {
         $user = Auth::user();
@@ -211,19 +182,98 @@ class SecondVendorController extends Controller
             // Prepare data for update
             $data = $request->validated();
 
-            // Handle the image upload if provided
-            if ($request->hasFile('image')) {
-                // Store the image and save the path
-                $imagePath = $request->file('image')->store('public/users');
-                $data['image'] = basename($imagePath); // Store only the file name
+            // Handle image upload if provided
+            if ($request->hasFile('image') && $request->file('image')->isValid()) {
+                // Store the image in the public directory and get its path
+                $imagePath = $request->file('image')->store('images/users', 'public');
+
+                // If user already has an image, delete the old one
+                if ($user->image) {
+                    Storage::disk('public')->delete($user->image);
+                }
+
+                // Save the new image path
+                $data['image'] = $imagePath;
             }
 
-            // Update user details
+            // Update user details with the new data
             $user->update($data);
 
-            return response()->json(['message' => 'Profile updated successfully', 'user' => $user], 200);
+            return response()->json([
+                'message' => 'Profile updated successfully',
+                'user' => $user,
+                'image_url' => $user->image ? Storage::url($user->image) : null // Return the public URL if available
+            ], 200);
         } catch (Exception $e) {
-            return response()->json(['message' => 'An error occurred while updating profile', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'An error occurred while updating profile',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
+
+    public function createOrUpdateVendor(Request $request)
+{
+    try {
+        // Retrieve the authenticated user
+        $user = Auth::user();
+
+        // Check if user has the 'vendor' role
+        if ($user->role !== 'vendor') {
+            return response()->json(['message' => 'Only vendors can access this route'], 403);
+        }
+
+        // Validate incoming request data
+        $validator = Validator::make($request->all(), [
+            'name' => 'nullable|string|max:255',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
+            'description' => 'nullable|string',
+            'x_link' => 'nullable|url',
+            'ig_link' => 'nullable|url',
+            'yt_link' => 'nullable|url',
+            'fb_link' => 'nullable|url',
+            'tt_link' => 'nullable|url',
+            'display' => 'nullable|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Find or create a vendor record associated with the user
+        $vendor = Vendor::updateOrCreate(
+            ['user_id' => $user->id], // Condition for updating or creating
+            [
+                'name' => $request->name,
+                'description' => $request->description,
+                'x_link' => $request->x_link,
+                'ig_link' => $request->ig_link,
+                'yt_link' => $request->yt_link,
+                'fb_link' => $request->fb_link,
+                'tt_link' => $request->tt_link,
+                'display' => $request->display ?? true, // Default display to true if not provided
+            ]
+        );
+
+        // Handle photo upload if provided
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('vendor_photos', 'public');
+            $vendor->update(['photo' => $photoPath]);
+        }
+
+        // Get the full URL for the photo
+        $vendor->photo = $vendor->photo ? Storage::url($vendor->photo) : null;
+
+        return response()->json([
+            'message' => $vendor->wasRecentlyCreated ? 'Vendor profile created successfully' : 'Vendor profile updated successfully',
+            'vendor' => $vendor
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'An error occurred while processing your request',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }

@@ -69,52 +69,6 @@ class UserController extends Controller
         }
     }
 
-    public function handleUserImage(Request $request)
-    {
-        try {
-            $user = auth()->user(); // Get the authenticated user
-
-            // Check if a new image is uploaded
-            if ($request->hasFile('image') && $request->file('image')->isValid()) {
-                // Store the new image and get its storage path
-                $path = $request->file('image')->store('images/users', 'public');
-
-                // Begin transaction to safely update image path
-                DB::transaction(function () use ($user, $path) {
-                    // Delete old image if it exists and a new one is uploaded
-                    if ($user->image) {
-                        Storage::disk('public')->delete($user->image);
-                    }
-
-                    // Update user with new image path
-                    $user->image = $path;
-                    $user->save();
-                });
-
-                // Convert the path to a public URL
-                $imageUrl = Storage::url($path);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Profile image updated!',
-                    'image_url' => $imageUrl
-                ], 201);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'No valid image uploaded.',
-            ], 400);
-        } catch (\Throwable $th) {
-            Log::error("User image update error: {$th->getMessage()}");
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update profile image.',
-                'error' => $th->getMessage()
-            ], 400);
-        }
-    }
-
 
     public function handleVendorRequest(WantVendorRequest $wantVendorRequest)
     {

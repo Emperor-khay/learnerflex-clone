@@ -65,7 +65,6 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     // Route::get('/{id}/product/{reffer_id}', [ProductController::class, 'getProduct']);
 
     //profile routes
-    Route::post('/update/image', [UserController::class, 'handleUserImage']);
     Route::post('/update/profile', [SecondVendorController::class, 'handleUserProfile']);
 
     //vendor requesting to be a vendor
@@ -81,7 +80,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     //products routes
     Route::get('/products', [AffiliateController::class, 'affiliateproducts']);
 
-    Route::get('/products/{id}', [AffiliateController::class, 'showAffiliateProducts']);
+    Route::get('/products/{id}', [AffiliateController::class, 'showAffiliateProduct']);
 
     Route::post('/unlock/market', [AffiliateController::class, 'unlockMarketAccess']);
     Route::get('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
@@ -107,12 +106,13 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::get('/affiliate/dashboard', [SecondVendorController::class, 'affiliateDashboardMetrics']);
 
     //profile routes
-    Route::post('/update/image', [UserController::class, 'handleUserImage']);
     Route::post('/update/profile', [SecondVendorController::class, 'handleUserProfile']);
+    Route::post('/update/store/profile', [SecondVendorController::class, 'createOrUpdateVendor']);
+
 
     Route::get('/data', [VendorController::class, 'getAuthenticatedVendorData']);
     Route::get('/affiliate/products', [AffiliateController::class, 'affiliateproducts']);
-    Route::get('/affiliate/product/{id}', [SecondVendorController::class, 'viewAffiliateProducts']);
+    Route::get('/affiliate/product/{id}', [AffiliateController::class, 'showAffiliateProduct']);
     //gets sales data
     Route::get('/affiliate/sales', [SecondVendorController::class, 'salesAffiliate']);
 

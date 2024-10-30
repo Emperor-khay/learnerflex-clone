@@ -21,7 +21,7 @@ class Vendor extends Model
         'user_id',
         'name',
         'photo',
-        'description',
+        'description','x_link', 'ig_link', 'yt_link', 'fb_link', 'tt_link', 'display',
     ];
 
     protected static function boot()
@@ -37,19 +37,18 @@ class Vendor extends Model
         });
     }
 
-    /**
-     * Get the user that owns the vendor profile.
-     */
-    public function user(): BelongsTo
+    
+    // Relationship with Product model
+    public function products()
     {
-        return $this->belongsTo(User::class);
+        return $this->hasMany(Product::class, 'vendor_id');
     }
 
-    /**
-     * Get the products for the vendor.
-     */
-    public function products(): HasMany
+    // Relationship with User model
+    public function user()
     {
-        return $this->hasMany(Product::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
+
+    
 }

@@ -164,7 +164,7 @@ class SuperAdminUserController extends Controller
         $user = User::findOrFail($id);
 
         // Check if the user is already a vendor
-        if ($user->is_vendor && $user->role == "vendor") {
+        if ($user->role == "vendor") {
             return response()->json(['error' => 'User is already a vendor!'], 422);
         }
 
@@ -172,16 +172,26 @@ class SuperAdminUserController extends Controller
             DB::transaction(function () use ($user) {
                 // Update the user's details to reflect vendor status
                 $user->update([
-                    'is_vendor' => true,
-                    'vendor_status' => 'up', // Adjust according to your enum values
                     'role' => 'vendor',
                 ]);
 
-                // Update the vendor_status table for the user
-                DB::table('vendor_status')->where('user_id', $user->id)->updateOrInsert(
-                    ['user_id' => $user->id],
-                    ['status' => 'active', 'updated_at' => now()]
+                // Create a new record in the vendors table for the user
+                DB::table('vendors')->updateOrInsert(
+                    ['user_id' => $user->id], // Condition to find existing record or insert new
+                    [
+                        'display' => true, // Set the desired initial status
+                        'created_at' => now(),
+                    'updated_at' => now(),
+                    ]
                 );
+
+                // Update the vendor_status table only if a record exists
+                DB::table('vendor_status')
+                    ->where('user_id', $user->id)
+                    ->update([
+                        'status' => 'active',
+                        'updated_at' => now(),
+                    ]);
 
                 // Send email notification to the affiliate
                 Mail::to($user->email)->send(new VendorAccountUpgraded($user));

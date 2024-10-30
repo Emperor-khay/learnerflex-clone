@@ -110,7 +110,7 @@ class User extends Authenticatable
      */
     public function products()
     {
-        return $this->hasMany(Product::class, 'vendor_id');
+        return $this->hasMany(Product::class, 'user_id');
     }
 
     /**
@@ -132,6 +132,11 @@ class User extends Authenticatable
     public function transactions()
     {
         return $this->hasMany(Transaction::class, 'user_id');
+    }
+
+    public function vendor(): HasOne
+    {
+        return $this->hasOne(Vendor::class);
     }
 
     

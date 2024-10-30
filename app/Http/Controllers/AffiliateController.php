@@ -278,14 +278,17 @@ class AffiliateController extends Controller
         $user = auth()->user();
 
         // Set default pagination size or get it from the request
-        $perPage = $request->get('per_page', 20); // Default is 20 products per page
+        $perPage = $request->get('per_page', 20);
 
-        // Check if user has market access, paid onboard, and does not have a referral ID
-        if ($user->market_access &&  is_null($user->refferal_id)) {
+        // Determine product query based on user's access level
+        if ($user->market_access && is_null($user->refferal_id)) {
             // User can see all products
-            $products = Product::query();
+            $products = Product::with([
+                'user:id,name,email,phone,country,image',  // User details as store owner
+                'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor business details
+            ]);
         } else {
-            // Find all successful transactions for the user associated with vendors
+            // Get user's successful transactions associated with vendors
             $transactions = Transaction::where('email', $user->email)
                 ->where('status', 'success')
                 ->whereNotNull('vendor_id')
@@ -296,15 +299,17 @@ class AffiliateController extends Controller
                 return response()->json(['message' => 'No products available for you.', 'success' => false], 403);
             }
 
-            // Extract vendor IDs from the transactions
+            // Extract vendor IDs
             $vendorIds = $transactions->pluck('vendor_id')->unique();
 
-            // Filter products by all vendors the user has purchased from
-            $products = Product::whereIn('vendor_id', $vendorIds);
+            // Filter products by vendors the user has purchased from
+            $products = Product::with([
+                'user:id,name,email,phone,country,image',  // User details
+                'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor details
+            ])->whereIn('vendor_id', $vendorIds);
         }
 
         // Apply additional filters for commission and name if provided
-        // Apply commission range filter if provided
         if ($request->has('min_commission') && $request->has('max_commission')) {
             $products->whereBetween('commission', [(float)$request->min_commission, (float)$request->max_commission]);
         }
@@ -313,12 +318,18 @@ class AffiliateController extends Controller
             $products->where('name', 'LIKE', '%' . $request->name . '%');
         }
 
-        // Fetch the products with pagination
+        // Fetch paginated products
         $paginatedProducts = $products->paginate($perPage);
+
+        // Remove `access_link` from each product in the response
+        $filteredProducts = $paginatedProducts->through(function ($product) {
+            unset($product['access_link']);
+            return $product;
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $paginatedProducts->items(), // The products data
+            'data' => $filteredProducts,
             'pagination' => [
                 'current_page' => $paginatedProducts->currentPage(),
                 'last_page' => $paginatedProducts->lastPage(),
@@ -328,67 +339,74 @@ class AffiliateController extends Controller
         ]);
     }
 
-    public function showAffiliateProducts($id)
-    {
-        $user = auth()->user();  // Get the authenticated user
 
-        // Fetch the product by ID
-        $product = Product::find($id);
 
-        if (!$product) {
-            return response()->json(['message' => 'Product not found', 'success' => false], 404);
-        }
 
-        // Check if the user has market access, paid onboard, and does not have a referral ID
-        if ($user->market_access && is_null($user->refferal_id)) {
-            // User can see all products, no further conditions needed
-            return response()->json(['success' => true, 'data' => $product], 200);
-        }
+    
+public function showAffiliateProduct($id)
+{
+    $user = auth()->user();  // Get the authenticated user
 
-        // Check if the user has purchased from this vendor before, regardless of the specific product
-        $hasPurchasedFromVendor = Transaction::where('user_id', $user->id)
-            ->where('vendor_id', $product->vendor_id)
-            ->where('status', 'success')  // Use 'success' to ensure only successful transactions count
-            ->exists();
+    // Fetch the product by ID
+    $product = Product::with([
+        'vendor:id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link',  // Vendor details
+        'user:id,name,email,phone,country,image' // User details
+    ])->find($id);
 
-        if ($hasPurchasedFromVendor) {
-            // User has previously purchased from this vendor, allow access to the product
-            return response()->json(['success' => true, 'data' => $product], 200);
-        }
-
-        // If the user hasn't purchased from this vendor, deny access
-        return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
+    if (!$product) {
+        return response()->json(['message' => 'Product not found', 'success' => false], 404);
     }
+
+    // Check if the user has market access, paid onboard, and does not have a referral ID
+    if ($user->market_access && is_null($user->refferal_id)) {
+        // User can see all products, no further conditions needed
+        return response()->json(['success' => true, 'data' => $product], 200);
+    }
+
+    // Check if the user has purchased from this vendor before, regardless of the specific product
+    $hasPurchasedFromVendor = Transaction::where('user_id', $user->id)
+        ->where('vendor_id', $product->vendor_id)
+        ->where('status', 'success')  // Use 'success' to ensure only successful transactions count
+        ->exists();
+
+    if ($hasPurchasedFromVendor) {
+        // User has previously purchased from this vendor, allow access to the product
+        return response()->json(['success' => true, 'data' => $product], 200);
+    }
+
+    // If the user hasn't purchased from this vendor, deny access
+    return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
+}
 
 
     public function sendVendorRequest(Request $request)
-{
-    $validate = $request->validate([
-        'sale_url' => 'required|string',
-        'description' => 'nullable|string',
-    ]);
+    {
+        $validate = $request->validate([
+            'sale_url' => 'required|string',
+            'description' => 'nullable|string',
+        ]);
 
-    $user = auth()->user();
-    $saleurl = $validate['sale_url'];
+        $user = auth()->user();
+        $saleurl = $validate['sale_url'];
 
-    // Use null as a default if 'description' is not provided
-    $description = $validate['description'] ?? null;
+        // Use null as a default if 'description' is not provided
+        $description = $validate['description'] ?? null;
 
-    DB::table('vendor_status')->insert([
-        'user_id' => $user->id,
-        'sale_url' => $saleurl,
-        'description' => $description,
-        'status' => 'pending',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
+        DB::table('vendor_status')->insert([
+            'user_id' => $user->id,
+            'sale_url' => $saleurl,
+            'description' => $description,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-    Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
-    // Send email to the affiliate
-    Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
+        Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
+        // Send email to the affiliate
+        Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
 
-    return response()->json(['success' => true, 'message' => 'Vendor Request sent successfully'], 201);
-}
+        return response()->json(['success' => true, 'message' => 'Vendor Request sent successfully'], 201);
+    }
 
 
     public function checkSaleByEmail(Request $request)

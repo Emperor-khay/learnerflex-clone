@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('earnings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users');
-            $table->decimal('amount', 15, 2);
-            $table->string('transaction_ref')->nullable();
-            $table->timestamps();
+        Schema::table('vendors', function (Blueprint $table) {
+            $table->string('name')->nullable()->change(); // Change the name field to be nullable
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('earnings');
+        Schema::table('vendors', function (Blueprint $table) {
+            $table->string('name')->nullable(false)->change();
+        });
     }
 };

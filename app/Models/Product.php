@@ -55,18 +55,21 @@ class Product extends Model
             'is_affiliated' => 'boolean',
         ];
     }
-
-    /**
-     * Get the vendor that owns the product.
-     */
-     // The product belongs to a vendor (which is a user with a vendor role)
-     public function vendor()
-     {
-         return $this->belongsTo(User::class, 'vendor_id');
-     }
  
      public function reviews()
      {
          return $this->hasMany(Review::class);
      }
+
+      // Relationship with Vendor model
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_id');
+    }
+
+    // Relationship with User model (the owner of the product)
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }
