@@ -14,7 +14,7 @@ class UserProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'phone' => ['nullable', 'string', 'unique:users,phone,' . auth()>user()->id()],
+            'phone' => ['nullable', 'string', 'unique:users,phone,' . auth()->user()->id()],
             'country' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:7000'], // Optional image upload, max 2MB
             'bank_name' => ['nullable', 'string'],

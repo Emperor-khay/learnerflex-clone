@@ -54,6 +54,7 @@ class SuperAdminProductController extends Controller
             // Prepare validated data
             $productData = $request->validated();
             $productData['user_id'] = $authUser->id;
+            $productData['vendor_id'] = optional($authUser->vendor)->id;
             $productData['status'] = 'approved';
             $productData['is_partnership'] = false;
             $productData['is_affiliated'] = true;

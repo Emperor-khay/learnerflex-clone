@@ -138,6 +138,8 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::get('/make/withdrawal', [VendorController::class, 'withdrawal']);
     Route::get('/withdrawals', [VendorController::class, 'allWithdrawal']);
 
+    Route::post('/logout', [LogoutController::class, 'logout']);
+
     // check bank account route and update user account
     // Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
     // products
