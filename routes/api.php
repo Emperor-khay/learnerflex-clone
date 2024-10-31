@@ -112,7 +112,7 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
 
     Route::get('/data', [VendorController::class, 'getAuthenticatedVendorData']);
     Route::get('/affiliate/products', [AffiliateController::class, 'affiliateproducts']);
-    Route::get('/affiliate/product/{id}', [AffiliateController::class, 'showAffiliateProduct']);
+    Route::get('/affiliate/products/{id}', [AffiliateController::class, 'showAffiliateProduct']);
     //gets sales data
     Route::get('/affiliate/sales', [SecondVendorController::class, 'salesAffiliate']);
 
