@@ -213,67 +213,71 @@ class SecondVendorController extends Controller
     }
 
     public function createOrUpdateVendor(Request $request)
-{
-    try {
-        // Retrieve the authenticated user
-        $user = Auth::user();
-
-        // Check if user has the 'vendor' role
-        if ($user->role !== 'vendor') {
-            return response()->json(['message' => 'Only vendors can access this route'], 403);
+    {
+        try {
+            // Retrieve the authenticated user
+            $user = Auth::user();
+    
+            // Check if user has the 'vendor' role
+            if ($user->role !== 'vendor') {
+                return response()->json(['message' => 'Only vendors can access this route'], 403);
+            }
+    
+            // Validate incoming request data
+            $validator = Validator::make($request->all(), [
+                'name' => 'nullable|string|max:255',
+                'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
+                'description' => 'nullable|string',
+                'x_link' => 'nullable|url',
+                'ig_link' => 'nullable|url',
+                'yt_link' => 'nullable|url',
+                'fb_link' => 'nullable|url',
+                'tt_link' => 'nullable|url',
+                'display' => 'nullable|boolean',
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+    
+            // Find the existing vendor record associated with the user or create a new one
+            $vendor = Vendor::firstOrCreate(['user_id' => $user->id]);
+    
+            // Only update fields if they are present in the request
+            $vendor->fill([
+                'name' => $request->name ?? $vendor->name,
+                'description' => $request->description ?? $vendor->description,
+                'x_link' => $request->x_link ?? $vendor->x_link,
+                'ig_link' => $request->ig_link ?? $vendor->ig_link,
+                'yt_link' => $request->yt_link ?? $vendor->yt_link,
+                'fb_link' => $request->fb_link ?? $vendor->fb_link,
+                'tt_link' => $request->tt_link ?? $vendor->tt_link,
+                'display' => $request->display ?? $vendor->display,
+            ]);
+    
+            // Handle photo upload if provided
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('vendor_photos', 'public');
+                $vendor->photo = $photoPath;
+            }
+    
+            // Save updated vendor information
+            $vendor->save();
+    
+            // Get the full URL for the photo
+            $vendor->photo = $vendor->photo ? Storage::url($vendor->photo) : null;
+    
+            return response()->json([
+                'message' => $vendor->wasRecentlyCreated ? 'Vendor profile created successfully' : 'Vendor profile updated successfully',
+                'vendor' => $vendor
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while processing your request',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Validate incoming request data
-        $validator = Validator::make($request->all(), [
-            'name' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5048',
-            'description' => 'nullable|string',
-            'x_link' => 'nullable|url',
-            'ig_link' => 'nullable|url',
-            'yt_link' => 'nullable|url',
-            'fb_link' => 'nullable|url',
-            'tt_link' => 'nullable|url',
-            'display' => 'nullable|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        // Find or create a vendor record associated with the user
-        $vendor = Vendor::updateOrCreate(
-            ['user_id' => $user->id], // Condition for updating or creating
-            [
-                'name' => $request->name,
-                'description' => $request->description,
-                'x_link' => $request->x_link,
-                'ig_link' => $request->ig_link,
-                'yt_link' => $request->yt_link,
-                'fb_link' => $request->fb_link,
-                'tt_link' => $request->tt_link,
-                'display' => $request->display ?? true, // Default display to true if not provided
-            ]
-        );
-
-        // Handle photo upload if provided
-        if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->store('vendor_photos', 'public');
-            $vendor->update(['photo' => $photoPath]);
-        }
-
-        // Get the full URL for the photo
-        $vendor->photo = $vendor->photo ? Storage::url($vendor->photo) : null;
-
-        return response()->json([
-            'message' => $vendor->wasRecentlyCreated ? 'Vendor profile created successfully' : 'Vendor profile updated successfully',
-            'vendor' => $vendor
-        ], 201);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'An error occurred while processing your request',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
+    
 
 }
