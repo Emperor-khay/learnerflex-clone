@@ -174,43 +174,44 @@ class SecondVendorController extends Controller
     }
 
     public function handleUserProfile(UserProfileUpdateRequest $request): JsonResponse
-    {
-        try {
-            // Get the authenticated user
-            $user = auth()->user();
+{
+    try {
+        // Get the authenticated user
+        $user = auth()->user();
 
-            // Prepare data for update
-            $data = $request->validated();
+        // Prepare data for update
+        $data = $request->validated();
 
-            // Handle image upload if provided
-            if ($request->hasFile('image') && $request->file('image')->isValid()) {
-                // Store the image in the public directory and get its path
-                $imagePath = $request->file('image')->store('images/users', 'public');
+        // Handle image upload if provided
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            // Store the image in the public directory and get the relative path
+            $imagePath = $request->file('image')->store('images/users', 'public');
 
-                // If user already has an image, delete the old one
-                if ($user->image) {
-                    Storage::disk('public')->delete($user->image);
-                }
-
-                // Save the new image path
-                $data['image'] = $imagePath;
+            // Delete old image if exists
+            if ($user->image) {
+                Storage::disk('public')->delete($user->image);
             }
 
-            // Update user details with the new data
-            $user->update($data);
-
-            return response()->json([
-                'message' => 'Profile updated successfully',
-                'user' => $user,
-                'image_url' => $user->image ? Storage::url($user->image) : null // Return the public URL if available
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'An error occurred while updating profile',
-                'error' => $e->getMessage()
-            ], 500);
+            // Get the full URL and save it in the database
+            $data['image'] = Storage::url($imagePath);
         }
+
+        // Update user details
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user,
+            'image_url' => $user->image // Full URL is saved and returned directly
+        ], 200);
+    } catch (Exception $e) {
+        return response()->json([
+            'message' => 'An error occurred while updating profile',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function createOrUpdateVendor(Request $request)
     {
