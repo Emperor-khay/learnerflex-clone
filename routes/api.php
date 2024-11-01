@@ -38,6 +38,7 @@ Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paym
 Route::post('password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
 Route::post('password/new-password', [NewPasswordReset::class, 'resetPassword']);
 Route::get('/user/{id}', [UserController::class, 'getUserById']);
+Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData']);
 
 // unlock market
 //one time payment
@@ -158,7 +159,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     // Product Management Routes
     Route::get('/products', [SuperAdminProductController::class, 'index']); // View Products
     Route::post('/products/create', [SuperAdminProductController::class, 'store']); // Create Products
-    Route::get('/product/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
+    Route::get('/products/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
     Route::put('/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
     Route::post('/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
     Route::delete('/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product

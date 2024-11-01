@@ -554,4 +554,28 @@ class VendorController extends Controller
             ]
         ]);
     }
+
+    public function getVendorData($id): JsonResponse
+    {
+        try {
+            // Attempt to find the vendor by user_id
+            $vendor = Vendor::where('user_id', $id)->first();
+
+            // Check if the vendor exists
+            if (!$vendor) {
+                return response()->json(['message' => 'Vendor not found.'], 404);
+            }
+
+            // Return vendor details
+            return response()->json([
+                'message' => 'Vendor details retrieved successfully.',
+                'vendor' => $vendor
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching vendor details.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
