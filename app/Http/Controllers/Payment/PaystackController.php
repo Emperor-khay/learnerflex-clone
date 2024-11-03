@@ -231,7 +231,6 @@ public function payment_callback(Request $request)
 
         $reference = $request->input('reference');
         $email = $request->input('email');
-        // $email = $request->input('email');
         $orderId = $request->input('orderId');
 
         // Verify payment with Paystack

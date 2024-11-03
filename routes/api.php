@@ -42,11 +42,11 @@ Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData'
 
 // unlock market
 //one time payment
-// Route::post('/marketplace/payment', [MarketplacePaymentController::class,'payment'])->name('marketplace.payment');
-// Route::get('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
+Route::post('/marketplace/payment', [MarketplacePaymentController::class,'payment'])->name('marketplace.payment');
+Route::post('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
 
-Route::post('/oh', [MarketplacePaymentController::class, 'redirectToGateway'])->name('oh');
-Route::get('/ohyes', [MarketplacePaymentController::class, 'handleGatewayCallback'])->name('ohyes');
+// Route::post('/oh', [MarketplacePaymentController::class, 'redirectToGateway'])->name('oh');
+// Route::get('/ohyes', [MarketplacePaymentController::class, 'handleGatewayCallback'])->name('ohyes');
 
 //User Authentication
 Route::prefix('auth')->group(function () {
