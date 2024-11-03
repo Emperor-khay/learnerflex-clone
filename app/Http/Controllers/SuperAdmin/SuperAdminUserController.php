@@ -7,6 +7,7 @@ use App\Models\Vendor;
 use App\Models\Product;
 use App\Models\Affiliate;
 use App\Models\Transaction;
+use App\Models\VendorStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Mail\VendorAccountUpgraded;
@@ -181,7 +182,7 @@ class SuperAdminUserController extends Controller
                     [
                         'display' => true, // Set the desired initial status
                         'created_at' => now(),
-                    'updated_at' => now(),
+                        'updated_at' => now(),
                     ]
                 );
 
@@ -217,10 +218,11 @@ class SuperAdminUserController extends Controller
             'status' => ['nullable', 'in:active,inactive,pending']
         ]);
 
-        // Fetch all vendor requests, optionally filtering by status
-        $query = DB::table('vendor_status')->orderBy('created_at', 'desc');
+        // Build the query to fetch vendor requests with user details, optionally filtering by status
+        $query = VendorStatus::with('user')
+            ->orderBy('created_at', 'desc');
 
-        if ($request->has('status') && $request->input('status') !== null) {
+        if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
 
@@ -229,7 +231,21 @@ class SuperAdminUserController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $paginatedRequests->items(),
+            'data' => $paginatedRequests->map(function ($request) {
+                return [
+                    'id' => $request->id,
+                    'user' => [
+                        'id' => $request->user->id,
+                        'name' => $request->user->name,
+                        'email' => $request->user->email,
+                    ],
+                    'sale_url' => $request->sale_url,
+                    'description' => $request->description,
+                    'review' => $request->review,
+                    'status' => $request->status,
+                    'created_at' => $request->created_at,
+                ];
+            }),
             'pagination' => [
                 'current_page' => $paginatedRequests->currentPage(),
                 'last_page' => $paginatedRequests->lastPage(),

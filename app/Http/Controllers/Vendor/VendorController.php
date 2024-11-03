@@ -150,8 +150,8 @@ class VendorController extends Controller
 
         // Fetch the sales for the authenticated vendor with pagination
         $paginatedSales = Transaction::where('vendor_id', $userId)
-        ->where('status', 'success')
-        ->whereNotNull('product_id')
+            ->where('status', 'success')
+            ->whereNotNull('product_id')
             ->paginate(20); // Adjust the number 10 to change the number of items per page
 
         return response()->json([
@@ -190,34 +190,43 @@ class VendorController extends Controller
         ]);
     }
 
-    public function productPerformance(request $request)
+    public function productPerformance(Request $request)
     {
-        $totalNoSales = Sale::where('user_id', $request->user_id)->count();
+        $userId = $request->user_id;
 
-        $vendorAffCount = Sale::where('user_id', $request->user_id)
+        // Total number of sales for the vendor
+        $totalNoSales = Transaction::where('vendor_id', $userId)->where('status', 'approved')->count();
+
+        // Count of distinct affiliates who made sales for the vendor
+        $vendorAffCount = Transaction::where('vendor_id', $userId)
             ->whereNotNull('affiliate_id')
-            ->where('affiliate_id', '!=', 0)
             ->distinct('affiliate_id')
             ->count('affiliate_id');
 
-        $transaction = Sale::where('user_id', $request->user_id)
-            ->with(['affiliateId:id,name', 'productId:id,name'])
+        // Retrieve all transactions for the vendor with affiliate and product details
+        $transactions = Transaction::where('vendor_id', $userId)
+            ->with(['affiliate', 'product'])
             ->get();
 
-        $productCount = Product::where('user_id', $request->user_id)->count();
+        // Total number of products for the vendor
+        $productCount = Product::where('user_id', $userId)->count();
 
         return response()->json([
             'message' => "Data Retrieved",
             'success' => true,
-            'total no of sales' => $totalNoSales,
-            'vendor aff count' => $vendorAffCount,
-            'no of product' => $productCount,
-            'transactions' => $transaction->map(function ($transaction) {
+            'total_no_of_sales' => $totalNoSales,
+            'vendor_aff_count' => $vendorAffCount,
+            'no_of_products' => $productCount,
+            'transactions' => $transactions->map(function ($transaction) {
                 return [
                     'user_id' => $transaction->user_id,
-                    'product_name' => $transaction->product->name,
+                    'product_name' => $transaction->product ? $transaction->product->name : null,
                     'aff_id' => $transaction->affiliate_id,
-                    'affiliate_name' => $transaction->affiliate->name,
+                    'affiliate_name' => $transaction->affiliate ? $transaction->affiliate->name : null,
+                    'amount' => $transaction->amount,
+                    'currency' => $transaction->currency,
+                    'status' => $transaction->status,
+                    'created_at' => $transaction->created_at,
                 ];
             }),
         ]);
@@ -344,7 +353,7 @@ class VendorController extends Controller
         if ($digitalProductRequest->fails()) {
             return response()->json($digitalProductRequest->errors(), Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
             $user = $digitalProductRequest->user(); // Get authenticated user
             $productData = $digitalProductRequest->validated(); // Validate and get data
