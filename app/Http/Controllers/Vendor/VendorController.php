@@ -195,7 +195,7 @@ class VendorController extends Controller
         $userId = $request->user_id;
 
         // Total number of sales for the vendor
-        $totalNoSales = Transaction::where('vendor_id', $userId)->where('status', 'approved')->count();
+        $totalNoSales = Transaction::where('vendor_id', $userId)->where('status', 'success')->count();
 
         // Count of distinct affiliates who made sales for the vendor
         $vendorAffCount = Transaction::where('vendor_id', $userId)
