@@ -26,7 +26,6 @@ class PaystackController extends Controller
             $validator = Validator::make($request->all(), [
                 'product_id' => 'required|exists:products,id',
                 'email' => 'required|email',
-                'currency' => 'required|string|in:NGN,USD', // Expecting a 3-letter currency code like 'USD'
                 'aff_id' => 'required|exists:users,aff_id', // Optional, but must exist if provided
 
             ]);
@@ -53,11 +52,10 @@ class PaystackController extends Controller
             $amount = $product->price;
             $amountKobo = $amount * 100;
             $orderId = strtoupper(Str::random(5) . time());
-
             // Prepare the data for the payment
             $formData = [
                 'email' => $request->input('email'),
-                'currency' => $request->input('currency'),
+                'currency' => 'NGN',
                 'callback_url' => 'https://learnerflex.com/dashboard/product/pay' . '?p_id=' . $request->input('product_id') . '&aff_id=' . $request->input('aff_id') . '&email=' . urlencode($request->input('email')) . '&orderId=' . urlencode($orderId),
                 'aff_id' => $request->input('aff_id'),
                 'amount' => $amountKobo,
@@ -92,14 +90,14 @@ class PaystackController extends Controller
             // Check if payment initialization was successful
             if ($pay && $pay->status) {
                 // Save transaction data, including vendor_id
-                Transaction::create([
+                $tr = Transaction::create([
                     'user_id' => $request->input('user_id'),
                     'email' => $request->input('email'),
                     'affiliate_id' => $affiliate_id,
                     'product_id' => $request->input('product_id'),
-                    'vendor_id' => $product->user_id,  // Retrieve vendor_id from the product
+                    'vendor_id' => $product->user_id,
                     'amount' => $amount,
-                    'currency' => $request->input('currency'),
+                    'currency' => 'NGN',
                     'status' => 'pending',
                     'org_company' => $org_company_share,
                     'org_vendor' => $org_vendor_share,
@@ -107,7 +105,6 @@ class PaystackController extends Controller
                     'tx_ref' => $pay->data->reference ?? null,
                     'transaction_id' => $orderId,
                 ]);
-
                 // Return the authorization URL in the JSON response
                 return response()->json([
                     'success' => true,
@@ -135,10 +132,8 @@ class PaystackController extends Controller
         }
     }
 
-
     public function payment_callback(Request $request)
     {
-
         try {
             // Input validation
             $validator = Validator::make($request->all(), [
@@ -146,7 +141,6 @@ class PaystackController extends Controller
                 'email' => 'required|email',
                 'orderId' => 'required|string',
                 'aff_id' => 'required|string',
-
             ]);
 
             if ($validator->fails()) {
@@ -155,6 +149,7 @@ class PaystackController extends Controller
                 ]);
                 return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
             }
+
 
             $reference = $request->input('reference');
             $email = $request->input('email');
@@ -192,11 +187,6 @@ class PaystackController extends Controller
                 return response()->json(['success' => false, 'message' => 'Transaction not found'], 404);
             }
 
-            $transactionAffId = $transaction->affiliate_id;
-            $transactionProductId = $transaction->product_id;
-            $transactionUserId = $transaction->user_id;
-            $transactionAmount = $transaction->amount;
-
             // Update transaction status and tx_ref
             Log::info('Updating transaction status to success', [
                 'transaction_id' => $transaction->id,
@@ -207,22 +197,37 @@ class PaystackController extends Controller
                 'status' => 'success',
             ]);
 
-            // Retrieve product details and vendor information
-            $product = Product::find($transactionProductId);
-            if (!$product) {
-                Log::error('Product not found', ['product_id' => $transactionProductId]);
+            // Retrieve product and vendor information
+            // $product = Product::find($transaction->product_id);\
+            $product = Product::find($transaction->product_id);
+            $vendor =  User::find($product->user_id);
+
+            // Insert data into the sales table using transaction data
+            $sale = Sale::create([
+                'transaction_id' => $transaction->id,
+                'product_id' => $transaction->product_id,
+                'vendor_id' => $transaction->vendor_id,
+                'affiliate_id' => $transaction->affiliate_id,
+                'amount' => $transaction->amount,
+                'status' => 'success',
+                'commission' => $product->commission ?? 0,
+                'currency' => $transaction->currency,
+                'email' => $transaction->email,
+                'org_vendor' => $transaction->org_vendor,
+                'org_aff' => $transaction->org_aff,
+                'org_company' => $transaction->org_company,
+            ]);
+
+            if (!$sale) {
+                Log::error('Sale not saved', ['transaction_id' => $transaction->id]);
             }
+
+            // Prepare email data
             $product_name = $product->name ?? 'Product';
             $product_access_link = $product->access_link ?? '';
 
-            $vendor = User::find($product->vendor_id ?? null);
-            if (!$vendor) {
-                Log::warning('Vendor not found for product', ['product_id' => $transactionProductId]);
-            }
-
             // Send email to the buyer
             try {
-                Log::info('Sending success email to buyer', ['email' => $email, 'product_name' => $product_name]);
                 Mail::to($email)->send(new \App\Mail\PurchaseSuccessMail($product_name, $product_access_link));
             } catch (\Exception $e) {
                 Log::error('Error sending email to buyer', ['email' => $email, 'error' => $e->getMessage()]);
@@ -231,26 +236,20 @@ class PaystackController extends Controller
             // Notify the vendor about the sale
             if ($vendor) {
                 try {
-                    Log::info('Sending sale notification email to vendor', [
-                        'vendor_email' => $vendor->email,
-                        'product_name' => $product_name,
-                        'transaction_amount' => $transactionAmount
-                    ]);
-                    Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transactionAmount, $email));
+                    Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transaction->amount, $email));
                 } catch (\Exception $e) {
                     Log::error('Error sending sale notification to vendor', ['vendor_email' => $vendor->email, 'error' => $e->getMessage()]);
                 }
             }
 
             // Retrieve referrer information for affiliate registration link
-            $refferer = User::find($transactionAffId);
+            $refferer = User::where('aff_id', $transaction->affiliate_id)->first();
             $aff_id = $refferer->aff_id ?? null;
 
-            // If user doesn’t exist, send them a registration link
+            // Send registration link if the user doesn’t exist
             $checkUser = User::where('email', $email)->first();
             if (!$checkUser && $aff_id) {
                 try {
-                    Log::info('Sending registration link to new user', ['email' => $email, 'aff_id' => $aff_id]);
                     Mail::to($email)->send(new \App\Mail\RegisterLink($aff_id));
                 } catch (\Exception $e) {
                     Log::error('Error sending registration link to user', ['email' => $email, 'error' => $e->getMessage()]);
@@ -274,6 +273,171 @@ class PaystackController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred during callback processing'], 500);
         }
     }
+
+
+    // public function payment_callback(Request $request)
+    // {
+
+    //     try {
+    //         // Input validation
+    //         $validator = Validator::make($request->all(), [
+    //             'reference' => 'required|string',
+    //             'email' => 'required|email',
+    //             'orderId' => 'required|string',
+    //             'aff_id' => 'required|string',
+
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             Log::warning('Validation failed for payment callback', [
+    //                 'errors' => $validator->errors()->toArray(),
+    //             ]);
+    //             return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
+    //         }
+
+    //         $reference = $request->input('reference');
+    //         $email = $request->input('email');
+    //         $orderId = $request->input('orderId');
+
+    //         // Verify payment with Paystack
+    //         Log::info('Verifying payment with Paystack', ['reference' => $reference]);
+    //         $response = json_decode($this->verify_payment($reference));
+
+    //         if (!$response || $response->data->status !== "success") {
+    //             Log::error('Payment verification failed', [
+    //                 'reference' => $reference,
+    //                 'response' => $response
+    //             ]);
+    //             return response()->json(['message' => 'Transaction not successful', 'success' => false]);
+    //         }
+
+    //         // Check for transaction with matching email and order ID
+    //         Log::info('Searching for transaction', [
+    //             'email' => $email,
+    //             'orderId' => $orderId,
+    //             'status' => 'pending'
+    //         ]);
+    //         $transaction = Transaction::where('email', $email)
+    //             ->where('transaction_id', $orderId)
+    //             ->where('status', 'pending')
+    //             ->latest()
+    //             ->first();
+
+    //         if (!$transaction) {
+    //             Log::error('Transaction not found', [
+    //                 'email' => $email,
+    //                 'orderId' => $orderId
+    //             ]);
+    //             return response()->json(['success' => false, 'message' => 'Transaction not found'], 404);
+    //         }
+
+    //         $transactionAffId = $transaction->affiliate_id;
+    //         $transactionProductId = $transaction->product_id;
+    //         $transactionUserId = $transaction->user_id;
+    //         $transactionAmount = $transaction->amount;
+
+    //         // Update transaction status and tx_ref
+    //         Log::info('Updating transaction status to success', [
+    //             'transaction_id' => $transaction->id,
+    //             'reference' => $reference,
+    //         ]);
+    //         $transaction->update([
+    //             'tx_ref' => $reference,
+    //             'status' => 'success',
+    //         ]);
+
+
+    //         // Retrieve product details and vendor information
+    //         $product = Product::find($transactionProductId);
+    //         if (!$product) {
+    //             Log::error('Product not found', ['product_id' => $transactionProductId]);
+    //         }
+    //         // Insert data into the sales table using the transaction data
+    //         $sale = Sale::create([
+    //             'tx_ref' => $transaction->id,
+    //             'product_id' => $transaction->product_id,
+    //             'vendor_id' => $transaction->vendor_id,
+    //             'affiliate_id' => $transaction->affiliate_id,
+    //             'amount' => $transaction->amount,
+    //             'status' => 'success',
+    //             'commission' => $product->commission,
+    //             'currency' => $transaction->currency,
+    //             'email' => $transaction->email,
+    //             'org_vendor' => $transaction->org_vendor,
+    //             'org_aff' => $transaction->org_aff,
+    //             'org_company' => $transaction->org_company,
+    //         ]);
+
+    //         if (!$transaction) {
+    //             Log::error('sale not saved', [
+    //                 'email' => $transaction->id,
+
+    //             ]);
+    //         }
+
+    //         Log::info('Inserted data into sales table', ['sale_id' => $sale->id]);
+    //         $product_name = $product->name ?? 'Product';
+    //         $product_access_link = $product->access_link ?? '';
+
+    //         $vendor = User::find($product->vendor_id ?? null);
+    //         if (!$vendor) {
+    //             Log::warning('Vendor not found for product', ['product_id' => $transactionProductId]);
+    //         }
+
+    //         // Send email to the buyer
+    //         try {
+    //             Log::info('Sending success email to buyer', ['email' => $email, 'product_name' => $product_name]);
+    //             Mail::to($email)->send(new \App\Mail\PurchaseSuccessMail($product_name, $product_access_link));
+    //         } catch (\Exception $e) {
+    //             Log::error('Error sending email to buyer', ['email' => $email, 'error' => $e->getMessage()]);
+    //         }
+
+    //         // Notify the vendor about the sale
+    //         if ($vendor) {
+    //             try {
+    //                 Log::info('Sending sale notification email to vendor', [
+    //                     'vendor_email' => $vendor->email,
+    //                     'product_name' => $product_name,
+    //                     'transaction_amount' => $transactionAmount
+    //                 ]);
+    //                 Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transactionAmount, $email));
+    //             } catch (\Exception $e) {
+    //                 Log::error('Error sending sale notification to vendor', ['vendor_email' => $vendor->email, 'error' => $e->getMessage()]);
+    //             }
+    //         }
+
+    //         // Retrieve referrer information for affiliate registration link
+    //         $refferer = User::find($transactionAffId);
+    //         $aff_id = $refferer->aff_id ?? null;
+
+    //         // If user doesn’t exist, send them a registration link
+    //         $checkUser = User::where('email', $email)->first();
+    //         if (!$checkUser && $aff_id) {
+    //             try {
+    //                 Log::info('Sending registration link to new user', ['email' => $email, 'aff_id' => $aff_id]);
+    //                 Mail::to($email)->send(new \App\Mail\RegisterLink($aff_id));
+    //             } catch (\Exception $e) {
+    //                 Log::error('Error sending registration link to user', ['email' => $email, 'error' => $e->getMessage()]);
+    //             }
+    //         }
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'status' => 'success',
+    //             'transaction' => $transaction,
+    //             'product_name' => $product_name,
+    //             'product_access_link' => $product_access_link,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error in payment callback', [
+    //             'error' => $e->getMessage(),
+    //             'reference' => $reference ?? 'N/A',
+    //             'email' => $email ?? 'N/A',
+    //             'orderId' => $orderId ?? 'N/A',
+    //         ]);
+    //         return response()->json(['success' => false, 'message' => 'An error occurred during callback processing'], 500);
+    //     }
+    // }
 
 
 

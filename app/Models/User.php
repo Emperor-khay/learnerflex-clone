@@ -16,17 +16,17 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens;
 
     protected static function boot()
-{
-    parent::boot();
+    {
+        parent::boot();
 
-    static::creating(function ($user) {
-        // Generate a unique 8-character aff_id
-        do {
-            $user->aff_id = Str::random(8);
-            $exists = User::where('aff_id', $user->aff_id)->exists();
-        } while ($exists); // Ensure it's unique before setting
-    });
-}
+        static::creating(function ($user) {
+            // Generate a unique 8-character aff_id
+            do {
+                $user->aff_id = Str::random(8);
+                $exists = User::where('aff_id', $user->aff_id)->exists();
+            } while ($exists); // Ensure it's unique before setting
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -113,33 +113,41 @@ class User extends Authenticatable
         return $this->hasMany(Product::class, 'user_id');
     }
 
-    /**
-     * A vendor or affiliate can have many sales.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function sales()
+    // In the User model
+    public function transactionsAsAffiliate()
     {
-        return $this->hasMany(Sale::class, 'user_id');
+        return $this->hasMany(Transaction::class, 'affiliate_id');
     }
 
-
-    /**
-     * A user (vendor or affiliate) can have transactions.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function transactions()
+    public function transactionsAsVendor()
     {
-        return $this->hasMany(Transaction::class, 'user_id');
+        return $this->hasMany(Transaction::class, 'vendor_id');
     }
+
+   // Relationship for sales where the user is the buyer
+   public function sales()
+   {
+       return $this->hasMany(Sale::class, 'user_id');
+   }
+
+   // Relationship for sales where the user is the vendor
+   public function vendorSales()
+   {
+       return $this->hasMany(Sale::class, 'vendor_id');
+   }
+
+   // Relationship for sales where the user is the affiliate
+   public function affiliateSales()
+   {
+       return $this->hasMany(Sale::class, 'affiliate_id');
+   }
 
     public function vendor(): HasOne
     {
-        return $this->hasOne(Vendor::class,'user_id');
+        return $this->hasOne(Vendor::class, 'user_id');
     }
 
-    
+
 
     /**
      * Get the reviews of the user.

@@ -14,8 +14,9 @@ class Transaction extends Model
         'tx_ref',
         'user_id', // id of user who own product
         'affiliate_id', //user id id of affilate who reffered user
-        'product_id', 
-        'email', //email of user making payment
+        'product_id',
+        'vendor_id',
+        'email',
         'transaction_id',
         'amount',
         'currency',
@@ -40,11 +41,31 @@ class Transaction extends Model
         ];
     }
 
-    /**
-     * Get the user that owns the transaction.
-     */
-    public function user(): BelongsTo
+     // Relationship to the user who made the purchase
+     public function buyer()
+     {
+         return $this->belongsTo(User::class, 'user_id');
+     }
+ 
+     // Relationship to the user who is the vendor of the product
+     public function vendor()
+     {
+         return $this->belongsTo(User::class, 'vendor_id');
+     }
+ 
+     // Relationship to the affiliate user involved in the transaction
+     public function affiliate()
+     {
+         return $this->belongsTo(User::class, 'affiliate_id');
+     }
+
+    public function product()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function sale()
+    {
+        return $this->hasOne(Sale::class, 'transaction_id');
     }
 }

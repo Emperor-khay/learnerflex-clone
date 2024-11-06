@@ -15,22 +15,25 @@ class Sale extends Model
      * @var array
      */
     protected $fillable = [
-        'product_id',
-        'user_id',
-        'affiliate_id',
-        'amount',
-        'transaction_id',
-        'status',
-        'vendor_id',
+        'transaction_id',     // Foreign key referencing the transaction
+        'product_id',         // Foreign key referencing the product
+        'vendor_id',          // Foreign key referencing the vendor (user who owns the product)
+        'affiliate_id',       // Foreign key referencing the affiliate (if any)
+        'amount',             // Total sale amount
+        'status',             // Status of the sale (e.g., pending, completed)
+        'commission',         // Commission earned by the affiliate
+        'currency',           // Currency used in the sale
+        'email',              // Buyer's email
+        'org_vendor',         // Vendor's share in the sale
+        'org_aff',            // Affiliate's share in the sale (if any)
+        'org_company',        // Company's share in the sale (e.g., admin fee)
     ];
 
-    /**
-     * Get the user who made the purchase.
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+   // Relationship to the user who is the vendor of the product
+   public function vendor()
+   {
+       return $this->belongsTo(User::class, 'vendor_id');
+   }
 
     /**
      * A sale may involve an affiliate earning commission.

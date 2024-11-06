@@ -192,43 +192,72 @@ class VendorController extends Controller
 
     public function productPerformance(Request $request)
     {
-        $userId = $request->user_id;
+        $vendorId = auth()->id(); // Assuming the vendor is authenticated
 
-        // Total number of sales for the vendor
-        $totalNoSales = Transaction::where('vendor_id', $userId)->where('status', 'success')->count();
+        // Fetch vendor's product metrics
+        $productMetrics = [
+            'total_products_sold' => DB::table('sales')
+                ->where('vendor_id', $vendorId)
+                ->where('status', 'successful') // Assuming 'status' filters for successful sales
+                ->count(),
+            'total_affiliates' => DB::table('sales')
+                ->where('vendor_id', $vendorId)
+                ->distinct('affiliate_id')
+                ->count('affiliate_id'),
+            'total_products' => DB::table('products')
+                ->where('vendor_id', $vendorId)
+                ->count(),
+        ];
 
-        // Count of distinct affiliates who made sales for the vendor
-        $vendorAffCount = Transaction::where('vendor_id', $userId)
-            ->whereNotNull('affiliate_id')
-            ->distinct('affiliate_id')
-            ->count('affiliate_id');
-
-        // Retrieve all transactions for the vendor with affiliate and product details
-        $transactions = Transaction::where('vendor_id', $userId)
-            ->with(['affiliate', 'product'])
+        // Get affiliates who sold the vendor's products and their metrics
+        $affiliateMetrics = DB::table('sales')
+            ->join('users as affiliates', 'sales.affiliate_id', '=', 'affiliates.id')
+            ->join('products', 'sales.product_id', '=', 'products.id')
+            ->select(
+                'affiliates.id as affiliate_id',
+                'affiliates.name as affiliate_name',
+                'products.name as product_name',
+                DB::raw('COUNT(sales.id) as sales_count')
+            )
+            ->where('sales.vendor_id', $vendorId)
+            ->groupBy('affiliates.id', 'affiliates.name', 'products.name')
             ->get();
 
-        // Total number of products for the vendor
-        $productCount = Product::where('user_id', $userId)->count();
+        return response()->json([
+            'success' => true,
+            'product_metrics' => $productMetrics,
+            'affiliate_metrics' => $affiliateMetrics,
+        ]);
+    }
+
+
+    public function viewAffiliatePerformance($affiliateId)
+    {
+        $vendorId = auth()->id(); // Assuming the vendor is authenticated
+
+        // Get affiliate's general details
+        $affiliateDetails = DB::table('users')
+            ->where('id', $affiliateId)
+            ->select('name', 'email', 'phone', 'country', 'created_at')
+            ->first();
+
+        // Calculate total sales the affiliate made for this vendor's products
+        $totalSales = DB::table('sales')
+            ->where('affiliate_id', $affiliateId)
+            ->where('vendor_id', $vendorId)
+            ->where('status', 'successful')
+            ->count();
 
         return response()->json([
-            'message' => "Data Retrieved",
             'success' => true,
-            'total_no_of_sales' => $totalNoSales,
-            'vendor_aff_count' => $vendorAffCount,
-            'no_of_products' => $productCount,
-            'transactions' => $transactions->map(function ($transaction) {
-                return [
-                    'user_id' => $transaction->user_id,
-                    'product_name' => $transaction->product ? $transaction->product->name : null,
-                    'aff_id' => $transaction->affiliate_id,
-                    'affiliate_name' => $transaction->affiliate ? $transaction->affiliate->name : null,
-                    'amount' => $transaction->amount,
-                    'currency' => $transaction->currency,
-                    'status' => $transaction->status,
-                    'created_at' => $transaction->created_at,
-                ];
-            }),
+            'affiliate_details' => [
+                'name' => $affiliateDetails->name,
+                'email' => $affiliateDetails->email,
+                'phone' => $affiliateDetails->phone,
+                'country' => $affiliateDetails->country,
+                'total_sales' => $totalSales,
+                'registered_on' => $affiliateDetails->created_at->format('Y-m-d'),
+            ]
         ]);
     }
 

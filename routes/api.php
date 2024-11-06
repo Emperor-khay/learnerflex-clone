@@ -30,7 +30,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
 // Route for handling the payment callback
-Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
+Route::get('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
 Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
 // Route for handling the payment callback
 Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback']);
@@ -130,6 +130,7 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::get('/transactions', [VendorController::class, 'getVendorSales']);
 
     Route::get('/product-performance', [VendorController::class, 'productPerformance']);
+    Route::get('/affiliate-performance/{affiliateId}', [VendorController::class, 'viewAffiliatePerformance']);
     Route::get('/affiliate-details/{aff_id}', [VendorController::class, 'getAffDetails']);
 
     //add new product
@@ -190,7 +191,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
 //test endpoints
 Route::get('/test', function () {
-    return 'Test checked successfully!';
+
+    return "Test route";
 });
 //not sure what these are used for
 // Route::post('/user/get-balance', [UserController::class, 'getBalance']);

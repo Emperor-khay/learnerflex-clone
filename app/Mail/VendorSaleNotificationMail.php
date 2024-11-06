@@ -32,7 +32,7 @@ class VendorSaleNotificationMail extends Mailable
     public function build()
     {
         return $this->subject('New Product Sale')
-                    ->view('Mail.vendor_sale_notification');
+                    ->view('mail.vendor_sale_notification');
     }
    
 }

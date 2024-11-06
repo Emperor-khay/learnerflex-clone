@@ -23,31 +23,18 @@ class RegisterLink extends Mailable
         $this->aff_id = $aff_id;
     }
 
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
+    public function build()
     {
-        return new Envelope(
-            subject: 'Register Link',
-        );
+        $url = "https://learnerflex.com/auth/signup?aff_id=" . $this->aff_id;
+
+        return $this->markdown('mail.register-link')
+                    ->with([
+                        'aff_id' => $this->aff_id,
+                        'url' => $url,
+                    ])
+                    ->subject('Product Purchase Successful - Register with Link');
     }
 
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
-        return new Content(
-            markdown: 'mail.register-link',
-        );
-    }
-
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];
