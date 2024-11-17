@@ -265,7 +265,7 @@ class RegisterController extends Controller
             'aff_id' => $aff_id,
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
-            'phone' => $validatedData['phone_number'],
+            'phone' => $validatedData['phone'],
             'password' => $hashedPassword,
             'country' => null,
             'refferal_id' =>  $referral,
@@ -273,6 +273,11 @@ class RegisterController extends Controller
             'role' => 'affiliate',
             'market_access' => true,
         ]);
+
+        $email = $validatedData['email'];
+        Mail::to($email)->send(new \App\Mail\RegisterSuccess());
+        // Redirect to signup with success message
+        return redirect('https://learnerflex.com/auth/signup?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
 
         return response()->json(['success' => true, 'message' => 'Registration successful', 'user' => $user]);
     }
