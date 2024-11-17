@@ -30,7 +30,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
 // Route for handling the payment callback
-Route::get('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
+Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
 Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
 // Route for handling the payment callback
 Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback']);
@@ -42,7 +42,7 @@ Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData'
 
 // unlock market
 //one time payment
-Route::post('/marketplace/payment', [MarketplacePaymentController::class,'payment'])->name('marketplace.payment');
+Route::post('/marketplace/payment', [MarketplacePaymentController::class, 'payment'])->name('marketplace.payment');
 Route::post('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
 
 // Route::post('/oh', [MarketplacePaymentController::class, 'redirectToGateway'])->name('oh');

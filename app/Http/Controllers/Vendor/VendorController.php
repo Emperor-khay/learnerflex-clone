@@ -198,7 +198,7 @@ class VendorController extends Controller
         $productMetrics = [
             'total_products_sold' => DB::table('sales')
                 ->where('vendor_id', $vendorId)
-                ->where('status', 'successful') // Assuming 'status' filters for successful sales
+                ->where('status', 'success') // Assuming 'status' filters for successful sales
                 ->count(),
             'total_affiliates' => DB::table('sales')
                 ->where('vendor_id', $vendorId)
@@ -245,7 +245,7 @@ class VendorController extends Controller
         $totalSales = DB::table('sales')
             ->where('affiliate_id', $affiliateId)
             ->where('vendor_id', $vendorId)
-            ->where('status', 'successful')
+            ->where('status', 'success')
             ->count();
 
         return response()->json([
