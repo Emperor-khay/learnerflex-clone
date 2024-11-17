@@ -278,8 +278,6 @@ class RegisterController extends Controller
         Mail::to($email)->send(new \App\Mail\RegisterSuccess());
         // Redirect to signup with success message
         return redirect('https://learnerflex.com/auth/signup?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
-
-        return response()->json(['success' => true, 'message' => 'Registration successful', 'user' => $user]);
     }
 
     // public function handlePaymentCallback(Request $request)
