@@ -271,7 +271,7 @@ class RegisterController extends Controller
             'refferal_id' =>  $referral,
             'image' => null,
             'role' => 'affiliate',
-            'market_access' => true,
+            'market_access' => false,
         ]);
 
         $email = $validatedData['email'];
