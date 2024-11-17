@@ -275,10 +275,16 @@ class RegisterController extends Controller
         ]);
 
         $email = $validatedData['email'];
-        Mail::to($email)->send(new \App\Mail\RegisterSuccess());
-        // Redirect to signup with success message
-        return redirect('https://learnerflex.com/auth/signup?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
-    }
+        $token = $user->createToken('YourAppName')->plainTextToken;
+            Mail::to($email)->send(new \App\Mail\RegisterSuccess());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registration successful',
+                'user' => $user,
+                'token' => $token,
+            ], 201);
+     }
 
     // public function handlePaymentCallback(Request $request)
     // {
