@@ -281,7 +281,7 @@ class AffiliateController extends Controller
         $perPage = $request->get('per_page', 20);
 
         // Determine product query based on user's access level
-        if ($user->market_access && is_null($user->refferal_id)) {
+        if ($user->market_access || is_null($user->refferal_id)) {
             // User can see all products
             $products = Product::with([
                 'user:id,name,email,phone,country,image',  // User details as store owner

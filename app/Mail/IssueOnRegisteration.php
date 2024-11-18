@@ -13,41 +13,28 @@ class IssueOnRegisteration extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $orderID;
+    public $email;
+
     /**
      * Create a new message instance.
-     */
-    public function __construct()
-    {
-        //
-    }
-
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
-    {
-        return new Envelope(
-            subject: 'Issue On Registeration',
-        );
-    }
-
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
-        return new Content(
-            view: 'view.name',
-        );
-    }
-
-    /**
-     * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return void
      */
-    public function attachments(): array
+    public function __construct($orderID, $email)
     {
-        return [];
+        $this->orderID = $orderID;
+        $this->email = $email;
+    }
+
+    /**
+     * Build the message.
+     *
+     * @return $this
+     */
+    public function build()
+    {
+        return $this->subject('Issue with User Registration')
+                    ->view('issue_on_registration');
     }
 }
