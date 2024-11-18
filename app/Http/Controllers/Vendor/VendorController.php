@@ -323,7 +323,7 @@ class VendorController extends Controller
         }
 
         // Fetch all products created by the authenticated vendor
-        $products = Product::where('vendor_id', $user->id)->get();
+        $products = Product::where('user_id', $user->id)->get();
 
         return response()->json($products);
     }
@@ -340,7 +340,7 @@ class VendorController extends Controller
 
         // Fetch the product by ID and ensure it belongs to the vendor
         $product = Product::where('id', $id)
-            ->where('vendor_id', $user->id)
+            ->where('user_id', $user->id)
             ->first();
 
         // Check if the product exists
@@ -363,7 +363,7 @@ class VendorController extends Controller
 
         // Find the product by ID and ensure it belongs to the vendor
         $product = Product::where('id', $id)
-            ->where('vendor_id', $user->id)
+            ->where('user_id', $user->id)
             ->first();
 
         // Check if the product exists

@@ -288,12 +288,7 @@ class AffiliateController extends Controller
                 'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor business details
             ]);
         } else {
-            // Get user's successful transactions associated with vendors
-            // $transactions = Transaction::where('email', $user->email)
-            //     ->where('status', 'success')
-            //     ->whereNotNull('vendor_id')
-            //     ->whereNotNull('product_id')
-            //     ->get();
+            
             $transactions = Transaction::where('email', $user->email)
                 ->where('status', 'success')
                 ->whereNotNull('vendor_id')
@@ -312,10 +307,8 @@ class AffiliateController extends Controller
             $products = Product::with([
                 'user:id,name,email,phone,country,image',  // User details
                 'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor details
-            ])->whereIn('vendor_id', $vendorIds);
+            ])->whereIn('user_id', $vendorIds);
         }
-
-        return $products;
 
         // Apply additional filters for commission and name if provided
         if ($request->has('min_commission') && $request->has('max_commission')) {
@@ -346,10 +339,6 @@ class AffiliateController extends Controller
             ]
         ]);
     }
-
-
-
-
 
     public function showAffiliateProduct($id)
     {
