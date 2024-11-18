@@ -301,8 +301,6 @@ class AffiliateController extends Controller
                 ->pluck('vendor_id')
                 ->unique();
 
-                return $transactions;
-
             if ($transactions->isEmpty()) {
                 return response()->json(['message' => 'No products available for you.', 'success' => false], 403);
             }
@@ -316,6 +314,8 @@ class AffiliateController extends Controller
                 'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor details
             ])->whereIn('vendor_id', $vendorIds);
         }
+
+        return $products;
 
         // Apply additional filters for commission and name if provided
         if ($request->has('min_commission') && $request->has('max_commission')) {
