@@ -84,7 +84,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     Route::get('/products/{id}', [AffiliateController::class, 'showAffiliateProduct']);
 
     Route::post('/unlock/market', [AffiliateController::class, 'unlockMarketAccess']);
-    Route::get('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
+    Route::post('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
 
     Route::post('/logout', [LogoutController::class, 'logout']);
 

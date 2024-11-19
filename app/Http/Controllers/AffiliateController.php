@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Validator;
 use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\User;
@@ -224,54 +225,151 @@ class AffiliateController extends Controller
         }
     }
 
+    // public function marketAccessCallback(Request $request)
+    // {
+
+    //     try {
+    //         $email = urldecode($request->get('email'));
+    //         $orderID = urldecode($request->get('order_id'));
+    //         $reference = request('reference');  // Get reference from the callback
+    //         $paymentDetails = Paystack::getPaymentData();
+    //         // Verify transaction using Paystack reference
+
+    //         if ($paymentDetails['data']['status'] == "success") {
+    //             // Get the authenticated user
+    //             $user = auth()->user();
+    //             // Update user to grant market access
+    //             $user->update([
+    //                 'market_access' => true,
+    //                 'refferal_id' => null,
+
+    //             ]);
+    //             // Update the transaction record
+    //             $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
+
+    //             if ($transaction) {
+    //                 $transaction->update([
+    //                     'tx_ref' => request('reference'),
+    //                     'status' => $paymentDetails['data']['status'],
+    //                     'is_onboard' => 1,
+    //                     'tx_ref' => $reference,
+    //                 ]);
+    //             }
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Market access unlocked successfully!'
+    //             ], 200);
+    //         }
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Payment failed or not verified.'
+    //         ], 400);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error verifying payment: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function marketAccessCallback(Request $request)
     {
-
         try {
-            $email = urldecode($request->get('email'));
-            $orderID = urldecode($request->get('order_id'));
-            $reference = request('reference');  // Get reference from the callback
-            $paymentDetails = Paystack::getPaymentData();
-            // Verify transaction using Paystack reference
+            // Validate the POST request payload
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email',
+                'order_id' => 'required',
+                'reference' => 'required',
+            ]);
 
-            if ($paymentDetails['data']['status'] == "success") {
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            // Extract the validated inputs
+            $email = $request->input('email');
+            $orderID = $request->input('order_id');
+            $reference = $request->input('reference');
+            // Verify payment with Paystack
+            Log::info('Verifying payment with Paystack', ['reference' => $reference]);
+            $response = json_decode($this->verify_payment($reference));
+
+            if (!$response || $response->data->status !== "success") {
+                Log::error('Payment verification failed', [
+                    'reference' => $reference,
+                    'response' => $response
+                ]);
+                return response()->json(['message' => 'Transaction not successful', 'success' => false]);
+            }
+
+            // Verify the transaction status
+            if ($response->data->status === "success") {
                 // Get the authenticated user
                 $user = auth()->user();
-                // Update user to grant market access
+
+                // Update the user's market access and clear referral ID
                 $user->update([
                     'market_access' => true,
                     'refferal_id' => null,
-
                 ]);
-                // Update the transaction record
-                $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
 
+                // Locate the transaction based on email and order ID
+                $transaction = Transaction::where('email', $email)
+                    ->where('transaction_id', $orderID)
+                    ->latest()
+                    ->first();
+
+                // Update the transaction details if found
                 if ($transaction) {
                     $transaction->update([
-                        'tx_ref' => request('reference'),
-                        'status' => $paymentDetails['data']['status'],
-                        'is_onboard' => 1,
                         'tx_ref' => $reference,
+                        'status' => $response->data->status
                     ]);
                 }
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Market access unlocked successfully!'
+                    'message' => 'Market access unlocked successfully!',
                 ], 200);
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'Payment failed or not verified.'
+                'message' => 'Payment failed or not verified.',
             ], 400);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error verifying payment: ' . $e->getMessage()
+                'message' => 'Error verifying payment: ' . $e->getMessage(),
             ], 500);
         }
     }
+
+    public function verify_payment($reference)
+    {
+        $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
+            "Cache-Control: no-cache"
+        ));
+
+        $result = curl_exec($ch);
+
+        curl_close($ch);
+
+        return $result;
+    }
+
 
     public function affiliateproducts(Request $request)
     {
@@ -288,7 +386,7 @@ class AffiliateController extends Controller
                 'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor business details
             ]);
         } else {
-            
+
             $transactions = Transaction::where('email', $user->email)
                 ->where('status', 'success')
                 ->whereNotNull('vendor_id')
