@@ -460,7 +460,7 @@ class AffiliateController extends Controller
         }
 
         // Check if the user has purchased from this vendor before, regardless of the specific product
-        $hasPurchasedFromVendor = Transaction::where('user_id', $user->id)
+        $hasPurchasedFromVendor = Transaction::where('email', $user->email)
             ->where('vendor_id', $product->vendor_id)
             ->where('status', 'success')  // Use 'success' to ensure only successful transactions count
             ->exists();
