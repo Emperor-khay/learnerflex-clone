@@ -133,6 +133,9 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::get('/affiliate-performance/{affiliateId}', [VendorController::class, 'viewAffiliatePerformance']);
     Route::get('/affiliate-details/{aff_id}', [VendorController::class, 'getAffDetails']);
 
+    Route::post('/unlock/market', [AffiliateController::class, 'unlockMarketAccess']);
+    Route::post('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
+
     //add new product
     Route::post('/product/add-product', [ProductController::class, 'addProduct']);
 

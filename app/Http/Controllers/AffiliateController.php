@@ -178,7 +178,7 @@ class AffiliateController extends Controller
             'email' => $user->email,  // Authenticated user's email
             'amount' => 1100 * 100, // Amount in kobo (NGN)
             'currency' => 'NGN',
-            'callback_url' => route('unlock.market.callback') . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
+            'callback_url' => 'https://learnerflex.com/dashboard/u/marketplace' . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
             'metadata' => json_encode([
                 'description' => 'Unlock Market Access - Full access to promote products',
                 'orderID' => $orderID,
