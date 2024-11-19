@@ -439,6 +439,41 @@ class AffiliateController extends Controller
         ]);
     }
 
+    // public function showAffiliateProduct($id)
+    // {
+    //     $user = auth()->user();  // Get the authenticated user
+
+    //     // Fetch the product by ID
+    //     $product = Product::with([
+    //         'vendor:id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link',  // Vendor details
+    //         'user:id,name,email,phone,country,image' // User details
+    //     ])->find($id);
+
+    //     if (!$product) {
+    //         return response()->json(['message' => 'Product not found', 'success' => false], 404);
+    //     }
+
+    //     // Check if the user has market access, paid onboard, and does not have a referral ID
+    //     if ($user->market_access && is_null($user->refferal_id)) {
+    //         // User can see all products, no further conditions needed
+    //         return response()->json(['success' => true, 'data' => $product], 200);
+    //     }
+
+    //     // Check if the user has purchased from this vendor before, regardless of the specific product
+    //     $hasPurchasedFromVendor = Transaction::where('email', $user->email)
+    //         ->where('vendor_id', $product->vendor_id)
+    //         ->where('status', 'success')  // Use 'success' to ensure only successful transactions count
+    //         ->exists();
+
+    //     if ($hasPurchasedFromVendor) {
+    //         // User has previously purchased from this vendor, allow access to the product
+    //         return response()->json(['success' => true, 'data' => $product], 200);
+    //     }
+
+    //     // If the user hasn't purchased from this vendor, deny access
+    //     return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
+    // }
+
     public function showAffiliateProduct($id)
     {
         $user = auth()->user();  // Get the authenticated user
@@ -452,6 +487,9 @@ class AffiliateController extends Controller
         if (!$product) {
             return response()->json(['message' => 'Product not found', 'success' => false], 404);
         }
+
+        // Hide the access_link field
+        $product->makeHidden(['access_link']);
 
         // Check if the user has market access, paid onboard, and does not have a referral ID
         if ($user->market_access && is_null($user->refferal_id)) {
