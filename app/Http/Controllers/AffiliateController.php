@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Validator;
 use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\User;
@@ -17,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use App\Mail\AffiliateVendorRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 use Unicodeveloper\Paystack\Facades\Paystack;
 use Illuminate\Validation\ValidationException;
 
@@ -178,7 +178,8 @@ class AffiliateController extends Controller
             'email' => $user->email,  // Authenticated user's email
             'amount' => 1100 * 100, // Amount in kobo (NGN)
             'currency' => 'NGN',
-            'callback_url' => 'https://learnerflex.com/dashboard/u/marketplace' . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
+            'callback_url' => 'https://learnerflex.com/dashboard/u/marketplace 
+' . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
             'metadata' => json_encode([
                 'description' => 'Unlock Market Access - Full access to promote products',
                 'orderID' => $orderID,

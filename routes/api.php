@@ -100,7 +100,6 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     // Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
 });
 
-
 // Vendor routes group
 Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function () {
     Route::get('/dashboard', [SecondVendorController::class, 'vendorDashboardMetrics']);
