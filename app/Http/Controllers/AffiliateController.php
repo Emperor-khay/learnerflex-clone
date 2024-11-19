@@ -162,7 +162,7 @@ class AffiliateController extends Controller
     {
         $user = auth()->user();
         // Check if the user is eligible for market access (has not paid and has a referral ID)
-        if ($user->market_access && $user->has_paid_onboard && is_null($user->refferal_id)) {
+        if ($user->market_access  && is_null($user->refferal_id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You already have market access or have already paid for onboarding.',
@@ -192,8 +192,8 @@ class AffiliateController extends Controller
             Transaction::create([
                 'user_id' => $user->id,
                 'email' => $user->email,
-                'affiliate_id' => 0,
-                'product_id' => 0,
+                'affiliate_id' => null,
+                'product_id' => null,
                 'amount' => $formData['amount'],
                 'currency' => $formData['currency'],
                 'status' => 'pending',
