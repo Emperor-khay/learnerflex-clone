@@ -26,7 +26,7 @@ class PaystackController extends Controller
             $validator = Validator::make($request->all(), [
                 'product_id' => 'required|exists:products,id',
                 'email' => 'required|email',
-                'aff_id' => 'required|exists:users,aff_id', // Optional, but must exist if provided
+                'aff_id' => 'required|exists:users,aff_id',
 
             ]);
 

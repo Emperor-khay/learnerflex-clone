@@ -206,23 +206,27 @@ class VendorController extends Controller
                 ->distinct('affiliate_id')
                 ->count('affiliate_id'),
             'total_products' => DB::table('products')
-                ->where('vendor_id', $vendorId)
+                ->where('user_id', $vendorId)
                 ->count(),
         ];
 
-        // Get affiliates who sold the vendor's products and their metrics
         $affiliateMetrics = DB::table('sales')
-            ->join('users as affiliates', 'sales.affiliate_id', '=', 'affiliates.id')
+            ->join('users as affiliates', 'sales.affiliate_id', '=', 'affiliates.aff_id') // Match with aff_id
             ->join('products', 'sales.product_id', '=', 'products.id')
             ->select(
-                'affiliates.id as affiliate_id',
+                'affiliates.aff_id as affiliate_id', // Fetch affiliate's unique aff_id
                 'affiliates.name as affiliate_name',
+                'products.id as product_id',
                 'products.name as product_name',
-                DB::raw('COUNT(sales.id) as sales_count')
+                DB::raw('COUNT(sales.id) as sales_count') // Count of successful sales for the affiliate
             )
-            ->where('sales.vendor_id', $vendorId)
-            ->groupBy('affiliates.id', 'affiliates.name', 'products.name')
+            ->where('sales.vendor_id', $vendorId) // Filter for the current vendor
+            ->whereNotNull('sales.affiliate_id') // Ensure the sale has an affiliate
+            ->where('sales.status', 'success') // Include only successful sales
+            ->groupBy('affiliates.aff_id', 'affiliates.name', 'products.id', 'products.name')
             ->get();
+
+
 
         return response()->json([
             'success' => true,
@@ -564,35 +568,7 @@ class VendorController extends Controller
         }
     }
 
-    public function allWithdrawal(Request $request): JsonResponse
-    {
-        // Get the authenticated user
-        $user = $request->user();
 
-        // Check if the user is authenticated
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Please log in to view your withdrawals.',
-            ], Response::HTTP_UNAUTHORIZED);
-        }
-
-        // Fetch the withdrawals for the authenticated user with pagination
-        $paginatedWithdrawals = Withdrawal::where('user_id', $user->id)
-            ->paginate(10); // Adjust the number as needed
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Withdrawals retrieved successfully.',
-            'data' => $paginatedWithdrawals->items(), // The withdrawal data
-            'pagination' => [
-                'current_page' => $paginatedWithdrawals->currentPage(),
-                'last_page' => $paginatedWithdrawals->lastPage(),
-                'total' => $paginatedWithdrawals->total(),
-                'per_page' => $paginatedWithdrawals->perPage(),
-            ]
-        ]);
-    }
 
     public function getVendorData($id): JsonResponse
     {
