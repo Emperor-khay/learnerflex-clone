@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\User;
 use App\Models\Vendor;
@@ -237,7 +238,7 @@ class VendorController extends Controller
 
         // Get affiliate's general details
         $affiliateDetails = DB::table('users')
-            ->where('id', $affiliateId)
+            ->where('aff_id', $affiliateId)
             ->select('name', 'email', 'phone', 'country', 'created_at')
             ->first();
 
@@ -256,7 +257,7 @@ class VendorController extends Controller
                 'phone' => $affiliateDetails->phone,
                 'country' => $affiliateDetails->country,
                 'total_sales' => $totalSales,
-                'registered_on' => $affiliateDetails->created_at->format('Y-m-d'),
+                'registered_on' => Carbon::parse($affiliateDetails->created_at)->format('Y-m-d'),
             ]
         ]);
     }
