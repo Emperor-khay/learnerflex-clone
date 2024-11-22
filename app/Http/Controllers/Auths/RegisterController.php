@@ -55,7 +55,7 @@ class RegisterController extends Controller
                     'email' => $validatedData['email'],  // Use validated email
                     'amount' => 5100 * 100, // Amount in kobo (NGN)
                     'currency' => 'NGN',
-                    'callback_url' => route("auth.payment.callback") . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
+                    'callback_url' => 'https://learnerflex.com/auth/signup' . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
                     'orderID' => $orderID,
                 ];
 
@@ -140,15 +140,10 @@ class RegisterController extends Controller
         ]);
 
         $email = $validatedData['email'];
-        $token = $user->createToken('YourAppName')->plainTextToken;
         Mail::to($email)->send(new \App\Mail\RegisterSuccess());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Registration successful',
-            'user' => $user,
-            'token' => $token,
-        ], 201);
+        // Redirect to signup with success message
+        return redirect('https://learnerflex.com/auth/signup?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
     }
 
 
