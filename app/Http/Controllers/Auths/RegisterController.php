@@ -55,7 +55,7 @@ class RegisterController extends Controller
                     'email' => $validatedData['email'],  // Use validated email
                     'amount' => 5100 * 100, // Amount in kobo (NGN)
                     'currency' => 'NGN',
-                    'callback_url' => 'https://learnerflex.com/auth/signup' . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
+                    'callback_url' => route("auth.payment.callback") . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
                     'orderID' => $orderID,
                 ];
 
@@ -126,7 +126,7 @@ class RegisterController extends Controller
             $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
         } while ($exists);
         // Create the new user
-        $user = User::create([
+         User::create([
             'aff_id' => $aff_id,
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
