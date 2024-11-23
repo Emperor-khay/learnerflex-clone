@@ -40,7 +40,7 @@ class RegisterController extends Controller
 
         // If aff_id is present, register the user directly
         if ($request->filled('aff_id')) {
-            $this->storeUser($validatedData, $request->aff_id);
+            return $this->storeUser($validatedData, $request->aff_id);
         } else {
             // Hash password before storing in session (for security)
             $hashedPassword = Hash::make($validatedData['password']);
@@ -143,13 +143,10 @@ class RegisterController extends Controller
         Mail::to($email)->send(new \App\Mail\RegisterSuccess());
 
         // Redirect to signup with success message
-        // return redirect('https://learnerflex.com/auth/signup?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
-        return response()->json([
+     return response()->json([
             'success' => true,
-            'message' => 'Registration successful! You can now log in.',
-            'email' => $email,
-            'redirect_url' => 'https://learnerflex.com/auth/signup?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email),
-        ]);
+            'message' => 'Registration successful! You can now log in.'
+         ]);
         
     }
 
