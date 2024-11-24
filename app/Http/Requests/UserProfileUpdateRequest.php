@@ -19,6 +19,7 @@ class UserProfileUpdateRequest extends FormRequest
             'image' => ['nullable', 'image', 'max:7000'], // Optional image upload, max 2MB
             'bank_name' => ['nullable', 'string'],
             'bank_account' => ['nullable', 'string'],
+            'currency' => ['nullable', 'string', 'size:3'], // ISO currency code
         ];
     }
 }

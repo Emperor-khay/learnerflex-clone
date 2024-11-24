@@ -73,9 +73,8 @@ GET /vendor/dashboard: Retrieves vendor-specific dashboard metrics such as sales
 
 GET /vendor/affiliate/dashboard: Fetches metrics related to affiliates promoting the vendor's products.
 
-POST /vendor/update/image: Updates the vendor's profile image.
 
-POST /vendor/update/profile: Updates the vendor's profile information.
+POST /vendor/update/profile: Updates the vendor's profile information. data like phone,country,image,bank_name,bank_account are changeable
 
 GET /vendor/data: Retrieves the authenticated vendor's data. you can leave this for now
 
@@ -111,7 +110,7 @@ POST /vendor/product/add-product: Adds a new product to the vendor's catalog.
 
 GET /vendor/make/withdrawal: Initiates a withdrawal request for the vendor.
 
-GET /vendor/withdrawals: Retrieves all past withdrawal records for the vendor.
+GET /vendor/withdrawals: Retrieves all past withdrawal records for the vendor. filter by status pending,approved,rejected
 
 ############## ADMIN ROutes #########
 
@@ -153,12 +152,11 @@ POST /admin/logout: Logs out the currently authenticated super admin.
 ############## Affiliate routes ####################
 
 GET /affiliate/dashboard: Fetch metrics and data specific to the affiliate's dashboard.
-POST /affiliate/update/image: Updates the affiliate’s profile image.
-POST /affiliate/update/profile: Updates the affiliate's profile information.
+POST /affiliate/update/profile: Updates the affiliate's profile information. data like phone,country,image,bank_name,bank_account are changeable
 POST /affiliate/request-vendor: Submits a vendor request on behalf of the affiliate.
 GET /affiliate/check-sale: Retrieves sale data using the buyer's email.
 GET /affiliate/request/withdrawal: Initiates a withdrawal request for the affiliate.
-GET /affiliate/withdrawals: Retrieves the affiliate's withdrawal history.
+GET /affiliate/withdrawals: Retrieves the affiliate's withdrawal history. filter by status pending,approved,rejected
 GET /affiliate/transactions: Fetches the affiliate's transaction records.
 GET /affiliate/products: Lists the available products for the affiliate to promote.
 GET /affiliate/products/{id}: Shows details of a specific product.

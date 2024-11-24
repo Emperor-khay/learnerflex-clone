@@ -558,7 +558,6 @@ class AffiliateController extends Controller
         $transactions = Transaction::where('affiliate_id', $authUser->aff_id)
             ->where('email', $email)
             ->whereNotNull('product_id')
-            ->where('status', 'success')
             ->get();
 
         // Check if any transactions exist for the given email

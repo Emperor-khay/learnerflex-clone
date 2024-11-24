@@ -174,43 +174,50 @@ class SecondVendorController extends Controller
     }
 
     public function handleUserProfile(UserProfileUpdateRequest $request): JsonResponse
-{
-    try {
-        // Get the authenticated user
-        $user = auth()->user();
+    {
+        try {
+            // Get the authenticated user
+            $user = auth()->user();
 
-        // Prepare data for update
-        $data = $request->validated();
+            // Prepare data for update
+            $data = $request->validated();
 
-        // Handle image upload if provided
-        if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            // Store the image in the public directory and get the relative path
-            $imagePath = $request->file('image')->store('images/users', 'public');
+            // Handle image upload if provided
+            if ($request->hasFile('image') && $request->file('image')->isValid()) {
+                // Store the image in the public directory and get the relative path
+                $imagePath = $request->file('image')->store('images/users', 'public');
 
-            // Delete old image if exists
-            if ($user->image) {
-                Storage::disk('public')->delete($user->image);
+                // Delete old image if exists
+                if ($user->image) {
+                    Storage::disk('public')->delete($user->image);
+                }
+
+                // Get the full URL and save it in the database
+                // $data['image'] = Storage::url($imagePath);
+                // Save the relative path in the database
+                $data['image'] = $imagePath;
             }
 
-            // Get the full URL and save it in the database
-            $data['image'] = Storage::url($imagePath);
+            // Handle optional currency field
+            if (!$request->filled('currency')) {
+                unset($data['currency']);
+            }
+
+            // Update user details
+            $user->update($data);
+
+            return response()->json([
+                'message' => 'Profile updated successfully',
+                'user' => $user,
+                'image_url' => $user->image // Full URL is saved and returned directly
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while updating profile',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Update user details
-        $user->update($data);
-
-        return response()->json([
-            'message' => 'Profile updated successfully',
-            'user' => $user,
-            'image_url' => $user->image // Full URL is saved and returned directly
-        ], 200);
-    } catch (Exception $e) {
-        return response()->json([
-            'message' => 'An error occurred while updating profile',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
 
 
     public function createOrUpdateVendor(Request $request)
@@ -218,12 +225,12 @@ class SecondVendorController extends Controller
         try {
             // Retrieve the authenticated user
             $user = Auth::user();
-    
+
             // Check if user has the 'vendor' role
             if ($user->role !== 'vendor') {
                 return response()->json(['message' => 'Only vendors can access this route'], 403);
             }
-    
+
             // Validate incoming request data
             $validator = Validator::make($request->all(), [
                 'name' => 'nullable|string|max:255',
@@ -236,14 +243,14 @@ class SecondVendorController extends Controller
                 'tt_link' => 'nullable|url',
                 'display' => 'nullable|boolean',
             ]);
-    
+
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
-    
+
             // Find the existing vendor record associated with the user or create a new one
             $vendor = Vendor::firstOrCreate(['user_id' => $user->id]);
-    
+
             // Only update fields if they are present in the request
             $vendor->fill([
                 'name' => $request->name ?? $vendor->name,
@@ -255,19 +262,19 @@ class SecondVendorController extends Controller
                 'tt_link' => $request->tt_link ?? $vendor->tt_link,
                 'display' => $request->display ?? $vendor->display,
             ]);
-    
+
             // Handle photo upload if provided
             if ($request->hasFile('photo')) {
                 $photoPath = $request->file('photo')->store('vendor_photos', 'public');
                 $vendor->photo = $photoPath;
             }
-    
+
             // Save updated vendor information
             $vendor->save();
-    
+
             // Get the full URL for the photo
             $vendor->photo = $vendor->photo ? Storage::url($vendor->photo) : null;
-    
+
             return response()->json([
                 'message' => $vendor->wasRecentlyCreated ? 'Vendor profile created successfully' : 'Vendor profile updated successfully',
                 'vendor' => $vendor
@@ -279,6 +286,4 @@ class SecondVendorController extends Controller
             ], 500);
         }
     }
-    
-
 }

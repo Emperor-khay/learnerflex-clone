@@ -41,6 +41,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'country',
+        'currency',
         'role',
         'image',
         'is_vendor',
