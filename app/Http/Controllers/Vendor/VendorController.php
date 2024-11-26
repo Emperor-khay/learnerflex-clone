@@ -413,43 +413,96 @@ class VendorController extends Controller
         }
     }
 
+    // public function createOtherProduct(OtherProductRequest $otherProductRequest): JsonResponse
+    // {
+    //     try {
+    //         $user = $otherProductRequest->user(); // Get the authenticated user
+    //         $productData = $otherProductRequest->validated(); // Validate and get data
+
+    //         // Handle image upload
+    //         if ($otherProductRequest->hasFile('image') && $otherProductRequest->file('image')->isValid()) {
+    //             $path = $otherProductRequest->file('image')->store('images/products', 'public');
+    //             $productData['image'] = $path; // Store the image path
+    //         } else {
+    //             $productData['image'] = null; // Set image to null if no valid file
+    //         }
+
+    //         $productData['user_id'] = $user->id; // Set the user ID
+
+    //         // Create the product directly in the Product model
+    //         $otherProduct = Product::create($productData);
+    //         $otherProduct['image'] = $otherProduct->image ? Storage::url($otherProduct->image) : null; // Get the URL for the image
+
+    //         return response()->json([
+    //             'data' => $otherProduct,
+    //             'message' => 'Other Product Created!',
+    //         ], Response::HTTP_CREATED);
+    //     } catch (QueryException $qe) {
+    //         // Handle database-related exceptions
+    //         return response()->json([
+    //             'error' => 'Database error: ' . $qe->getMessage(),
+    //         ], Response::HTTP_BAD_REQUEST);
+    //     } catch (\Throwable $th) {
+    //         // Log the error for further debugging
+    //         \Log::error('Other product creation failed', ['error' => $th->getMessage()]);
+    //         return response()->json([
+    //             'error' => 'An error occurred: ' . $th->getMessage(),
+    //         ], Response::HTTP_BAD_REQUEST);
+    //     }
+    // }
+
     public function createOtherProduct(OtherProductRequest $otherProductRequest): JsonResponse
     {
         try {
             $user = $otherProductRequest->user(); // Get the authenticated user
             $productData = $otherProductRequest->validated(); // Validate and get data
 
-            // Handle image upload
-            if ($otherProductRequest->hasFile('image') && $otherProductRequest->file('image')->isValid()) {
-                $path = $otherProductRequest->file('image')->store('images/products', 'public');
-                $productData['image'] = $path; // Store the image path
-            } else {
-                $productData['image'] = null; // Set image to null if no valid file
+            // Handle image uploads
+            if ($otherProductRequest->hasFile('images')) {
+                $images = [];
+                foreach ($otherProductRequest->file('images') as $file) {
+                    $images[] = $file->store('images/products', 'public');
+                }
+
+                // Set the primary image in the `image` column for compatibility
+                $productData['image'] = $images[0] ?? null;
+
+                // Store all images in the `images` column
+                $productData['images'] = $images;
+            }
+
+            // Handle eBook file upload
+            if ($otherProductRequest->hasFile('file') && $otherProductRequest->file('file')->isValid()) {
+                $ebookPath = $otherProductRequest->file('file')->store('files/products', 'private');
+                $productData['file'] = $ebookPath;
             }
 
             $productData['user_id'] = $user->id; // Set the user ID
+            $productData['status'] = "approved";
 
-            // Create the product directly in the Product model
+            // Create the product
             $otherProduct = Product::create($productData);
-            $otherProduct['image'] = $otherProduct->image ? Storage::url($otherProduct->image) : null; // Get the URL for the image
+
+            // Add public URLs for images and temporary URL for the eBook
+            $otherProduct['image'] = $otherProduct->image ? Storage::url($otherProduct->image) : null;
+            $otherProduct['images'] = array_map(fn($path) => Storage::url($path), $otherProduct->images ?? []);
 
             return response()->json([
                 'data' => $otherProduct,
                 'message' => 'Other Product Created!',
             ], Response::HTTP_CREATED);
         } catch (QueryException $qe) {
-            // Handle database-related exceptions
             return response()->json([
                 'error' => 'Database error: ' . $qe->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         } catch (\Throwable $th) {
-            // Log the error for further debugging
             \Log::error('Other product creation failed', ['error' => $th->getMessage()]);
             return response()->json([
                 'error' => 'An error occurred: ' . $th->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         }
     }
+
 
     public function editDigitalProduct(UpdateDigitalProductRequest $request, $id): JsonResponse
     {
@@ -471,34 +524,89 @@ class VendorController extends Controller
         }
     }
 
+    // public function editOtherProduct(UpdateOtherProductRequest $request, $id): JsonResponse
+    // {
+    //     try {
+    //         $product = Product::findOrFail($id); // Find the product by ID
+    //         // Check ownership
+    //         if ($product->user_id !== auth()->id()) {
+    //             return $this->error(null, 'You do not have permission to edit this product.', Response::HTTP_FORBIDDEN);
+    //         }
+    //         $productData = $request->validated(); // Get validated data
+
+    //         // Check if there's a new image and store it
+    //         if ($request->hasFile('image') && $request->file('image')->isValid()) {
+    //             $path = $request->file('image')->store('images/products', 'public');
+    //             $productData['image'] = $path;
+    //         } else {
+    //             // If no new image, retain the existing image
+    //             unset($productData['image']); // Prevent overwriting the existing image
+    //         }
+
+    //         // Update the product fields based on the request data
+    //         $product->update($productData);
+
+    //         return $this->success($product, 'Other Product Updated Successfully!', Response::HTTP_OK);
+    //     } catch (\Throwable $th) {
+    //         Log::error('Other product update failed', ['error' => $th->getMessage()]);
+    //         return $this->error(null, 'Failed to update product: ' . $th->getMessage(), Response::HTTP_BAD_REQUEST);
+    //     }
+    // }
+
     public function editOtherProduct(UpdateOtherProductRequest $request, $id): JsonResponse
     {
         try {
             $product = Product::findOrFail($id); // Find the product by ID
-            // Check ownership
+
             if ($product->user_id !== auth()->id()) {
-                return $this->error(null, 'You do not have permission to edit this product.', Response::HTTP_FORBIDDEN);
+                return response()->json(['message' => 'You do not have permission to edit this product.'], Response::HTTP_FORBIDDEN);
             }
+
             $productData = $request->validated(); // Get validated data
 
-            // Check if there's a new image and store it
-            if ($request->hasFile('image') && $request->file('image')->isValid()) {
-                $path = $request->file('image')->store('images/products', 'public');
-                $productData['image'] = $path;
+            // Handle new image uploads
+            if ($request->has('images')) {
+                // Store multiple images
+                $storedImages = [];
+                foreach ($request->file('images') as $image) {
+                    $path = $image->store('images/products', 'public'); // Store in public directory
+                    $storedImages[] = $path; // Add the stored path to the array
+                }
+                $productData['images'] = $storedImages; // Store as JSON in the database
+
+                // Update the `image` column with the first image
+                $productData['image'] = $storedImages[0] ?? null;
+            }
+
+            // Handle eBook file upload
+            if ($request->hasFile('file') && $request->file('file')->isValid()) {
+                $filePath = $request->file('file')->store('files/products', 'private'); // Store securely
+                $productData['file_url'] = $filePath; // Save the file path
             } else {
-                // If no new image, retain the existing image
-                unset($productData['image']); // Prevent overwriting the existing image
+                unset($productData['file_url']); // Don't overwrite file_url if none is provided
             }
 
             // Update the product fields based on the request data
             $product->update($productData);
 
-            return $this->success($product, 'Other Product Updated Successfully!', Response::HTTP_OK);
+            // Format response
+            $product->images = array_map(fn($image) => '/storage/' . $image, $product->images ?? []);
+            $product->image = $product->image ? '/storage/' . $product->image : null;
+            $product->file_url = $product->file_url ? Storage::disk('private')->temporaryUrl($product->file_url, now()->addMinutes(60)) : null;
+
+            return response()->json([
+                'data' => $product,
+                'message' => 'Other Product Updated Successfully!',
+            ], Response::HTTP_OK);
         } catch (\Throwable $th) {
             Log::error('Other product update failed', ['error' => $th->getMessage()]);
-            return $this->error(null, 'Failed to update product: ' . $th->getMessage(), Response::HTTP_BAD_REQUEST);
+            return response()->json([
+                'message' => 'Failed to update product',
+                'error' => $th->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
+
 
     public function destroy($id): JsonResponse
     {

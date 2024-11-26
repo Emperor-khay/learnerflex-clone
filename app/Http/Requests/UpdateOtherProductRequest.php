@@ -23,14 +23,28 @@ class UpdateOtherProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'required', 'string'],
-            'description' => ['sometimes', 'required', 'string'],
-            'image' => ['sometimes', 'image'], // Make image optional for updates
-            'price' => ['sometimes', 'required', 'numeric'],
-            'old_price' => ['sometimes', 'required', 'numeric'],
-            'access_link' => ['sometimes', 'required', 'string'],
-            'type' => ['sometimes', 'required', 'string', 'in:' . ProductType::EBOOK->value . ',' . ProductType::MENTORSHIP->value],
+            'name' => ['sometimes', 'nullable', 'string'],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'images' => ['sometimes', 'array', 'max:5'], // Multiple images allowed, max 5
+            'images.*' => ['image', 'max:7000'], // Validate each image
+            'file' => ['nullable', 'file', 'mimes:pdf', 'max:20000'], // Optional eBook file upload
+            'price' => ['sometimes', 'nullable', 'numeric'],
+            'old_price' => ['sometimes', 'nullable', 'numeric'],
+            'access_link' => ['sometimes', 'nullable', 'string'],
+            'type' => ['sometimes', 'nullable', 'string', 'in:ebook,mentorship'],
+            'commission' => ['sometimes', 'nullable', 'string'],
+            'contact_email' => ['sometimes', 'nullable', 'string', 'email'],
+            'vsl_pa_link' => ['nullable', 'string'],
+            'promotional_material' => ['nullable', 'string'],
+            'sale_page_link' => ['sometimes', 'nullable', 'string'],
+            'sale_challenge_link' => ['nullable', 'string'],
+            'x_link' => ['nullable', 'string'],
+            'ig_link' => ['nullable', 'string'],
+            'yt_link' => ['nullable', 'string'],
+            'fb_link' => ['nullable', 'string'],
+            'tt_link' => ['nullable', 'string'],
             'is_affiliated' => ['sometimes', 'boolean'],
         ];
+
     }
 }

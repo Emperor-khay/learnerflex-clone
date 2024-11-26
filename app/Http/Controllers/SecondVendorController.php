@@ -11,9 +11,12 @@ use App\Models\Product;
 use App\Models\Withdrawal;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Flutterwave\Service\Transactions;
+use Nette\Schema\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\UserProfileUpdateRequest;
@@ -286,4 +289,53 @@ class SecondVendorController extends Controller
             ], 500);
         }
     }
+
+    public function changePassword(Request $request)
+    {
+        try {
+            // Validate incoming request data
+            $validator = Validator::make($request->all(), [
+                'old_password' => ['required', 'string'],
+                'new_password' => ['required', 'string', 'min:6', 'confirmed'], // Confirmed ensures a `new_password_confirmation` field matches
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+    
+            $validated = $validator->validated(); // Get the validated data
+    
+            $user = auth()->user(); // Get the currently authenticated user
+    
+            // Check if the old password is correct
+            if (!Hash::check($validated['old_password'], $user->password)) {
+                throw ValidationException::withMessages([
+                    'old_password' => ['The provided old password is incorrect.'],
+                ]);
+            }
+    
+            // Update the password
+            $user->update([
+                'password' => Hash::make($validated['new_password']),
+            ]);
+    
+            return response()->json([
+                'message' => 'Password changed successfully.',
+            ], Response::HTTP_OK);
+        } catch (ValidationException $e) {
+            // Return validation errors
+            return response()->json([
+                'message' => 'Validation error occurred.',
+                'errors' => $e->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Throwable $th) {
+            \Log::error('Password change failed', ['error' => $th->getMessage()]);
+            return response()->json([
+                'message' => 'An error occurred while changing the password.',
+                'error' => $th->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+
 }

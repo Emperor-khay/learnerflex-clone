@@ -86,6 +86,8 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     Route::post('/unlock/market', [AffiliateController::class, 'unlockMarketAccess']);
     Route::post('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
 
+    Route::post('/change-password', [SecondVendorController::class, 'changePassword'])->name('change-password');
+
     Route::post('/logout', [LogoutController::class, 'logout']);
 
 
@@ -142,6 +144,8 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     // Route::get('/make/withdrawal', [VendorController::class, 'withdrawal']);
     Route::post('/request/withdrawal', [WithdrawalController::class, 'index']);
     Route::get('/withdrawals', [WithdrawalController::class, 'WithdrawRecord']);
+    Route::post('/change-password', [SecondVendorController::class, 'changePassword'])->name('change-password');
+
 
     Route::post('/logout', [LogoutController::class, 'logout']);
 
@@ -185,6 +189,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     //set affiliates to vendor
     Route::get('/vendor-requests', [SuperAdminUserController::class, 'requestToBeVendor']);
     Route::patch('/accept-vendor-request/{id}', [SuperAdminUserController::class, 'upgradeAffiliateToVendor']);
+
+    Route::post('/change-password', [SecondVendorController::class, 'changePassword'])->name('change-password');
 
     Route::post('/logout', [SuperAdminAuthController::class, 'logout']);
 });

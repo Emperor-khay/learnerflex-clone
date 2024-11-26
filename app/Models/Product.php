@@ -24,6 +24,7 @@ class Product extends Model
         'image',
         'price',
         'old_price',
+        'file',
         'type',
         'commission',
         'contact_email',

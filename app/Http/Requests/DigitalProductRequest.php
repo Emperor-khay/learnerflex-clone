@@ -28,7 +28,7 @@ class DigitalProductRequest extends FormRequest
             'description' => ['required', 'string', 'min:10', 'max:500'],
             'price' => ['required', 'integer'],
             'type' => ['required', 'string', 'in:' . ProductType::DIGITAL->value],
-            'commission' => ['required', 'string'],
+            'commission' => ['sometimes', 'required', 'numeric', 'between:1,90'],
             'contact_email' => ['required', 'string', 'email'],
             'access_link' => ['required', 'string'],
             'vsl_pa_link' => ['nullable', 'string'],
