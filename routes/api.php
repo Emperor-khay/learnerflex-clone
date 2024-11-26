@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RandomController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\Users\UserController;
 use App\Http\Controllers\Auths\LoginController;
@@ -39,6 +40,10 @@ Route::post('/password/reset-link', [PasswordResetController::class, 'sendPasswo
 Route::post('/password/new-password', [NewPasswordReset::class, 'resetPassword']);
 Route::get('/user/{id}', [UserController::class, 'getUserById']);
 Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData']);
+
+Route::post('/request-access-token', [RandomController::class, 'requestAccessToken']);
+Route::post('/validate-access-token', [RandomController::class, 'validateAccessToken']);
+
 
 // unlock market
 //one time payment

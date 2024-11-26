@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Users;
 use Exception;
 use App\Models\Sale;
 use App\Models\User;
+use App\Models\Product;
 use App\Models\Withdrawal;
+use App\Models\AccessToken;
 use App\Models\Transaction;
+use Illuminate\Support\Str;
 use App\Service\UserService;
 use Illuminate\Http\Request;
+use App\Mail\AccessTokenMail;
 use App\Mail\VendorAccountWanted;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -191,4 +195,7 @@ class UserController extends Controller
             ], 404);
         }
     }
+
+   
+
 }
