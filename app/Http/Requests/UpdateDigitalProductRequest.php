@@ -24,11 +24,11 @@ class UpdateDigitalProductRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'required', 'string'],
-            'description' => ['sometimes', 'required', 'string', 'min:10', 'max:500'],
+            'description' => ['sometimes', 'required', 'string'],
             'price' => ['sometimes', 'required', 'numeric'],
             'type' => ['sometimes', 'required', 'string', 'in:' . ProductType::DIGITAL->value],
             'commission' => ['sometimes', 'required', 'numeric', 'between:1,90'],
-            'contact_email' => ['sometimes', 'required', 'string', 'email'],
+            'contact_email' => ['nullable', 'string', 'email'],
             'access_link' => ['sometimes', 'required', 'string'],
             'vsl_pa_link' => ['sometimes', 'nullable', 'string'],
             'promotional_material' => ['sometimes', 'nullable', 'string'],
@@ -39,6 +39,8 @@ class UpdateDigitalProductRequest extends FormRequest
             'yt_link' => ['sometimes', 'nullable', 'string'],
             'fb_link' => ['sometimes', 'nullable', 'string'],
             'tt_link' => ['sometimes', 'nullable', 'string'],
+            'images.*' => ['image', 'max:7000'], // Validate each image
+            'images' => ['array', 'max:5'],      // Limit to 5 images
         ];
     }
 }

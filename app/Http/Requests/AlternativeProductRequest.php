@@ -25,7 +25,7 @@ class AlternativeProductRequest extends FormRequest
             'description' => ['required', 'string', 'min:10', 'max:500'],
             'price' => ['required', 'numeric'],
             'type' => ['required', 'string', 'in:' . ProductType::DIGITAL->value],
-            'commission' => ['required', 'string'],
+            'commission' => ['required', 'numeric','between:1,90'],
             'contact_email' => ['required', 'string', 'email'],
             'access_link' => ['required', 'string'],
             'vsl_pa_link' => ['nullable', 'string'],
@@ -37,6 +37,8 @@ class AlternativeProductRequest extends FormRequest
             'yt_link' => ['nullable', 'string'],
             'fb_link' => ['nullable', 'string'],
             'tt_link' => ['nullable', 'string'],
+            'images.*' => ['image', 'max:7000'], // Validate each image
+            'images' => ['array', 'max:5'],
         ];
     }
 
@@ -50,7 +52,7 @@ class AlternativeProductRequest extends FormRequest
             'description' => ['string', 'min:10', 'max:500'],
             'price' => ['numeric'],
             'type' => ['string', 'in:' . ProductType::DIGITAL->value],
-            'commission' => ['string'],
+            'commission' => ['string','numeric','between:1,90'],
             'contact_email' => ['string', 'email'],
             'access_link' => ['string'],
             'vsl_pa_link' => ['nullable', 'string'],
@@ -62,6 +64,8 @@ class AlternativeProductRequest extends FormRequest
             'yt_link' => ['nullable', 'string'],
             'fb_link' => ['nullable', 'string'],
             'tt_link' => ['nullable', 'string'],
+            'images.*' => ['image', 'max:7000'], // Validate each image
+            'images' => ['array', 'max:5'],
         ];
     }
 

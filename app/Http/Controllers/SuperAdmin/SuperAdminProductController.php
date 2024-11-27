@@ -46,6 +46,43 @@ class SuperAdminProductController extends Controller
     }
 
 
+    // public function store(AlternativeProductRequest $request)
+    // {
+    //     try {
+    //         $authUser = auth()->user();
+
+    //         // Prepare validated data
+    //         $productData = $request->validated();
+    //         $productData['user_id'] = $authUser->id;
+    //         $productData['vendor_id'] = optional($authUser->vendor)->id;
+    //         $productData['status'] = 'approved';
+    //         $productData['is_partnership'] = false;
+    //         $productData['is_affiliated'] = true;
+
+    //         // Handle image upload if provided
+    //         if ($request->hasFile('image')) {
+    //             $image = $request->file('image');
+    //             $imageName = time() . '_' . $image->getClientOriginalName();
+    //             $image->move(public_path('images/products'), $imageName);
+    //             $productData['image'] = asset('images/products/' . $imageName); // Save full URL path
+    //         }
+
+    //         // Create the product
+    //         $product = Product::create($productData);
+
+    //         return response()->json([
+    //             'message' => 'Product created successfully',
+    //             'product' => $product
+    //         ], 201);
+    //     } catch (\Exception $e) {
+    //         // Catch and handle any errors
+    //         return response()->json([
+    //             'message' => 'Failed to create product',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function store(AlternativeProductRequest $request)
     {
         try {
@@ -60,11 +97,23 @@ class SuperAdminProductController extends Controller
             $productData['is_affiliated'] = true;
 
             // Handle image upload if provided
-            if ($request->hasFile('image')) {
-                $image = $request->file('image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $image->move(public_path('images/products'), $imageName);
-                $productData['image'] = asset('images/products/' . $imageName); // Save full URL path
+            // if ($request->hasFile('image')) {
+            //     $image = $request->file('image');
+            //     $imageName = time() . '_' . $image->getClientOriginalName();
+            //     $image->move(public_path('images/products'), $imageName);
+            //     $productData['image'] = asset('images/products/' . $imageName); // Save full URL path
+            // }
+            if ($request->hasFile('images')) {
+                $images = [];
+                foreach ($request->file('images') as $file) {
+                    $images[] = $file->store('images/products', 'public');
+                }
+
+                // Set the primary image in the `image` column for compatibility
+                $productData['image'] = $images[0] ?? null;
+
+                // Store all images in the `images` column
+                $productData['images'] = $images;
             }
 
             // Create the product
@@ -82,6 +131,7 @@ class SuperAdminProductController extends Controller
             ], 500);
         }
     }
+
 
 
 
@@ -112,7 +162,8 @@ class SuperAdminProductController extends Controller
                 'yt_link',
                 'fb_link',
                 'tt_link',
-                'status'
+                'status',
+                'images'
             ]);
 
             // Handle image upload if provided

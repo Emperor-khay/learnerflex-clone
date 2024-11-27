@@ -514,6 +514,26 @@ class VendorController extends Controller
             }
             $productData = $request->validated(); // Get validated data
 
+            if ($request->has('images')) {
+                if (!empty($product->images) && is_array($product->images)) {
+                    foreach ($product->images as $oldImage) {
+                        if (Storage::disk('public')->exists($oldImage)) {
+                            Storage::disk('public')->delete($oldImage); // Delete old image
+                        }
+                    }
+                }
+                // Store multiple images
+                $storedImages = [];
+                foreach ($request->file('images') as $image) {
+                    $path = $image->store('images/products', 'public'); // Store in public directory
+                    $storedImages[] = $path; // Add the stored path to the array
+                }
+                $productData['images'] = $storedImages; // Store as JSON in the database
+
+                // Update the `image` column with the first image
+                $productData['image'] = $storedImages[0] ?? null;
+            }
+
             // Update the product fields based on the request data
             $product->update($productData);
 
