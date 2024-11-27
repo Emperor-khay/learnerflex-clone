@@ -168,3 +168,5 @@ new additions 26/11/2024
 
 /change-password for auth users takes new_password, old_password and new_password_confirmation
 /vendor/product/other/create now takes in a nullable file input which for now is just pdf 2. the image input for this is now images which must be in an array with max of 5  although the old image will be left unchanged, the first image from the array will be the used to populate image column so you can get one image from image column and 5 images from images column return in product data 
+/request-access-token require email to get the access token
+/validate-access-token require email and token sent to mail to get purchased products for users who wants to access their products list
