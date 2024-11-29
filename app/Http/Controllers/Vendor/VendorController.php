@@ -339,7 +339,7 @@ class VendorController extends Controller
         $user = Auth::user();
 
         // Check if the user is a vendor
-        if ($user->role !== 'vendor') {
+        if ($user->role === 'affiliate' ) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -575,10 +575,11 @@ class VendorController extends Controller
 
     public function editOtherProduct(UpdateOtherProductRequest $request, $id): JsonResponse
     {
+        $user = Auth::user();
         try {
             $product = Product::findOrFail($id); // Find the product by ID
 
-            if ($product->user_id !== auth()->id()) {
+            if ($product->user_id !== $user->id) {
                 return response()->json(['message' => 'You do not have permission to edit this product.'], Response::HTTP_FORBIDDEN);
             }
 
