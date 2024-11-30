@@ -129,8 +129,8 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::delete('/product/delete/{id}', [VendorController::class, 'deleteProduct']);
     Route::post('/product/digital/create', [SuperAdminProductController::class, 'store']);
     Route::post('/product/other/create', [VendorController::class, 'createOtherProduct']);
-    Route::patch('/products/digital/{id}/update', [VendorController::class, 'editDigitalProduct']);
-    Route::patch('/products/other/{id}/update', [VendorController::class, 'editOtherProduct']);
+    Route::post('/products/digital/{id}/update', [VendorController::class, 'editDigitalProduct']);
+    Route::post('/products/other/{id}/update', [VendorController::class, 'editOtherProduct']);
     Route::delete('/products/{id}/delete', [VendorController::class, 'destroy']);
 
     Route::get('/transactions', [VendorController::class, 'getVendorSales']);

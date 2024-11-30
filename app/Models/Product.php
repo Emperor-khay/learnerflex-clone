@@ -42,6 +42,7 @@ class Product extends Model
         'fb_link',
         'tt_link',
         'status',
+        'images'
     ];
 
     /**
@@ -54,6 +55,7 @@ class Product extends Model
         return [
             'is_partnership' => 'boolean',
             'is_affiliated' => 'boolean',
+            'images' => 'array',
         ];
     }
  

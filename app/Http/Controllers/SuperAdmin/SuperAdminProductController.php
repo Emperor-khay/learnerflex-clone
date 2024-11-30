@@ -96,13 +96,6 @@ class SuperAdminProductController extends Controller
             $productData['is_partnership'] = false;
             $productData['is_affiliated'] = true;
 
-            // Handle image upload if provided
-            // if ($request->hasFile('image')) {
-            //     $image = $request->file('image');
-            //     $imageName = time() . '_' . $image->getClientOriginalName();
-            //     $image->move(public_path('images/products'), $imageName);
-            //     $productData['image'] = asset('images/products/' . $imageName); // Save full URL path
-            // }
             if ($request->hasFile('images')) {
                 $images = [];
                 foreach ($request->file('images') as $file) {
