@@ -15,16 +15,18 @@ class VendorSaleNotificationMail extends Mailable
 
     public $product_name;
     public $transaction_amount;
-    public $buyer_email;
+    public $email;
+    public $reference;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($product_name, $transaction_amount, $buyer_email)
+    public function __construct($product_name, $transaction_amount, $email,$reference)
     {
         $this->product_name = $product_name;
         $this->transaction_amount = $transaction_amount;
-        $this->buyer_email = $buyer_email;
+        $this->email = $email;
+        $this->reference = $reference;
     }
 
    

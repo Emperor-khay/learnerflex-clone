@@ -453,62 +453,62 @@ class VendorController extends Controller
     //     }
     // }
     public function editDigitalProduct(UpdateDigitalProductRequest $request, $id): JsonResponse
-{
-    try {
-        $user = Auth::user();
+    {
+        try {
+            $user = Auth::user();
 
-        // Find the product
-        $product = Product::findOrFail($id);
+            // Find the product
+            $product = Product::findOrFail($id);
 
-        // Authorization: Ensure the user is the owner of the product
-        if ($product->user_id !== $user->id) {
-            return response()->json(['message' => 'You do not have permission to edit this product.'], Response::HTTP_FORBIDDEN);
-        }
-
-        $productData = $request->validated(); // Get validated data
-
-        // Handle image uploads
-        if ($request->hasFile('images')) {
-            $uploadedImages = [];
-
-            // Store new images
-            foreach ($request->file('images') as $file) {
-                $uploadedImages[] = $file->store('images/products', 'public'); // Store images in public disk
+            // Authorization: Ensure the user is the owner of the product
+            if ($product->user_id !== $user->id) {
+                return response()->json(['message' => 'You do not have permission to edit this product.'], Response::HTTP_FORBIDDEN);
             }
 
-            // Replace old images with the new ones and ensure the number of images does not exceed 5
-            $productData['images'] = array_merge($uploadedImages, is_array($product->images) ? $product->images : []); // Ensure images is an array
-            $productData['images'] = array_slice($productData['images'], 0, 5); // Keep only the first 5 images
+            $productData = $request->validated(); // Get validated data
 
-            // Update the primary image in the `image` column
-            $productData['image'] = $productData['images'][0] ?? $product->image; // Retain the existing primary image if no new images are uploaded
+            // Handle image uploads
+            if ($request->hasFile('images')) {
+                $uploadedImages = [];
+
+                // Store new images
+                foreach ($request->file('images') as $file) {
+                    $uploadedImages[] = $file->store('images/products', 'public'); // Store images in public disk
+                }
+
+                // Replace old images with the new ones and ensure the number of images does not exceed 5
+                $productData['images'] = array_merge($uploadedImages, is_array($product->images) ? $product->images : []); // Ensure images is an array
+                $productData['images'] = array_slice($productData['images'], 0, 5); // Keep only the first 5 images
+
+                // Update the primary image in the `image` column
+                $productData['image'] = $productData['images'][0] ?? $product->image; // Retain the existing primary image if no new images are uploaded
+            }
+
+            // Handle file upload (e.g., eBook or digital product file)
+            if ($request->hasFile('file') && $request->file('file')->isValid()) {
+                $filePath = $request->file('file')->store('files/products', 'private'); // Store securely
+                $productData['file'] = $filePath; // Save the file path in the `file` column
+            }
+
+            // Update the product with the new data
+            $product->update($productData);
+
+            // Ensure images is an array and generate URLs for the images
+            $product->images = is_array($product->images) ? array_map(fn($path) => $path, $product->images) : [];
+            $product->image = $product->image ? $product->image : null;
+
+            return response()->json([
+                'data' => $product,
+                'message' => 'Digital Product Updated Successfully!',
+            ], Response::HTTP_OK);
+        } catch (\Throwable $th) {
+            Log::error('Digital product update failed', ['error' => $th->getMessage()]);
+            return response()->json([
+                'message' => 'Failed to update product',
+                'error' => $th->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
         }
-
-        // Handle file upload (e.g., eBook or digital product file)
-        if ($request->hasFile('file') && $request->file('file')->isValid()) {
-            $filePath = $request->file('file')->store('files/products', 'private'); // Store securely
-            $productData['file'] = $filePath; // Save the file path in the `file` column
-        }
-
-        // Update the product with the new data
-        $product->update($productData);
-
-        // Ensure images is an array and generate URLs for the images
-        $product->images = is_array($product->images) ? array_map(fn($path) => $path, $product->images) : [];
-        $product->image = $product->image ? $product->image : null;
-
-        return response()->json([
-            'data' => $product,
-            'message' => 'Digital Product Updated Successfully!',
-        ], Response::HTTP_OK);
-    } catch (\Throwable $th) {
-        Log::error('Digital product update failed', ['error' => $th->getMessage()]);
-        return response()->json([
-            'message' => 'Failed to update product',
-            'error' => $th->getMessage(),
-        ], Response::HTTP_BAD_REQUEST);
     }
-}
 
 
     public function createOtherProduct(OtherProductRequest $otherProductRequest): JsonResponse
@@ -625,7 +625,7 @@ class VendorController extends Controller
         }
     }
 
-    
+
 
 
 
@@ -678,7 +678,7 @@ class VendorController extends Controller
     //     }
     // }
 
-    
+
 
 
 
@@ -775,6 +775,87 @@ class VendorController extends Controller
                 'message' => 'An error occurred while fetching vendor details.',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    // public function getVendorDetails($id)
+    // {
+    //     try {
+    //         // Fetch the vendor's data
+    //         $vendor = User::with('vendor') // Assuming a relationship 'vendors'
+    //             ->findOrFail($id);
+
+    //         // Fetch the vendor's products and their sales data
+    //         $products = Product::where('user_id', $id)
+    //             ->with('sales') // Assuming a relationship 'sales'
+    //             ->get()
+    //             ->map(function ($product) {
+    //                 return [
+    //                     'product_name' => $product->name,
+    //                     'sales_count' => $product->sales->count(),
+    //                     'total_sales_amount' => $product->sales->sum('amount'),
+    //                     'sales_details' => $product->sales->map(function ($sale) {
+    //                         return [
+    //                             'amount' => $sale->amount,
+    //                             'type' => $sale->type, // Assuming 'type' exists in the sales table
+    //                         ];
+    //                     }),
+    //                 ];
+    //             });
+
+    //         // Prepare the response
+    //         $response = [
+    //             'vendor' => [
+    //                 'id' => $vendor->id,
+    //                 'name' => $vendor->name,
+    //                 'email' => $vendor->email,
+    //                 'vendors_relationship' => $vendor->vendor, // Assuming 'vendors' relationship exists
+    //             ],
+    //             'products' => $products,
+    //         ];
+
+    //         return response()->json($response, 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => 'Vendor not found or an error occurred'], 404);
+    //     }
+    // }
+
+    public function getVendorDetails($id)
+    {
+        try {
+            // Fetch the vendor's user data along with the vendor profile
+            $vendor = User::with('vendor') // Assuming the User has a 'vendor' relationship
+                ->findOrFail($id);
+
+            // Fetch the vendor's products and summarize sales data
+            $products = Product::where('user_id', $id)
+                ->withCount('sales') // Assuming 'sales' relationship exists
+                ->withSum('sales', 'amount') // Sum the 'amount' column from sales
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'product_type' => $product->type, // Assuming 'type' is a column in products
+                        'sales_count' => $product->sales_count, // Using eager-loaded count
+                        'total_sales_amount' => $product->sales_sum_amount, // Using eager-loaded sum
+                    ];
+                });
+
+            // Prepare the response
+            $response = [
+                'vendor' => [
+                    'id' => $vendor->id,
+                    'name' => $vendor->name,
+                    'email' => $vendor->email,
+                    'vendor_profile' => $vendor->vendor, // Assuming 'vendor' relationship exists
+                ],
+                'products' => $products,
+            ];
+
+            return response()->json($response, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Vendor not found or an error occurred'], 404);
         }
     }
 }

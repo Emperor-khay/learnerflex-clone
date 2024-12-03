@@ -29,7 +29,7 @@ class OtherProductRequest extends FormRequest
             'images' => ['array', 'max:5'],      // Limit to 5 images
             'file' => ['nullable', 'file', 'mimes:pdf', 'max:90000'], // eBook file (PDF)
             'price' => ['required', 'integer'],
-            'old_price' => ['required', 'integer'],
+            'old_price' => ['nullable', 'integer'],
             'access_link' => ['required', 'string'],
             'type' => ['required', 'string', 'in:' . ProductType::EBOOK->value . ',' . ProductType::MENTORSHIP->value],
             'commission' => ['sometimes', 'nullable', 'numeric', 'between:1,90'],

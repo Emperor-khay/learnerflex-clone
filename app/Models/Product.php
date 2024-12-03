@@ -58,16 +58,21 @@ class Product extends Model
             'images' => 'array',
         ];
     }
- 
-     public function reviews()
-     {
-         return $this->hasMany(Review::class);
-     }
 
-      // Relationship with Vendor model
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    // Relationship with Vendor model
     public function vendor()
     {
         return $this->belongsTo(Vendor::class, 'vendor_id');
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'product_id');
     }
 
     // Relationship with User model (the owner of the product)
@@ -77,8 +82,7 @@ class Product extends Model
     }
 
     public function transactions()
-{
-    return $this->hasMany(Transaction::class, 'product_id');
-}
-
+    {
+        return $this->hasMany(Transaction::class, 'product_id');
+    }
 }
