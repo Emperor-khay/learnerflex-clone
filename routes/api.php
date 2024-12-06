@@ -40,7 +40,7 @@ Route::post('/password/reset-link', [PasswordResetController::class, 'sendPasswo
 Route::post('/password/new-password', [NewPasswordReset::class, 'resetPassword']);
 Route::get('/user/{id}', [UserController::class, 'getUserById']);
 Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData']);
-Route::get('/vendor/{id}', [VendorController::class, 'getVendorDetails']);
+Route::get('/vendor-details/{id}', [VendorController::class, 'getVendorDetails']);
 
 Route::post('/request-access-token', [RandomController::class, 'requestAccessToken']);
 Route::post('/validate-access-token', [RandomController::class, 'validateAccessToken']);

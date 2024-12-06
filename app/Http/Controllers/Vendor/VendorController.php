@@ -778,48 +778,6 @@ class VendorController extends Controller
         }
     }
 
-    // public function getVendorDetails($id)
-    // {
-    //     try {
-    //         // Fetch the vendor's data
-    //         $vendor = User::with('vendor') // Assuming a relationship 'vendors'
-    //             ->findOrFail($id);
-
-    //         // Fetch the vendor's products and their sales data
-    //         $products = Product::where('user_id', $id)
-    //             ->with('sales') // Assuming a relationship 'sales'
-    //             ->get()
-    //             ->map(function ($product) {
-    //                 return [
-    //                     'product_name' => $product->name,
-    //                     'sales_count' => $product->sales->count(),
-    //                     'total_sales_amount' => $product->sales->sum('amount'),
-    //                     'sales_details' => $product->sales->map(function ($sale) {
-    //                         return [
-    //                             'amount' => $sale->amount,
-    //                             'type' => $sale->type, // Assuming 'type' exists in the sales table
-    //                         ];
-    //                     }),
-    //                 ];
-    //             });
-
-    //         // Prepare the response
-    //         $response = [
-    //             'vendor' => [
-    //                 'id' => $vendor->id,
-    //                 'name' => $vendor->name,
-    //                 'email' => $vendor->email,
-    //                 'vendors_relationship' => $vendor->vendor, // Assuming 'vendors' relationship exists
-    //             ],
-    //             'products' => $products,
-    //         ];
-
-    //         return response()->json($response, 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Vendor not found or an error occurred'], 404);
-    //     }
-    // }
-
     public function getVendorDetails($id)
     {
         try {
@@ -838,7 +796,7 @@ class VendorController extends Controller
                         'product_name' => $product->name,
                         'product_type' => $product->type, // Assuming 'type' is a column in products
                         'sales_count' => $product->sales_count, // Using eager-loaded count
-                        'total_sales_amount' => $product->sales_sum_amount, // Using eager-loaded sum
+                        'price' => $product->price, // Using eager-loaded sum
                     ];
                 });
 

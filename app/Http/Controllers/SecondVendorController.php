@@ -26,6 +26,7 @@ class SecondVendorController extends Controller
 
     public function vendorDashboardMetrics(Request $request)
     {
+        
         try {
             // Get authenticated vendor
             $vendor = Auth::guard('sanctum')->user();
