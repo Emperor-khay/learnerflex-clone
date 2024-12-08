@@ -816,4 +816,67 @@ class VendorController extends Controller
             return response()->json(['error' => 'Vendor not found or an error occurred'], 404);
         }
     }
+
+    public function getVendorStore($id)
+    {
+        try {
+            // Fetch the user and associated vendor profile
+            $user = User::with('vendor')->findOrFail($id);
+
+            // Fetch the vendor's products with sales count
+            $products = Product::where('user_id', $id)
+                ->withCount('sales') // Assumes a 'sales' relationship exists
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'product_id' => $product->id,
+                        'name' => $product->name,
+                        'description' => $product->description,
+                        'image' => $product->image,
+                        'images' => $product->images, // URL or path to the image
+                        'price' => $product->price,
+                        'old_price' => $product->old_price,
+                        'type' => $product->type,
+                        'contact_email' => $product->contact_email,
+                        'links' => [
+                            'vsl_pa_link' => $product->vsl_pa_link,
+                            'sale_challenge_link' => $product->sale_challenge_link,
+                            'x_link' => $product->x_link,
+                            'ig_link' => $product->ig_link,
+                            'yt_link' => $product->yt_link,
+                            'fb_link' => $product->fb_link,
+                            'tt_link' => $product->tt_link,
+                        ],
+                        'is_partnership' => $product->is_partnership,
+                        'is_affiliated' => $product->is_affiliated,
+                        'status' => $product->status,
+                        'sales_count' => $product->sales_count, // Included by withCount
+                    ];
+                });
+
+            // Prepare the response
+            $response = [
+                'user_profile' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'country' => $user->country,
+                    'image' => $user->image,
+                    'status' => $user->status,
+                ],
+                'business_profile' => $user->vendor ? [
+                    'id' => $user->vendor->id,
+                    'name' => $user->vendor->name,
+                    'photo' => $user->vendor->photo,
+                    'description' => $user->vendor->description,
+                ] : null, // Handle case where no vendor profile exists
+                'products' => $products,
+            ];
+
+            return response()->json($response, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Vendor not found or an error occurred'], 404);
+        }
+    }
 }

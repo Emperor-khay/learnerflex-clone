@@ -40,7 +40,8 @@ Route::post('/password/reset-link', [PasswordResetController::class, 'sendPasswo
 Route::post('/password/new-password', [NewPasswordReset::class, 'resetPassword']);
 Route::get('/user/{id}', [UserController::class, 'getUserById']);
 Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData']);
-Route::get('/vendor-details/{id}', [VendorController::class, 'getVendorDetails']);
+Route::get('/vendor-details/{id}', [VendorController::class, 'getVendorStore']);
+// Route::get('/vendor-store/{id}', [VendorController::class, 'getVendorStore']);
 
 Route::post('/request-access-token', [RandomController::class, 'requestAccessToken']);
 Route::post('/validate-access-token', [RandomController::class, 'validateAccessToken']);
@@ -135,6 +136,7 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::delete('/products/{id}/delete', [VendorController::class, 'destroy']);
 
     Route::get('/transactions', [VendorController::class, 'getVendorSales']);
+    Route::get('/check-sale', [AffiliateController::class, 'checkSaleByEmail']);
 
     Route::get('/product-performance', [VendorController::class, 'productPerformance']);
     Route::get('/affiliate-performance/{affiliateId}', [VendorController::class, 'viewAffiliatePerformance']);
