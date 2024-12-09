@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Service\WithdrawalService;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Mail;
 
 class WithdrawalController extends Controller
 {
@@ -55,6 +56,15 @@ class WithdrawalController extends Controller
             'bank_account' => $bankAccount,
             'status' => 'pending',
         ]);
+
+        if ($withdrawal) {
+            try {
+                $name = $user->name;
+                Mail::to($user->email)->send(new \App\Mail\WithdrawalProcessingMail($name, $amount));
+            } catch (\Exception $e) {
+                Log::error('Error sending mail', ['error' => $e->getMessage()]);
+            }
+        }
 
         return response()->json([
             'success' => true,

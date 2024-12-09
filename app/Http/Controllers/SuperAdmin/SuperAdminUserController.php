@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use App\Models\VendorStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Mail\VendorAccountRejected;
 use App\Mail\VendorAccountUpgraded;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
@@ -159,53 +160,81 @@ class SuperAdminUserController extends Controller
         }
     }
 
-    public function upgradeAffiliateToVendor($id)
+    public function updateAffiliateVendorStatus(Request $request, $id)
     {
+        // Validate the request input
+        $request->validate([
+            'action' => 'required|in:approve,reject',  // Validate action (approve or reject)
+            'comment' => 'nullable|string|max:500',    // Admin comment is optional for rejection
+        ]);
+
+        $action = $request->input('action'); // Get the action (approve or reject) from the request body
+        $comment = $request->input('comment'); // Get the comment if provided
+
         // Find the user by ID
         $user = User::findOrFail($id);
 
-        // Check if the user is already a vendor
-        if ($user->role == "vendor") {
+        // Prevent upgrading if user is already a vendor
+        if ($action === 'approve' && $user->role === "vendor") {
             return response()->json(['error' => 'User is already a vendor!'], 422);
         }
 
         try {
-            DB::transaction(function () use ($user) {
-                // Update the user's details to reflect vendor status
-                $user->update([
-                    'role' => 'vendor',
-                ]);
-
-                // Create a new record in the vendors table for the user
-                DB::table('vendors')->updateOrInsert(
-                    ['user_id' => $user->id], // Condition to find existing record or insert new
-                    [
-                        'display' => true, // Set the desired initial status
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]
-                );
-
-                // Update the vendor_status table only if a record exists
-                DB::table('vendor_status')
-                    ->where('user_id', $user->id)
-                    ->update([
-                        'status' => 'active',
-                        'updated_at' => now(),
+            if ($action === 'approve') {
+                DB::transaction(function () use ($user) {
+                    // Update the user's details to reflect vendor status
+                    $user->update([
+                        'role' => 'vendor',
                     ]);
 
-                // Send email notification to the affiliate
-                Mail::to($user->email)->send(new VendorAccountUpgraded($user));
-            });
+                    // Update vendor_status table to mark the user as active
+                    DB::table('vendor_status')
+                        ->updateOrInsert(
+                            ['user_id' => $user->id],
+                            [
+                                'status' => 'active',
+                                'review' => null, // Clear any previous review comments
+                                'updated_at' => now(),
+                            ]
+                        );
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Affiliate upgraded to vendor successfully',
-                'user' => $user->refresh()
-            ], 200);
+                    // Send email notification for success
+                    Mail::to($user->email)->send(new VendorAccountUpgraded($user));
+                });
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Affiliate upgraded to vendor successfully',
+                    'user' => $user->refresh(),
+                ], 200);
+            } elseif ($action === 'reject') {
+                DB::transaction(function () use ($user, $comment) {
+                    // Update vendor_status table to include rejection and comment
+                    DB::table('vendor_status')
+                        ->updateOrInsert(
+                            ['user_id' => $user->id],
+                            [
+                                'status' => 'inactive',
+                                'review' => $comment, // Save the admin's comment for rejection
+                                'updated_at' => now(),
+                            ]
+                        );
+
+                    // Send email notification for rejection
+                    Mail::to($user->email)->send(new VendorAccountRejected($user, $comment));
+                });
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Affiliate vendor request rejected successfully',
+                    'user' => $user->refresh(),
+                ], 200);
+            }
+
+            return response()->json(['error' => 'Invalid action'], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Failed to upgrade affiliate to vendor',
+                'error' => 'Failed to update affiliate vendor status',
                 'message' => $e->getMessage(),
             ], 500);
         }

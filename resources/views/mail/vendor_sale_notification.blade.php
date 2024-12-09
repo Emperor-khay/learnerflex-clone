@@ -140,8 +140,8 @@
         <!-- Content Section -->
         <div class="content-section">
             <h2 class="title-text">Congratulations!! You’ve made a vendor sale</h2>
-            <p><strong>Product Sold:</strong> {{ $product_name }}/p>
-            <p style="margin-bottom: 6px;"><strong>Amount</strong> {{ $transaction_amount }}(added to your
+            <p><strong>Product Sold:</strong> {{ $product_name }}</p>
+            <p style="margin-bottom: 6px;"><strong>Amount</strong> {{ $transaction_amount }} (added to your
                 available balance)</p>
 
             <ul class="">

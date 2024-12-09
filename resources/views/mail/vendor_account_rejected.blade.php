@@ -1,41 +1,10 @@
-{{-- <!DOCTYPE html>
-<html>
-<head>
-    <title>Password Reset Request</title>
-</head>
-<body>
-    <h2>Hello,</h2>
-    <p>You are receiving this email because we received a password reset request for your account.</p>
-
-    <p>
-        Here is your token: <b>{{$token}}</b>
-        Click the button below to reset your password:
-    </p>
-
-    <p>
-        <a href="" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 4px;">
-            Reset Password
-        </a>
-    </p>
-
-    <p>
-        If you did not request a password reset, no further action is required.
-    </p>
-
-    <p>Thank you,<br/>
-    {{ config('app.name') }} Team</p>
-</body>
-</html> --}}
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Link</title>
+    <title>Vendor Account Request Update</title>
     <link href="../dist/styles.css" rel="stylesheet">
     <style>
         /* Reset some email client default styles */
@@ -109,6 +78,11 @@
             list-style-type: disc;
         }
 
+        .block-spans {
+            display: block;
+            margin-bottom: 10px;                        
+        }
+
         @media (min-width: 1024) {
             .container {
                 padding: 10px;
@@ -159,20 +133,20 @@
 
         <!-- Content Section -->
         <div class="content-section">
-            <h2 class="title-text">Hello,</h2>
-            <p style="margin-bottom: 14px;" >
-                Forgot your LearnerFlex account password? No worries!
-            </p>
-            <p>
-                Reset code: <span style="color: #F77E00;font-size: 20px;" >{{$token}}</span>
-            </p>
-            <p style="margin-bottom: 24px;margin-top: 14px;">
-                Kindly disregard this email if you did not make this request and feel free to reach out to us if you have any question
-                or concern.
-            </p>
+            <h2 class="title-text">Vendor Account Disapproved.</h2>
+            <p style="margin-bottom: 12px;" >
+                <span class="block-spans">Dear {{ $user->name }},</span>                
+                <span>    
+                    We're sorry to inform you that your vendor account request on LearnerFlex has been disapproved.                                        
+                </span>
+            </p>            
+            <span class="block-spans">
+                Please ensure you provide an original product and the sales page provided is good enough.
+            </span>            
 
             <!-- Call to Action Buttons -->            
-            <a href="https://learnerflex.com/help" class="button-alt">Click here <span class="text-black">to message us</span></a>
+            <a href="#" class="button">Access my account</a>
+            <a href="#" class="button-alt">Click here <span class="text-black">to message us</span></a>
         </div>
     </div>
 </body>

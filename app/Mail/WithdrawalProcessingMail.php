@@ -9,26 +9,40 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class PurchaseSuccessMail extends Mailable
+class WithdrawalProcessingMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $product_name;
-    public $product_access_link;
+    public $name;
+    public $amount;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($product_name, $product_access_link)
+    public function __construct($name, $amount)
     {
-        $this->product_name = $product_name;
-        $this->product_access_link = $product_access_link;
+        $this->name = $name;
+        $this->amount = $amount;
     }
 
-    public function build()
+    /**
+     * Get the message envelope.
+     */
+    public function envelope(): Envelope
     {
-        return $this->subject('Purchase Successful')
-            ->view('Mail.buyer_purchase_success');
+        return new Envelope(
+            subject: 'Withdrawal Processing',
+        );
+    }
+
+    /**
+     * Get the message content definition.
+     */
+    public function content(): Content
+    {
+        return new Content(
+            view: 'mail.withdrawal_processing_mail',
+        );
     }
 
     /**

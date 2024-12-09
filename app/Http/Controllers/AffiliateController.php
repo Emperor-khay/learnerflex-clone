@@ -525,7 +525,7 @@ class AffiliateController extends Controller
 
         // Use null as a default if 'description' is not provided
         $description = $validate['description'] ?? null;
-
+        try {
         DB::table('vendor_status')->insert([
             'user_id' => $user->id,
             'sale_url' => $saleurl,
@@ -535,9 +535,19 @@ class AffiliateController extends Controller
             'updated_at' => now(),
         ]);
 
-        Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
-        // Send email to the affiliate
-        Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
+
+        try {
+            Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
+            // Send email to the affiliate
+            Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
+        } catch (\Exception $e) {
+            Log::error('Error sending mail', ['error' => $e->getMessage()]);
+        }
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => 'error processing']);
+    }
+
+
 
         return response()->json(['success' => true, 'message' => 'Vendor Request sent successfully'], 201);
     }

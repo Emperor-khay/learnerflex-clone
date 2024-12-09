@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\Helper;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
@@ -224,37 +225,72 @@ class PaystackController extends Controller
 
             // Prepare email data
             $product_name = $product->name ?? 'Product';
-            $product_access_link = $product->access_link ?? '';
+            $product_type = $product->type ?? '';
+            $user_name = $transaction->email; // Assuming user's email is used as their name for simplicity
+            $email = $transaction->email;
+            $refferer = User::where('aff_id', $transaction->affiliate_id)->first();
+            $product_access_link = $product->access_link ?? '#';
 
-            // Send email to the buyer
+            // Add the try-catch block for sending emails based on product type
             try {
-                Mail::to($email)->send(new \App\Mail\PurchaseSuccessMail($product_name, $product_access_link));
+                // If user doesn't exist, send registration link
+
+                $aff_id = $refferer->aff_id ?? null;
+
+                // For eBooks
+                if ($product_type === 'ebook') {
+                    $download_link = Helper::generateDownloadLink($transaction->product_id);
+                    Mail::to($email)->send(new \App\Mail\EbookPurchaseSuccessMail($user_name, $product_name, $product_access_link, $download_link));
+                }
+                // For Digital Products
+                elseif ($product_type === 'digital') {
+                    Mail::to($email)->send(new \App\Mail\DigitalProductPurchaseSuccessMail($user_name, $product_name, $email, $product_access_link, $aff_id));
+                }
+                // For Mentorship
+                elseif ($product_type === 'mentorship') {
+                    $mentor_name = $vendor->name ?? 'Mentor'; // Assuming the mentor's name is the vendor's name
+                    Mail::to($email)->send(new \App\Mail\MentorshipPurchaseSuccessMail($user_name, $mentor_name, $product_access_link, $aff_id));
+                }
             } catch (\Exception $e) {
-                Log::error('Error sending email to buyer', ['email' => $email, 'error' => $e->getMessage()]);
+                Log::error('Error sending email after payment', ['error' => $e->getMessage()]);
             }
 
             // Notify the vendor about the sale
             if ($vendor) {
                 try {
-                    Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transaction->org_vendor, $email,$reference));
+                    Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transaction->org_vendor, $email, $reference));
                 } catch (\Exception $e) {
                     Log::error('Error sending sale notification to vendor', ['vendor_email' => $vendor->email, 'error' => $e->getMessage()]);
                 }
             }
 
-            // Retrieve referrer information for affiliate registration link
-            $refferer = User::where('aff_id', $transaction->affiliate_id)->first();
-            $aff_id = $refferer->aff_id ?? null;
+            if ($refferer) {
+                // Prepare data for the affiliate email
+                $affiliate_name = $refferer->name;
+                $product_name = $product->name ?? 'Product';
+                $commission = $transaction->org_aff ?? 0;
+                $customer_name = $transaction->email; // Assuming the customer name is stored in the email
+                $customer_email = $transaction->email;
+                $reference_id = $transaction->tx_ref;
 
-            // Send registration link if the user doesn’t exist
-            $checkUser = User::where('email', $email)->first();
-            if (!$checkUser && $aff_id) {
+                // Send the affiliate notification email
                 try {
-                    Mail::to($email)->send(new \App\Mail\RegisterLink($aff_id));
+                    Mail::to($refferer->email)->send(new \App\Mail\AffiliateSaleNotificationMail(
+                        $affiliate_name,
+                        $product_name,
+                        $commission,
+                        $customer_name,
+                        $customer_email,
+                        $reference_id
+                    ));
                 } catch (\Exception $e) {
-                    Log::error('Error sending registration link to user', ['email' => $email, 'error' => $e->getMessage()]);
+                    Log::error('Error sending affiliate sale notification email', [
+                        'affiliate_email' => $refferer->email,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
+
 
             return response()->json([
                 'success' => true,
@@ -273,173 +309,6 @@ class PaystackController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred during callback processing'], 500);
         }
     }
-
-
-    // public function payment_callback(Request $request)
-    // {
-
-    //     try {
-    //         // Input validation
-    //         $validator = Validator::make($request->all(), [
-    //             'reference' => 'required|string',
-    //             'email' => 'required|email',
-    //             'orderId' => 'required|string',
-    //             'aff_id' => 'required|string',
-
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             Log::warning('Validation failed for payment callback', [
-    //                 'errors' => $validator->errors()->toArray(),
-    //             ]);
-    //             return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
-    //         }
-
-    //         $reference = $request->input('reference');
-    //         $email = $request->input('email');
-    //         $orderId = $request->input('orderId');
-
-    //         // Verify payment with Paystack
-    //         Log::info('Verifying payment with Paystack', ['reference' => $reference]);
-    //         $response = json_decode($this->verify_payment($reference));
-
-    //         if (!$response || $response->data->status !== "success") {
-    //             Log::error('Payment verification failed', [
-    //                 'reference' => $reference,
-    //                 'response' => $response
-    //             ]);
-    //             return response()->json(['message' => 'Transaction not successful', 'success' => false]);
-    //         }
-
-    //         // Check for transaction with matching email and order ID
-    //         Log::info('Searching for transaction', [
-    //             'email' => $email,
-    //             'orderId' => $orderId,
-    //             'status' => 'pending'
-    //         ]);
-    //         $transaction = Transaction::where('email', $email)
-    //             ->where('transaction_id', $orderId)
-    //             ->where('status', 'pending')
-    //             ->latest()
-    //             ->first();
-
-    //         if (!$transaction) {
-    //             Log::error('Transaction not found', [
-    //                 'email' => $email,
-    //                 'orderId' => $orderId
-    //             ]);
-    //             return response()->json(['success' => false, 'message' => 'Transaction not found'], 404);
-    //         }
-
-    //         $transactionAffId = $transaction->affiliate_id;
-    //         $transactionProductId = $transaction->product_id;
-    //         $transactionUserId = $transaction->user_id;
-    //         $transactionAmount = $transaction->amount;
-
-    //         // Update transaction status and tx_ref
-    //         Log::info('Updating transaction status to success', [
-    //             'transaction_id' => $transaction->id,
-    //             'reference' => $reference,
-    //         ]);
-    //         $transaction->update([
-    //             'tx_ref' => $reference,
-    //             'status' => 'success',
-    //         ]);
-
-
-    //         // Retrieve product details and vendor information
-    //         $product = Product::find($transactionProductId);
-    //         if (!$product) {
-    //             Log::error('Product not found', ['product_id' => $transactionProductId]);
-    //         }
-    //         // Insert data into the sales table using the transaction data
-    //         $sale = Sale::create([
-    //             'tx_ref' => $transaction->id,
-    //             'product_id' => $transaction->product_id,
-    //             'vendor_id' => $transaction->vendor_id,
-    //             'affiliate_id' => $transaction->affiliate_id,
-    //             'amount' => $transaction->amount,
-    //             'status' => 'success',
-    //             'commission' => $product->commission,
-    //             'currency' => $transaction->currency,
-    //             'email' => $transaction->email,
-    //             'org_vendor' => $transaction->org_vendor,
-    //             'org_aff' => $transaction->org_aff,
-    //             'org_company' => $transaction->org_company,
-    //         ]);
-
-    //         if (!$transaction) {
-    //             Log::error('sale not saved', [
-    //                 'email' => $transaction->id,
-
-    //             ]);
-    //         }
-
-    //         Log::info('Inserted data into sales table', ['sale_id' => $sale->id]);
-    //         $product_name = $product->name ?? 'Product';
-    //         $product_access_link = $product->access_link ?? '';
-
-    //         $vendor = User::find($product->vendor_id ?? null);
-    //         if (!$vendor) {
-    //             Log::warning('Vendor not found for product', ['product_id' => $transactionProductId]);
-    //         }
-
-    //         // Send email to the buyer
-    //         try {
-    //             Log::info('Sending success email to buyer', ['email' => $email, 'product_name' => $product_name]);
-    //             Mail::to($email)->send(new \App\Mail\PurchaseSuccessMail($product_name, $product_access_link));
-    //         } catch (\Exception $e) {
-    //             Log::error('Error sending email to buyer', ['email' => $email, 'error' => $e->getMessage()]);
-    //         }
-
-    //         // Notify the vendor about the sale
-    //         if ($vendor) {
-    //             try {
-    //                 Log::info('Sending sale notification email to vendor', [
-    //                     'vendor_email' => $vendor->email,
-    //                     'product_name' => $product_name,
-    //                     'transaction_amount' => $transactionAmount
-    //                 ]);
-    //                 Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transactionAmount, $email));
-    //             } catch (\Exception $e) {
-    //                 Log::error('Error sending sale notification to vendor', ['vendor_email' => $vendor->email, 'error' => $e->getMessage()]);
-    //             }
-    //         }
-
-    //         // Retrieve referrer information for affiliate registration link
-    //         $refferer = User::find($transactionAffId);
-    //         $aff_id = $refferer->aff_id ?? null;
-
-    //         // If user doesn’t exist, send them a registration link
-    //         $checkUser = User::where('email', $email)->first();
-    //         if (!$checkUser && $aff_id) {
-    //             try {
-    //                 Log::info('Sending registration link to new user', ['email' => $email, 'aff_id' => $aff_id]);
-    //                 Mail::to($email)->send(new \App\Mail\RegisterLink($aff_id));
-    //             } catch (\Exception $e) {
-    //                 Log::error('Error sending registration link to user', ['email' => $email, 'error' => $e->getMessage()]);
-    //             }
-    //         }
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'status' => 'success',
-    //             'transaction' => $transaction,
-    //             'product_name' => $product_name,
-    //             'product_access_link' => $product_access_link,
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         Log::error('Error in payment callback', [
-    //             'error' => $e->getMessage(),
-    //             'reference' => $reference ?? 'N/A',
-    //             'email' => $email ?? 'N/A',
-    //             'orderId' => $orderId ?? 'N/A',
-    //         ]);
-    //         return response()->json(['success' => false, 'message' => 'An error occurred during callback processing'], 500);
-    //     }
-    // }
-
-
 
     public function initialize_payment($formData)
     {
@@ -471,57 +340,7 @@ class PaystackController extends Controller
         return $result;
     }
 
-    // public function payment_callback()
-    // {
-    //     $reference = request('reference');
-    //     $response = json_decode($this->verify_payment($reference));
-    //     $email = request('email');
-
-    //     if ($response && $response->status == "success") {
-
-    //         $transaction = Transaction::where('email', $email)->latest()->first();
-    //         $transactionAffId = $transaction->affiliate_id;
-    //         $transactionProductId = $transaction->product_id;
-    //         $transactionUserId = $transaction->user_id;
-    //         $transactionAmount = $transaction->amount;
-
-    //         $refferer = User::find($transactionAffId);
-
-
-    //         $aff_id = $refferer->aff_id;
-
-
-    //         if ($transaction) {
-    //             $transaction->update([
-    //                 'tx_ref' => request('reference'),
-    //                 'status' => $response->status,
-    //                 'is_onboard' => 1,
-    //             ]);
-    //         }
-
-
-    //         $product = Product::find($transactionProductId);
-    //         $product_name = $product->name;
-    //         $product_access_link = $product->access_link;
-
-    //         $checkUser = User::where('email', request('email'))->first();
-
-    //         if (!$checkUser) {
-    //             Mail::to(request('email'))->send(new \App\Mail\RegisterLink($aff_id));
-    //         }
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'status' => $response->status,
-    //             'transaction' => $transaction,
-    //             'product_name' => $product_name,
-    //             'product_access_link' => $product_access_link,
-
-    //         ], 200);
-    //     } else {
-    //         return response()->json(['message' => 'transaction not successful', 'success' => false]);
-    //     }
-    // }
+   
 
     public function verify_payment($reference)
     {

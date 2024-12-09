@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use App\Helpers\Helper;
 use App\Http\Controllers\RandomController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\Users\UserController;
@@ -31,7 +32,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
 // Route for handling the payment callback
-Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
+Route::get('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
 Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
 // Route for handling the payment callback
 Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback']);
@@ -42,6 +43,8 @@ Route::get('/user/{id}', [UserController::class, 'getUserById']);
 Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData']);
 Route::get('/vendor-details/{id}', [VendorController::class, 'getVendorStore']);
 // Route::get('/vendor-store/{id}', [VendorController::class, 'getVendorStore']);
+Route::get('/download', [RandomController::class, 'downloadFile'])->name('product.download');
+
 
 Route::post('/request-access-token', [RandomController::class, 'requestAccessToken']);
 Route::post('/validate-access-token', [RandomController::class, 'validateAccessToken']);
@@ -209,7 +212,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 //test endpoints
 Route::get('/test', function () {
 
-    return "Test route";
+    $product = 17;
+    $downloadLink = Helper::generateDownloadLink($product);
+    return $downloadLink;
 });
 //not sure what these are used for
 // Route::post('/user/get-balance', [UserController::class, 'getBalance']);

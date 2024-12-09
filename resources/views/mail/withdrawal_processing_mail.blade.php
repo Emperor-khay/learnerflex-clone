@@ -1,41 +1,10 @@
-{{-- <!DOCTYPE html>
-<html>
-<head>
-    <title>Password Reset Request</title>
-</head>
-<body>
-    <h2>Hello,</h2>
-    <p>You are receiving this email because we received a password reset request for your account.</p>
-
-    <p>
-        Here is your token: <b>{{$token}}</b>
-        Click the button below to reset your password:
-    </p>
-
-    <p>
-        <a href="" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; border-radius: 4px;">
-            Reset Password
-        </a>
-    </p>
-
-    <p>
-        If you did not request a password reset, no further action is required.
-    </p>
-
-    <p>Thank you,<br/>
-    {{ config('app.name') }} Team</p>
-</body>
-</html> --}}
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Link</title>
+    <title>Email Template</title>
     <link href="../dist/styles.css" rel="stylesheet">
     <style>
         /* Reset some email client default styles */
@@ -159,16 +128,12 @@
 
         <!-- Content Section -->
         <div class="content-section">
-            <h2 class="title-text">Hello,</h2>
-            <p style="margin-bottom: 14px;" >
-                Forgot your LearnerFlex account password? No worries!
+            <h2 class="title-text">Great news! {{ $name }}.</h2>
+            <p style="margin-bottom: 12px;" >
+                Your {{ $amount }} withdrawal request from LearnerFlex has been processed.                
             </p>
-            <p>
-                Reset code: <span style="color: #F77E00;font-size: 20px;" >{{$token}}</span>
-            </p>
-            <p style="margin-bottom: 24px;margin-top: 14px;">
-                Kindly disregard this email if you did not make this request and feel free to reach out to us if you have any question
-                or concern.
+            <p style="margin-bottom: 24px;">
+                The funds will be transferred to your bank account within the next 48 hours. For any concerns, please reach out to us using the link below
             </p>
 
             <!-- Call to Action Buttons -->            

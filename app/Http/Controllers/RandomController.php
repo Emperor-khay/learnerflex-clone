@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use Log;
+use App\Models\Sale;
+use App\Helpers\Helper;
 use App\Models\Product;
 use App\Models\AccessToken;
 use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Mail\AccessTokenMail;
-use App\Models\Sale;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 
 class RandomController extends Controller
@@ -81,6 +84,8 @@ class RandomController extends Controller
                 // Query the product table for product details using the product_id
                 $product = Product::find($transaction->product_id);
 
+                $downloadlink = Helper::generateDownloadLink($transaction->product_id);
+
                 if ($product) {
                     // Return product details
                     return [
@@ -88,7 +93,7 @@ class RandomController extends Controller
                         'name' => $product->name,
                         'description' => $product->description,
                         'access_link' => $product->access_link,
-                        'file_url' => $this->generateTemporaryUrlForProductFile($product), // Calling the helper function
+                        'file_url' => $downloadlink, // Calling the helper function
                     ];
                 }
 
@@ -103,17 +108,29 @@ class RandomController extends Controller
         ], 200);
     }
 
-    function generateTemporaryUrlForProductFile($product)
+    public function downloadFile(Request $request)
 {
-    if ($product->file) {
-        return Storage::disk('private')->temporaryUrl(
-            $product->file,
-            now()->addMinutes(30) // Set the URL expiration time
-        );
+    try {
+        $token = $request->input('token');
+        $data = Crypt::decrypt($token);
+
+        // Validate expiry
+        if (now()->timestamp > $data['expires_at']) {
+            return response()->json(['error' => 'This link has expired.'], 403);
+        }
+
+        // Find the product
+        $product = Product::findOrFail($data['product_id']);
+
+        // Check if the file exists
+        if (!$product->file || !Storage::disk('private')->exists($product->file)) {
+            return response()->json(['error' => 'File not found.'], 404);
+        }
+
+        // Serve the file for download
+        return Storage::disk('private')->download($product->file);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Invalid or expired token.'], 403);
     }
-
-    return null;
 }
-
-
 }
