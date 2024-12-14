@@ -170,3 +170,27 @@ new additions 26/11/2024
 /vendor/product/other/create now takes in a nullable file input which for now is just pdf 2. the image input for this is now images which must be in an array with max of 5  although the old image will be left unchanged, the first image from the array will be the used to populate image column so you can get one image from image column and 5 images from images column return in product data 
 /request-access-token require email to get the access token
 /validate-access-token require email and token sent to mail to get purchased products for users who wants to access their products list
+
+update 11/12/2024
+
+/check-sale  === is a post request for with email required - checks if user aff id is used to purchase products
+
+admin routes
+List Users
+GET /users - Retrieve all users, with optional filters (e.g.name, role, per page).
+
+View User Details
+GET /users/{id} - View user details by role and ID. returns products and vendor profile for who has it
+
+Create User
+POST /users/create - Create a new user, either affiliate or vendor, with necessary details. vendor email is nullable
+
+Update User
+POST /users/edit/{id} - Update user information based on ID and provided data. can change name , add vendor_email, role
+
+Delete User
+DELETE /users/{id} - Delete a user by ID.
+
+Filter Vendor Status
+GET /users/vendor-status - Retrieve vendors based on their status (e.g.active, pending, inactive).
+

@@ -7,6 +7,7 @@ use App\Models\Vendor;
 use App\Models\Product;
 use App\Models\Affiliate;
 use App\Models\Transaction;
+use Illuminate\Support\Str;
 use App\Models\VendorStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,32 +15,51 @@ use App\Mail\VendorAccountRejected;
 use App\Mail\VendorAccountUpgraded;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 
 class SuperAdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        // Get the 'per_page' query parameter or default to 10
-        $perPage = $request->get('per_page', 20); // Default is 20 users per page
+        // Get the 'per_page' query parameter or default to 20
+        $perPage = $request->get('per_page', 20);
 
         // Get the 'role' query parameter to filter users by role (if provided)
         $role = $request->get('role');
+
+        // Get the 'name' query parameter to filter users by name (if provided)
+        $searchName = $request->get('name');
 
         // Build the query for users
         $query = User::query();
 
         // If a role is provided, filter the users by their role
         if ($role) {
-            $query->where('role', $role); // Assuming 'role' is a column in the users table
+            $query->where('role', $role);
+        }
+
+        // If a name is provided, filter users by a simple search (case-insensitive)
+        if ($searchName) {
+            $query->where('name', 'LIKE', '%' . $searchName . '%');
         }
 
         // Paginate users based on the query parameters
         $users = $query->paginate($perPage);
 
-        // Return a JSON response with pagination metadata
+        // Retrieve the count of users by role
+        $roleCounts = User::select('role', DB::raw('count(*) as count'))
+            ->groupBy('role')
+            ->pluck('count', 'role');
+
+        // Retrieve the count of pending vendor statuses
+        $pendingVendorCount = VendorStatus::where('status', 'pending')->count();
+
+        // Return a JSON response with users, pagination metadata, role counts, and pending vendor count
         return response()->json([
             'success' => true,
-            'data' => $users->items(), // List of users
+            'data' => $users->items(),
+            'role_counts' => $roleCounts,
+            'pending_vendor_count' => $pendingVendorCount,
             'pagination' => [
                 'current_page' => $users->currentPage(),
                 'last_page' => $users->lastPage(),
@@ -48,6 +68,8 @@ class SuperAdminUserController extends Controller
             ]
         ]);
     }
+
+
 
 
 
@@ -90,82 +112,234 @@ class SuperAdminUserController extends Controller
         return response()->json($referrer);
     }
 
-    public function showuser($role, $id)
+    public function showUser($id)
     {
-        switch ($role) {
-            case 'admin':
-                $entity = User::findOrFail($id);
-                break;
-            case 'vendor':
-                $entity = User::with('products', $id)->firstOrFail($id);
-                break;
-            case 'affiliate':
-                $entity = User::firstOrFail($id);
-                break;
-            default:
-                return response()->json(['error' => 'Invalid role'], 400);
-        }
+        try {
+            // Find the user by ID
+            $user = User::findOrFail($id);
 
-        return response()->json($entity);
-    }
+            // Determine the relationships to load dynamically
+            $relations = [];
 
-    public function store(Request $request, $role)
-    {
-        switch ($role) {
-            case 'vendor':
-                $vendor = Vendor::create($request->all());
-                return response()->json($vendor, 201);
-            case 'affiliate':
-                $affiliate = Affiliate::create($request->all());
-                return response()->json($affiliate, 201);
-            default:
-                return response()->json(['error' => 'Invalid role'], 400);
-        }
-    }
+            if ($user->role === 'vendor') {
+                $relations[] = 'products';
+            }
 
-    public function update(Request $request, $role, $id)
-    {
-        switch ($role) {
-            case 'user':
-                $user = User::findOrFail($id);
-                $user->update($request->all());
-                return response()->json($user);
-            case 'vendor':
-                $vendor = Vendor::where('user_id', $id)->firstOrFail();
-                $vendor->update($request->all());
-                return response()->json($vendor);
-            case 'affiliate':
-                $affiliate = Affiliate::where('user_id', $id)->firstOrFail();
-                $affiliate->update($request->all());
-                return response()->json($affiliate);
-            default:
-                return response()->json(['error' => 'Invalid role'], 400);
+            $relations[] = 'vendor'; // Always include vendors if it exists
+
+            // Load the specified relationships
+            $user->load($relations);
+
+            // Return the result as JSON
+            return response()->json([
+                'success' => true,
+                'data' => $user,
+            ]);
+        } catch (\Exception $e) {
+            // Handle errors gracefully
+            return response()->json([
+                'error' => 'An error occurred while retrieving the user',
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 
-    public function destroy($role, $id)
+
+
+    public function createUser(Request $request)
     {
-        switch ($role) {
-            case 'user':
-                User::findOrFail($id)->delete();
-                return response()->json(['message' => 'User deleted']);
-            case 'vendor':
-                Vendor::where('user_id', $id)->firstOrFail()->delete();
-                return response()->json(['message' => 'Vendor deleted']);
-            case 'affiliate':
-                Affiliate::where('user_id', $id)->firstOrFail()->delete();
-                return response()->json(['message' => 'Affiliate deleted']);
-            default:
-                return response()->json(['error' => 'Invalid role'], 400);
+        // Validate incoming request
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'role' => 'required|string|in:affiliate,vendor', // Role must be provided and valid
+            'vendor_email' => 'nullable|email|exists:users,email', // Vendor email is optional
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Generate a unique aff_id for the new user
+            $aff_id = null;
+            do {
+                $aff_id = Str::random(8);
+                $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+            } while ($exists);
+
+            // Create the new user
+            $user = User::create([
+                'aff_id' => $aff_id,
+                'name' => $request->input('name'),
+                'email' => $request->input('email'),
+                'currency' => $request->input('currency', 'NGN'), // Default to 'NGN' if not provided
+                'referral_id' => null, // Can be updated later if needed
+                'role' => $request->input('role'),
+            ]);
+
+            // Handle vendor_email if provided
+            if ($request->filled('vendor_email')) {
+                $vendor = User::where('email', $request->input('vendor_email'))->where('role', 'vendor')->first();
+                if (!$vendor) {
+                    return response()->json(['error' => 'Vendor not found'], 404);
+                }
+            }
+
+            // Create a transaction for this vendor-user relationship
+            Transaction::create([
+                'is_onboarded' => 1,
+                'vendor_id' => $vendor->id ?? null,
+                'email' => $request->input('email'),
+                'amount' => 0,
+                'status' => 'success',
+            ]);
+
+            DB::commit();
+
+            return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
 
-    public function updateAffiliateVendorStatus(Request $request, $id)
+    public function updateUser(Request $request, $id)
+    {
+        // Validate incoming request
+        $validator = Validator::make($request->all(), [
+            'name' => 'nullable|string|max:255',
+            'role' => 'nullable|string|in:affiliate,vendor', // Role must match valid options
+            'vendor_email' => 'nullable|email|exists:users,email', // Vendor email is optional
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Find the user
+            $user = User::find($id);
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            // Update user details
+            $user->update($request->only(['name', 'role']));
+
+            // Handle vendor_email if provided
+            if ($request->filled('vendor_email')) {
+                $vendor = User::where('email', $request->input('vendor_email'))->where('role', 'vendor')->first();
+                if (!$vendor) {
+                    return response()->json(['error' => 'Vendor not found'], 404);
+                }
+
+                // Create a transaction for this vendor-user relationship
+                Transaction::create([
+                    'is_onboarded' => true,
+                    'vendor_id' => $vendor->id,
+                    'email' => $user->email,
+                    'amount' => 0,
+                    'status' => 'success',
+
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'User updated successfully', 'user' => $user], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
+        }
+    }
+
+
+    public function filterVendorStatus(Request $request)
+    {
+        // Get the 'status' query parameter to filter vendors
+        $status = $request->get('status', 'pending'); // Default to 'pending'
+
+        // Validate the status parameter
+        $validStatuses = ['pending', 'inactive', 'active'];
+        if (!in_array($status, $validStatuses)) {
+            return response()->json(['error' => 'Invalid status provided.'], 400);
+        }
+
+        // Query vendor statuses by the provided status
+        $vendors = VendorStatus::with('user')
+            ->where('status', $status)
+            ->paginate(20); // Default pagination
+
+        return response()->json([
+            'success' => true,
+            'data' => $vendors->items(),
+            'pagination' => [
+                'current_page' => $vendors->currentPage(),
+                'last_page' => $vendors->lastPage(),
+                'total' => $vendors->total(),
+                'per_page' => $vendors->perPage(),
+            ]
+        ]);
+    }
+
+
+
+    public function deleteUser(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            // Find the user by ID
+            $user = User::find($id);
+
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            // Check if the user has an associated vendor record
+            $vendor = Vendor::where('user_id', $id)->first();
+
+            if ($vendor) {
+                // Delete the vendor record (this will also delete the photo due to the boot method in Vendor model)
+                $vendor->delete();
+            }
+
+            // Optional: Check if the user has products not associated with a vendor
+            $products = Product::where('user_id', $id)->get(); // Assuming `Product` model exists
+
+            if ($products->isNotEmpty()) {
+                foreach ($products as $product) {
+                    $product->delete();
+                }
+            }
+
+            // Delete the user
+            $user->delete();
+
+            DB::commit();
+
+            return response()->json(['message' => 'User, their vendor record, and associated products deleted successfully'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
+        }
+    }
+
+
+    public function upgradeAffiliateToVendor(Request $request, $id)
     {
         // Validate the request input
         $request->validate([
             'action' => 'required|in:approve,reject',  // Validate action (approve or reject)
-            'comment' => 'nullable|string|max:500',    // Admin comment is optional for rejection
+            'comment' => 'nullable|string|max:1000',    // Admin comment is optional for rejection
         ]);
 
         $action = $request->input('action'); // Get the action (approve or reject) from the request body

@@ -145,8 +145,8 @@
             </span>            
 
             <!-- Call to Action Buttons -->            
-            <a href="#" class="button">Access my account</a>
-            <a href="#" class="button-alt">Click here <span class="text-black">to message us</span></a>
+            <a href="https://learnerflex.com/auth/login" class="button">Access my account</a>
+            <a href="https://learnerflex.com/help" class="button-alt">Click here <span class="text-black">to message us</span></a>
         </div>
     </div>
 </body>

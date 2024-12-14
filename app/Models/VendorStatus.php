@@ -22,7 +22,7 @@ class VendorStatus extends Model
      *
      * @var array
      */
-    protected $fillable = ['user_id', 'sale_url'];
+    protected $fillable = ['user_id', 'sale_url', 'description', 'review', 'status'];
 
     /**
      * Get the user that requested for vendor account.

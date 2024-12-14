@@ -372,6 +372,73 @@ class AffiliateController extends Controller
     }
 
 
+    // public function affiliateproducts(Request $request)
+    // {
+    //     $user = auth()->user();
+
+    //     // Set default pagination size or get it from the request
+    //     $perPage = $request->get('per_page', 20);
+
+    //     // Determine product query based on user's access level
+    //     if ($user->market_access) {
+    //         // User can see all products
+    //         $products = Product::with([
+    //             'user:id,name,email,phone,country,image',  // User details as store owner
+    //             'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor business details
+    //         ]);
+    //     } else {
+
+    //         $transactions = Transaction::where('email', $user->email)
+    //             ->where('status', 'success')
+    //             ->whereNotNull('vendor_id')
+    //             ->whereNotNull('product_id')
+    //             ->pluck('vendor_id')
+    //             ->unique();
+
+    //         if ($transactions->isEmpty()) {
+    //             return response()->json(['message' => 'No products available for you.', 'success' => false], 403);
+    //         }
+
+    //         // Extract vendor IDs
+    //         $vendorIds = $transactions;
+
+    //         // Filter products by vendors the user has purchased from
+    //         $products = Product::with([
+    //             'user:id,name,email,phone,country,image',  // User details
+    //             'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor details
+    //         ])->whereIn('user_id', $vendorIds);
+    //     }
+
+    //     // Apply additional filters for commission and name if provided
+    //     if ($request->has('min_commission') && $request->has('max_commission')) {
+    //         $products->whereBetween('commission', [(float)$request->min_commission, (float)$request->max_commission]);
+    //     }
+
+    //     if ($request->has('name')) {
+    //         $products->where('name', 'LIKE', '%' . $request->name . '%');
+    //     }
+
+    //     // Fetch paginated products
+    //     $paginatedProducts = $products->paginate($perPage);
+
+    //     // Remove `access_link` from each product in the response
+    //     $filteredProducts = $paginatedProducts->through(function ($product) {
+    //         unset($product['access_link']);
+    //         return $product;
+    //     });
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => $filteredProducts,
+    //         'pagination' => [
+    //             'current_page' => $paginatedProducts->currentPage(),
+    //             'last_page' => $paginatedProducts->lastPage(),
+    //             'total' => $paginatedProducts->total(),
+    //             'per_page' => $paginatedProducts->perPage(),
+    //         ]
+    //     ]);
+    // }
+
     public function affiliateproducts(Request $request)
     {
         $user = auth()->user();
@@ -380,14 +447,14 @@ class AffiliateController extends Controller
         $perPage = $request->get('per_page', 20);
 
         // Determine product query based on user's access level
-        if ($user->market_access && is_null($user->refferal_id)) {
+        if ($user->market_access) {
             // User can see all products
             $products = Product::with([
                 'user:id,name,email,phone,country,image',  // User details as store owner
                 'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor business details
             ]);
         } else {
-
+            // Check transactions with successful status
             $transactions = Transaction::where('email', $user->email)
                 ->where('status', 'success')
                 ->whereNotNull('vendor_id')
@@ -395,18 +462,33 @@ class AffiliateController extends Controller
                 ->pluck('vendor_id')
                 ->unique();
 
-            if ($transactions->isEmpty()) {
-                return response()->json(['message' => 'No products available for you.', 'success' => false], 403);
+            if ($transactions->isNotEmpty()) {
+                // Extract vendor IDs
+                $vendorIds = $transactions;
+
+                // Filter products by vendors the user has purchased from
+                $products = Product::with([
+                    'user:id,name,email,phone,country,image',  // User details
+                    'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor details
+                ])->whereIn('user_id', $vendorIds);
+            } else {
+                // Check if the user has a transaction with is_onboarded set to true
+                $onboardedVendors = Transaction::where('email', $user->email)
+                    ->where('is_onboarded', true)
+                    ->whereNotNull('vendor_id')
+                    ->pluck('vendor_id')
+                    ->unique();
+
+                if ($onboardedVendors->isNotEmpty()) {
+                    // Filter products by vendors the user is onboarded to
+                    $products = Product::with([
+                        'user:id,name,email,phone,country,image',  // User details
+                        'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor details
+                    ])->whereIn('user_id', $onboardedVendors);
+                } else {
+                    return response()->json(['message' => 'No products available for you.', 'success' => false], 403);
+                }
             }
-
-            // Extract vendor IDs
-            $vendorIds = $transactions;
-
-            // Filter products by vendors the user has purchased from
-            $products = Product::with([
-                'user:id,name,email,phone,country,image',  // User details
-                'vendor:id,user_id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link' // Vendor details
-            ])->whereIn('user_id', $vendorIds);
         }
 
         // Apply additional filters for commission and name if provided
@@ -439,40 +521,8 @@ class AffiliateController extends Controller
         ]);
     }
 
-    // public function showAffiliateProduct($id)
-    // {
-    //     $user = auth()->user();  // Get the authenticated user
 
-    //     // Fetch the product by ID
-    //     $product = Product::with([
-    //         'vendor:id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link',  // Vendor details
-    //         'user:id,name,email,phone,country,image' // User details
-    //     ])->find($id);
 
-    //     if (!$product) {
-    //         return response()->json(['message' => 'Product not found', 'success' => false], 404);
-    //     }
-
-    //     // Check if the user has market access, paid onboard, and does not have a referral ID
-    //     if ($user->market_access && is_null($user->refferal_id)) {
-    //         // User can see all products, no further conditions needed
-    //         return response()->json(['success' => true, 'data' => $product], 200);
-    //     }
-
-    //     // Check if the user has purchased from this vendor before, regardless of the specific product
-    //     $hasPurchasedFromVendor = Transaction::where('email', $user->email)
-    //         ->where('vendor_id', $product->vendor_id)
-    //         ->where('status', 'success')  // Use 'success' to ensure only successful transactions count
-    //         ->exists();
-
-    //     if ($hasPurchasedFromVendor) {
-    //         // User has previously purchased from this vendor, allow access to the product
-    //         return response()->json(['success' => true, 'data' => $product], 200);
-    //     }
-
-    //     // If the user hasn't purchased from this vendor, deny access
-    //     return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
-    // }
 
     public function showAffiliateProduct($id)
     {
@@ -526,26 +576,26 @@ class AffiliateController extends Controller
         // Use null as a default if 'description' is not provided
         $description = $validate['description'] ?? null;
         try {
-        DB::table('vendor_status')->insert([
-            'user_id' => $user->id,
-            'sale_url' => $saleurl,
-            'description' => $description,
-            'status' => 'pending',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            DB::table('vendor_status')->insert([
+                'user_id' => $user->id,
+                'sale_url' => $saleurl,
+                'description' => $description,
+                'status' => 'pending',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
 
-        try {
-            Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
-            // Send email to the affiliate
-            Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
+            try {
+                Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
+                // Send email to the affiliate
+                Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
+            } catch (\Exception $e) {
+                Log::error('Error sending mail', ['error' => $e->getMessage()]);
+            }
         } catch (\Exception $e) {
-            Log::error('Error sending mail', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'error processing']);
         }
-    } catch (\Exception $e) {
-        return response()->json(['success' => false, 'message' => 'error processing']);
-    }
 
 
 

@@ -80,7 +80,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 
     //vendor requesting to be a vendor
     Route::post('/request-vendor', [AffiliateController::class, 'sendVendorRequest']);
-    Route::get('/check-sale', [AffiliateController::class, 'checkSaleByEmail']);
+    Route::post('/check-sale', [AffiliateController::class, 'checkSaleByEmail']);
 
 
     // withdrawals
@@ -139,7 +139,7 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::delete('/products/{id}/delete', [VendorController::class, 'destroy']);
 
     Route::get('/transactions', [VendorController::class, 'getVendorSales']);
-    Route::get('/check-sale', [AffiliateController::class, 'checkSaleByEmail']);
+    Route::post('/check-sale', [AffiliateController::class, 'checkSaleByEmail']);
 
     Route::get('/product-performance', [VendorController::class, 'productPerformance']);
     Route::get('/affiliate-performance/{affiliateId}', [VendorController::class, 'viewAffiliatePerformance']);
@@ -185,10 +185,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
     Route::prefix('users')->group(function () {
         Route::get('/', [SuperAdminUserController::class, 'index']); // View  Users
-        Route::get('/{role}/{id}', [SuperAdminUserController::class, 'showuser']); // View by role and id
-        Route::post('/{role}', [SuperAdminUserController::class, 'store']); // Create role-based entity
-        Route::put('/{role}/{id}', [SuperAdminUserController::class, 'update']); // Update by role and id
-        Route::delete('/{role}/{id}', [SuperAdminUserController::class, 'destroy']); // Delete by role and id
+        Route::get('/{id}', [SuperAdminUserController::class, 'showUser']); // View by role and id
+        Route::post('/create', [SuperAdminUserController::class, 'createUser']); // Create role-based entity
+        Route::post('/edit/{id}', [SuperAdminUserController::class, 'updateUser']); // Update by role and id
+        Route::delete('/{id}', [SuperAdminUserController::class, 'destroy']); // Delete by role and id
+        Route::get('/vendor-status', [SuperAdminUserController::class, 'filterVendorStatus']); 
     });
 
     // Route::get('/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User

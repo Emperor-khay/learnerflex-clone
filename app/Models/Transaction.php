@@ -21,7 +21,7 @@ class Transaction extends Model
         'amount',
         'currency',
         'status',
-        'is_onboard',
+        'is_onboarded',
         'user_id',
         'org_company',
         'org_vendor',
@@ -37,7 +37,7 @@ class Transaction extends Model
     protected function casts(): array
     {
         return [
-            'is_onboard' => 'boolean',
+            'is_onboarded' => 'boolean',
         ];
     }
 

@@ -38,6 +38,14 @@ class PaystackController extends Controller
                 return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
             }
 
+            // Check if the affiliate can sell the product
+            if (!Helper::canSellProduct($request->input('aff_id'), $request->input('product_id'))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Affiliate is not authorized to promote this product.'
+                ], 403);
+            }
+
             // Retrieve the product from the request
             $product = Product::find($request->input('product_id'));
 
@@ -340,7 +348,7 @@ class PaystackController extends Controller
         return $result;
     }
 
-   
+
 
     public function verify_payment($reference)
     {

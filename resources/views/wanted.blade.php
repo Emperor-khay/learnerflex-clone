@@ -170,9 +170,9 @@
             </p>
 
             <!-- Call to Action Buttons -->           
-            <a href="#" class="button">Make Decision</a>
+            <a href="https://learnerflex.com/auth/login" class="button">Make Decision</a>
             <a href="{{ $saleurl }}" class="button button-alternative">View Sales Page</a>
-            <!-- <a href="#" class="button-alt">Click here <span class="text-black">to message us</span></a> -->
+            <a href="https://learnerflex.com/help" class="button-alt">Click here <span class="text-black">to message us</span></a>
         </div>
     </div>
 </body>
