@@ -176,20 +176,29 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/dashboard', [SuperAdminDashboardController::class, 'getDashboardData']);
 
     // Product Management Routes
-    Route::get('/products', [SuperAdminProductController::class, 'index']); // View Products
-    Route::post('/products/create', [SuperAdminProductController::class, 'store']); // Create Products
-    Route::get('/products/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
-    Route::put('/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
-    Route::post('/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
-    Route::delete('/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product
+    // View Products
+    // Route::post('/products/create', [SuperAdminProductController::class, 'store']); // Create Products
+    // Route::get('/products/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
+    // Route::put('/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
+    // Route::post('/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
+    // Route::delete('/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product
 
+    Route::prefix('products')->group(function () {
+        Route::get('/', [SuperAdminProductController::class, 'index']);
+        Route::get('{id}', [SuperAdminProductController::class, 'show']);
+        Route::post('/digital/create', [SuperAdminProductController::class, 'store']);
+        Route::post('/other/create', [VendorController::class, 'createOtherProduct']);
+        Route::post('/digital/{id}/update', [VendorController::class, 'editDigitalProduct']);
+        Route::post('/other/{id}/update', [VendorController::class, 'editOtherProduct']);
+        Route::delete('/{id}/delete', [VendorController::class, 'destroy']);
+    });
     Route::prefix('users')->group(function () {
         Route::get('/', [SuperAdminUserController::class, 'index']); // View  Users
         Route::get('/{id}', [SuperAdminUserController::class, 'showUser']); // View by role and id
         Route::post('/create', [SuperAdminUserController::class, 'createUser']); // Create role-based entity
         Route::post('/edit/{id}', [SuperAdminUserController::class, 'updateUser']); // Update by role and id
         Route::delete('/{id}', [SuperAdminUserController::class, 'destroy']); // Delete by role and id
-        Route::get('/vendor-status', [SuperAdminUserController::class, 'filterVendorStatus']); 
+        Route::get('/vendor-status', [SuperAdminUserController::class, 'filterVendorStatus']);
     });
 
     // Route::get('/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User

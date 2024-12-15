@@ -194,3 +194,25 @@ DELETE /users/{id} - Delete a user by ID.
 Filter Vendor Status
 GET /users/vendor-status - Retrieve vendors based on their status (e.g.active, pending, inactive).
 
+########for products section in admin -- I decided to use vendor method to fill it in(how you handle vendor endpoint is similiar to this)###########
+
+List Products
+GET /products - Fetch all products.
+
+View Product Details
+GET /products/{id} - Fetch details of a specific product.
+
+Create Digital Product
+POST /products/digital/create - Add a new digital product.
+
+Create Other Product
+POST /products/other/create - Add a non-digital product.
+
+Update Digital Product
+POST /products/digital/{id}/update - Edit a digital product by ID.
+
+Update Other Product
+POST /products/other/{id}/update - Edit a non-digital product by ID.
+
+Delete Product
+DELETE /products/{id}/delete - Remove a product by ID.

@@ -170,6 +170,9 @@ class SuperAdminUserController extends Controller
                 $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
             } while ($exists);
 
+            // Determine market_access based on role
+            $marketAccess = $request->input('role') === 'admin' ? true : false;
+
             // Create the new user
             $user = User::create([
                 'aff_id' => $aff_id,
@@ -178,6 +181,7 @@ class SuperAdminUserController extends Controller
                 'currency' => $request->input('currency', 'NGN'), // Default to 'NGN' if not provided
                 'referral_id' => null, // Can be updated later if needed
                 'role' => $request->input('role'),
+                'market_access' => $marketAccess,
             ]);
 
             // Handle vendor_email if provided
