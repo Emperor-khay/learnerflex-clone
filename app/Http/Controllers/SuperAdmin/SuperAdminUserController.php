@@ -152,7 +152,7 @@ class SuperAdminUserController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'role' => 'required|string|in:affiliate,vendor', // Role must be provided and valid
+            'role' => 'required|string|in:affiliate,vendor,admin', // Role must be provided and valid
             'vendor_email' => 'nullable|email|exists:users,email', // Vendor email is optional
         ]);
 
