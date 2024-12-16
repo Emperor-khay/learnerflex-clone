@@ -197,7 +197,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::get('/{id}', [SuperAdminUserController::class, 'showUser']); // View by role and id
         Route::post('/create', [SuperAdminUserController::class, 'createUser']); // Create role-based entity
         Route::post('/edit/{id}', [SuperAdminUserController::class, 'updateUser']); // Update by role and id
-        Route::delete('/{id}', [SuperAdminUserController::class, 'destroy']); // Delete by role and id
+        Route::post('/delete/{id}', [SuperAdminUserController::class, 'deleteUser']); // Delete by role and id
         Route::get('/vendor-status', [SuperAdminUserController::class, 'filterVendorStatus']);
     });
 
@@ -209,7 +209,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('/affiliate/bulk-upload', [SuperAdminAffiliateController::class, 'bulkUpload']); // Bulk upload affiliates
     //set affiliates to vendor
     Route::get('/vendor-requests', [SuperAdminUserController::class, 'requestToBeVendor']);
-    Route::patch('/accept-vendor-request/{id}', [SuperAdminUserController::class, 'upgradeAffiliateToVendor']);
+    Route::post('/accept-vendor-request/{id}', [SuperAdminUserController::class, 'upgradeAffiliateToVendor']);
 
     Route::post('/change-password', [SecondVendorController::class, 'changePassword'])->name('change-password');
 

@@ -38,7 +38,7 @@ class VendorAccountRejected extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'mail.vendor_account_rejection',
         );
     }
 
