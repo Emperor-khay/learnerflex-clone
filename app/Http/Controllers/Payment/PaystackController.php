@@ -112,6 +112,7 @@ class PaystackController extends Controller
                     'org_vendor' => $org_vendor_share,
                     'org_aff' => $org_aff_share,
                     'tx_ref' => $pay->data->reference ?? null,
+                    'description' => 'signup_fee',
                     'transaction_id' => $orderId,
                 ]);
                 // Return the authorization URL in the JSON response
