@@ -197,11 +197,12 @@ class RegisterController extends Controller
             // Update the transaction record in the database
             $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
 
+            $description = "signup_fee";
             if ($transaction) {
                 $transaction->update([
                     'tx_ref' => $reference,
                     'status' => $paymentDetails['data']['status'],
-                    'description' => 'signup_fee'
+                    'description' => $description,
                 ]);
             }
 
