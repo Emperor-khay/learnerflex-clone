@@ -201,6 +201,7 @@ class RegisterController extends Controller
                 $transaction->update([
                     'tx_ref' => $reference,
                     'status' => $paymentDetails['data']['status'],
+                    'description' => 'signup_fee'
                 ]);
             }
 

@@ -204,6 +204,7 @@ class PaystackController extends Controller
             $transaction->update([
                 'tx_ref' => $reference,
                 'status' => 'success',
+                'description' => 'product_sale'
             ]);
 
             // Retrieve product and vendor information

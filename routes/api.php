@@ -1,9 +1,10 @@
 <?php
 
+use App\Helpers\Helper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
-use App\Helpers\Helper;
 use App\Http\Controllers\RandomController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\Users\UserController;
@@ -33,9 +34,9 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
 // Route for handling the payment callback
 Route::get('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
-Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
-// Route for handling the payment callback
-Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback']);
+// Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
+// // Route for handling the payment callback
+// Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback']);
 //password resetting routes
 Route::post('/password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
 Route::post('/password/new-password', [NewPasswordReset::class, 'resetPassword']);
@@ -174,14 +175,8 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     // Super Admin Dashboard Routes
     Route::get('/dashboard', [SuperAdminDashboardController::class, 'getDashboardData']);
+    Route::get('/analytics', [SuperAdminDashboardController::class, 'analytics']);
 
-    // Product Management Routes
-    // View Products
-    // Route::post('/products/create', [SuperAdminProductController::class, 'store']); // Create Products
-    // Route::get('/products/{id}', [SuperAdminProductController::class, 'show']); // View Single Product
-    // Route::put('/product/{id}', [SuperAdminProductController::class, 'update']); // Edit Product
-    // Route::post('/product/{id}/approve', [SuperAdminProductController::class, 'approve']); // Approve Product
-    // Route::delete('/product/{id}', [SuperAdminProductController::class, 'destroy']); //Delete Product
 
     Route::prefix('products')->group(function () {
         Route::get('/', [SuperAdminProductController::class, 'index']);
@@ -221,10 +216,122 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
 //test endpoints
 Route::get('/test', function () {
+    try {
+        // Revenue and Count from Marketplace Unlocks
+        $marketplaceUnlocks = DB::table('transactions')
+            ->whereNull('product_id')
+            ->whereNull('vendor_id')
+            ->where('description', 'marketplace_unlock')
+            ->where('status', 'success');
 
-    $product = 17;
-    $downloadLink = Helper::generateDownloadLink($product);
-    return $downloadLink;
+        $marketplaceRevenue = $marketplaceUnlocks->sum('amount');
+        $marketplaceCount = $marketplaceUnlocks->count();
+
+        // Revenue and Count from Signups
+        $signups = DB::table('transactions')
+            ->whereNull('product_id')
+            ->whereNull('vendor_id')
+            ->where('description', 'signup_fee')
+            ->where('status', 'success');
+
+        $signupRevenue = $signups->sum('amount');
+        $signupCount = $signups->count();
+
+        // Total Revenue Generated (Product Sales + Signups + Marketplace Unlocks)
+        $productSales = DB::table('transactions')
+            ->whereNotNull('product_id')
+            ->whereNotNull('vendor_id')
+            ->where('status', 'success');
+
+        $productSalesRevenue = $productSales->sum('amount');
+        $productSalesCount = $productSales->count();
+
+        $totalRevenue = $productSalesRevenue + $signupRevenue + $marketplaceRevenue;
+
+        // Today's Earnings
+        $orgEarningsToday = DB::table('sales')
+            ->whereDate('created_at', today())
+            ->sum('org_company'); // Organization's share
+        $orgEarningsTodayCount = DB::table('sales')
+            ->whereDate('created_at', today())
+            ->count();
+
+        $affiliateEarningsToday = DB::table('sales')
+            ->whereDate('created_at', today())
+            ->sum('org_aff'); // Affiliates' share
+        $affiliateEarningsTodayCount = DB::table('sales')
+            ->whereDate('created_at', today())
+            ->whereNotNull('affiliate_id') // Count only those involving affiliates
+            ->count();
+
+        $vendorEarningsToday = DB::table('sales')
+            ->whereDate('created_at', today())
+            ->sum('org_vendor'); // Vendors' share
+        $vendorEarningsTodayCount = DB::table('sales')
+            ->whereDate('created_at', today())
+            ->count();
+
+        // Unpaid Balances
+        $unpaidAffiliateBalance = DB::table('sales')->sum('org_aff') // Total owed
+            - DB::table('withdrawals')
+            ->join('users', 'withdrawals.user_id', '=', 'users.id')
+            ->where('users.role', 'affiliate')
+            ->where('withdrawals.status', 'success') // Only successful withdrawals
+            ->sum('withdrawals.amount'); // Total withdrawn
+
+        $unpaidVendorBalance = DB::table('sales')->sum('org_vendor') // Total owed
+            - DB::table('withdrawals')
+            ->join('users', 'withdrawals.user_id', '=', 'users.id')
+            ->where('users.role', 'vendor')
+            ->where('withdrawals.status', 'success') // Only successful withdrawals
+            ->sum('withdrawals.amount'); // Total withdrawn
+
+        // Total Payouts
+        $affiliatePayouts = DB::table('withdrawals')
+            ->join('users', 'withdrawals.user_id', '=', 'users.id')
+            ->where('users.role', 'affiliate')
+            ->where('withdrawals.status', 'success') // Only successful withdrawals
+            ->sum('withdrawals.amount'); // Total affiliate payouts
+
+        $vendorPayouts = DB::table('withdrawals')
+            ->join('users', 'withdrawals.user_id', '=', 'users.id')
+            ->where('users.role', 'vendor')
+            ->where('withdrawals.status', 'success') // Only successful withdrawals
+            ->sum('withdrawals.amount'); // Total vendor payouts
+
+        // Return data
+        return response()->json([
+            'total_revenue' => $totalRevenue,
+            'product_sales_revenue' => $productSalesRevenue,
+            'product_sales_count' => $productSalesCount,
+            'marketplace_revenue' => $marketplaceRevenue,
+            'marketplace_count' => $marketplaceCount,
+            'signup_revenue' => $signupRevenue,
+            'signup_count' => $signupCount,
+            'org_earnings_today' => [
+                'amount' => $orgEarningsToday,
+                'count' => $orgEarningsTodayCount,
+            ],
+            'affiliate_earnings_today' => [
+                'amount' => $affiliateEarningsToday,
+                'count' => $affiliateEarningsTodayCount,
+            ],
+            'vendor_earnings_today' => [
+                'amount' => $vendorEarningsToday,
+                'count' => $vendorEarningsTodayCount,
+            ],
+            'unpaid_affiliate_balance' => $unpaidAffiliateBalance,
+            'unpaid_vendor_balance' => $unpaidVendorBalance,
+            'total_affiliate_payouts' => $affiliatePayouts,
+            'total_vendor_payouts' => $vendorPayouts,
+        ]);
+    } catch (\Exception $e) {
+        // Handle any errors
+        return response()->json([
+            'error' => 'Failed to retrieve analytics data',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
 });
 //not sure what these are used for
 // Route::post('/user/get-balance', [UserController::class, 'getBalance']);
