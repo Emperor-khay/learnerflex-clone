@@ -22,6 +22,7 @@ class Transaction extends Model
         'currency',
         'status',
         'is_onboarded',
+        'description',
         'user_id',
         'org_company',
         'org_vendor',

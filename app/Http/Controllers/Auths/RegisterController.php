@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use App\Enums\TransactionDescription;
 use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Notifications\Notification;
@@ -85,7 +86,7 @@ class RegisterController extends Controller
                     'org_vendor' => 0,
                     'org_aff' => 0,
                     'market_access' => true,
-                    'description' => 'Registeration fee',
+                    'description' => TransactionDescription::SIGNUP_FEE->value,
                     'tx_ref' => null,
                     'transaction_id' => $orderID, // Save the dynamic order ID
                 ]);
@@ -196,13 +197,10 @@ class RegisterController extends Controller
 
             // Update the transaction record in the database
             $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
-
-            $description = "signup_fee";
             if ($transaction) {
                 $transaction->update([
                     'tx_ref' => $reference,
-                    'status' => $paymentDetails['data']['status'],
-                    'description' => $description,
+                    'status' => $paymentDetails['data']['status']
                 ]);
             }
 

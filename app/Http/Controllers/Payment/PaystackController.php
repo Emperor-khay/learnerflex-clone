@@ -5,15 +5,16 @@ namespace App\Http\Controllers\Payment;
 use Exception;
 use App\Models\Sale;
 use App\Models\User;
+use App\Helpers\Helper;
 use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Helpers\Helper;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
+use App\Enums\TransactionDescription;
 use Illuminate\Support\Facades\Validator;
 use Unicodeveloper\Paystack\Facades\Paystack;
 
@@ -112,7 +113,7 @@ class PaystackController extends Controller
                     'org_vendor' => $org_vendor_share,
                     'org_aff' => $org_aff_share,
                     'tx_ref' => $pay->data->reference ?? null,
-                    'description' => 'signup_fee',
+                    'description' => TransactionDescription::PRODUCT_SALE->value,
                     'transaction_id' => $orderId,
                 ]);
                 // Return the authorization URL in the JSON response

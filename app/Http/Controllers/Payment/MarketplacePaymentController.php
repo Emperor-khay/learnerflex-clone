@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
+use App\Enums\TransactionDescription;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
 use Unicodeveloper\Paystack\Facades\Paystack;
@@ -56,6 +57,7 @@ class MarketplacePaymentController extends Controller
                 'org_company' => 0,
                 'org_vendor' => 0,
                 'org_aff' => 0,
+                'description' => TransactionDescription::MARKETPLACE_UNLOCK->value,
                 'tx_ref' => null,
                 'transaction_id' => $orderId, // Save the dynamic order ID
             ]);
@@ -106,15 +108,7 @@ class MarketplacePaymentController extends Controller
             $user = User::updateOrCreate(
                 ['email' => $email],  // Find user by email
                 [
-                    'name' => null,
-                    'phone' => null,
-                    'password' => null,
-                    'country' => null,
-                    'refferal_id' => 0,
-                    'image' => null,
                     'market_access' => 1,
-                    'bank_account' => null,
-                    'bank_name' => null
                 ]
             );
     
@@ -125,7 +119,6 @@ class MarketplacePaymentController extends Controller
                 $transaction->update([
                     'tx_ref' => $reference,
                     'status' => $paymentDetails['data']['status'],
-                    'description' => 'marketplace_unlock'
                 ]);
             }
     
