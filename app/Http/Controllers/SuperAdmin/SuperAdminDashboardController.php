@@ -206,8 +206,7 @@ class SuperAdminDashboardController extends Controller
     {
         try {
             // Revenue and Count from Marketplace Unlocks
-            $marketplaceUnlocks = Transaction::whereNull('product_id')
-                ->whereNull('vendor_id')
+            $marketplaceUnlocks = Transaction::whereNull('vendor_id')
                 ->where('description', 'marketplace_unlock')
                 ->where('status', 'success');
 
@@ -215,8 +214,7 @@ class SuperAdminDashboardController extends Controller
             $marketplaceCount = $marketplaceUnlocks->count();
 
             // Revenue and Count from Signups
-            $signups = Transaction::whereNull('product_id')
-                ->whereNull('vendor_id')
+            $signups = Transaction::whereNull('vendor_id')
                 ->where('description', 'signup_fee')
                 ->where('status', 'success');
 
