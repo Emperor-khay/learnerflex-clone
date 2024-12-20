@@ -35,6 +35,6 @@ class IssueOnRegisteration extends Mailable
     public function build()
     {
         return $this->subject('Issue with User Registration')
-                    ->view('issue_on_registration');
+                    ->view('mail.issue_on_registration');
     }
 }

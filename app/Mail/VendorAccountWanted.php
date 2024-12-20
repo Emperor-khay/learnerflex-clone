@@ -34,6 +34,6 @@ class VendorAccountWanted extends Mailable
     public function build()
     {
         return $this->subject('New Vendor Request')
-                    ->view('wanted'); // Use the HTML view
+                    ->view('mail.admin_notification_of_vendor_account_request'); // Use the HTML view
     }
 }

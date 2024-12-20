@@ -32,16 +32,6 @@ class VendorAccountUpgraded extends Mailable
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
-    // public function content(): Content
-    // {
-    //     return new Content(
-    //         view: 'view.name',
-    //     );
-    // }
-
     public function build()
     {
         return $this->subject('Your Account has been Upgraded to Vendor')

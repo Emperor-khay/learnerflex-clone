@@ -33,7 +33,7 @@ class SkippedEmails extends Mailable
     public function build()
     {
         return $this->subject('Skipped Affiliate Registrations')
-                    ->view('skipped_emails')
+                    ->view('mail.skipped_emails')
                     ->with(['skippedEmails' => $this->skippedEmails]);
     }
 }

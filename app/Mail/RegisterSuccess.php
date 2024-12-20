@@ -37,7 +37,7 @@ class RegisterSuccess extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'register-success',
+            view: 'mail.register-success',
         );
     }
 
