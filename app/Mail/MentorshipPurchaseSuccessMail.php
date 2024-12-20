@@ -17,13 +17,15 @@ class MentorshipPurchaseSuccessMail extends Mailable
     public $mentor_name;
     public $product_access_link;
     public $aff_id;
+    public $product_name;
 
-    public function __construct($user_name, $mentor_name, $product_access_link, $aff_id)
+    public function __construct($user_name, $mentor_name, $product_access_link, $aff_id,$product_name)
     {
         $this->user_name = $user_name;
         $this->mentor_name = $mentor_name;
         $this->product_access_link = $product_access_link;
         $this->aff_id = $aff_id;
+        $this->product_name =$product_name;
     }
 
     /**

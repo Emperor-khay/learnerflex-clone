@@ -157,7 +157,6 @@
 
 </html>
 
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" lang="en">
   <head>
@@ -193,8 +192,10 @@
       max-width: 0;
     "
   >
-    Congratulations Raphael Ugo, You just made a sale of your Mentorship. check
-    below for details about your sale. Your are on track on being a global Vo
+    Congratulations!! You just paid to gain access to {{ $mentor_name }}&#x27;s mentorship. Use the button below to access what you paid for
+    <div>
+       ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿
+    </div>
   </div>
   <body
     style="
@@ -296,7 +297,7 @@
                         margin-bottom: 0px;
                       "
                     >
-                      Congratulations!! Raphael Ugo 🥳
+                      Congratulations!! {{ $user_name }} 🥳
                     </h1>
                     <p
                       style="
@@ -306,9 +307,9 @@
                         margin: 16px 0;
                       "
                     >
-                      You just made a sale of your Mentorship. check below for
-                      details about your sale. Your are on track on being a
-                      global Voice.
+                      You just paid to gain access to {{ $mentor_name }}&#x27;s
+                      mentorship. Use the button below to access what you paid
+                      for
                     </p>
                     <p
                       style="
@@ -316,24 +317,9 @@
                         line-height: 15.23px;
                         font-size: 13px;
                         margin: 16px 0;
-                        margin-top: 0px;
-                        margin-bottom: 0px;
                       "
                     >
-                      <strong>Product Sold</strong>: Smart Income Generator
-                    </p>
-                    <p
-                      style="
-                        font-weight: 400;
-                        line-height: 15.23px;
-                        font-size: 13px;
-                        margin: 16px 0;
-                        margin-top: 0px;
-                        margin-bottom: 0px;
-                      "
-                    >
-                      <strong>Product Price</strong>: ₦10,000 ( added to your
-                      available balance )
+                      <strong>Title</strong>: {{ $product_name }}
                     </p>
                   </td>
                 </tr>
@@ -352,7 +338,7 @@
                 <tr>
                   <td>
                     <a
-                      href="https://learnerflex.com/auth/login"
+                      href="{{ $product_access_link }}"
                       style="
                         border-radius: 3px;
                         padding: 8px 8px 8px 8px;
@@ -386,7 +372,7 @@
                           mso-padding-alt: 0px;
                           mso-text-raise: 6px;
                         "
-                        >Access Dashboard</span
+                        >Access mentorship</span
                       ><span
                         ><!--[if mso
                           ]><i style="mso-font-width: 400%" hidden

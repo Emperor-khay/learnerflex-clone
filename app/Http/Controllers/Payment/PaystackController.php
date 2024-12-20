@@ -260,7 +260,7 @@ class PaystackController extends Controller
                 // For Mentorship
                 elseif ($product_type === 'mentorship') {
                     $mentor_name = $vendor->name ?? 'Mentor'; // Assuming the mentor's name is the vendor's name
-                    Mail::to($email)->send(new \App\Mail\MentorshipPurchaseSuccessMail($user_name, $mentor_name, $product_access_link, $aff_id));
+                    Mail::to($email)->send(new \App\Mail\MentorshipPurchaseSuccessMail($user_name, $mentor_name, $product_access_link, $aff_id, $product_name));
                 }
             } catch (\Exception $e) {
                 Log::error('Error sending email after payment', ['error' => $e->getMessage()]);
