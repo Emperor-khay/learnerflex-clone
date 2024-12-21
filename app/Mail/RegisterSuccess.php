@@ -29,7 +29,7 @@ class RegisterSuccess extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: $this->name . 'Welcome to Learnerflex',
+            subject: $this->name. ',' . 'Welcome to Learnerflex',
         );
     }
 
