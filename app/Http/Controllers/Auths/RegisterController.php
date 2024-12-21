@@ -141,7 +141,8 @@ class RegisterController extends Controller
         ]);
 
         $email = $validatedData['email'];
-        Mail::to($email)->send(new \App\Mail\RegisterSuccess());
+        $name = $validatedData['name'];
+        Mail::to($email)->send(new \App\Mail\RegisterSuccess($name));
 
         // Redirect to signup with success message
      return response()->json([
@@ -209,7 +210,8 @@ class RegisterController extends Controller
 
             // Generate token and send confirmation email
             $token = $user->createToken('YourAppName')->plainTextToken;
-            Mail::to($email)->send(new \App\Mail\RegisterSuccess());
+            $name = $temporaryUser->name;
+            Mail::to($email)->send(new \App\Mail\RegisterSuccess($name));
 
             // Redirect to signup with success message
             return redirect('https://learnerflex.com/auth/signup?status=success&message=' . urlencode('Registration successful! You can now log in.') . '&email=' . urlencode($email));
