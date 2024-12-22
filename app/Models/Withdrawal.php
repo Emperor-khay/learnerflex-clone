@@ -22,6 +22,7 @@ class Withdrawal extends Model
         'email',
         'old_balance',
         'status',
+        'type',
     ];
 
     /**
