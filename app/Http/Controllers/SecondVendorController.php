@@ -45,7 +45,7 @@ class SecondVendorController extends Controller
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
-                ->sum('amount');
+                ->sum('org_vendor');
 
             // 1. Available Vendor Earnings (Total earnings for the vendor)
             $availableEarn = Transaction::where('vendor_id', $vendor->id) // Query the transactions table
@@ -53,7 +53,7 @@ class SecondVendorController extends Controller
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
-                ->sum('amount');  // Sum of the amount from transactions
+                ->sum('org_vendor');  // Sum of the amount from transactions
 
             // Calculate available earnings
             $availableEarnings = $availableEarn - $totalWithdrawals;
@@ -62,7 +62,7 @@ class SecondVendorController extends Controller
             $todaySalesData = Transaction::where('vendor_id', $vendor->id)
                 ->where('status', 'success') // Query transactions for successful sales
                 ->whereDate('created_at', Carbon::today())  // Today's sales
-                ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+                ->selectRaw('COUNT(*) as sale_count, SUM(org_vendor) as total_amount')
                 ->first();
 
             // 3. Total Vendor Sales (All-time or filtered by date sales with vendor - both count and amount)
@@ -71,7 +71,7 @@ class SecondVendorController extends Controller
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
-                ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+                ->selectRaw('COUNT(*) as sale_count, SUM(org_vendor) as total_amount')
                 ->first();
 
             // Return all data in JSON format
