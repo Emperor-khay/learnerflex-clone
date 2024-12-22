@@ -210,9 +210,18 @@ class SuperAdminAffiliateController extends Controller
         ]);
 
         Transaction::create([
-            'is_onboarded' => true,
-            'vendor_id' => $vendor->id, // Ensure $vendorId contains the appropriate vendor ID
+            'is_onboarded' => 1,
+                'vendor_id' => $vendor->id ?? null,
+                'email' => $data['email'],
+                'amount' => 0,
+                'status' => 'success',
         ]);
+
+        try {
+            Mail::to($data['email'])->send(new \App\Mail\AffiliateAccountCreated($data['name'], $data['email'], $vendor->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send email to ' . $data['email'] . ': ' . $e->getMessage());
+        }
         
     }
 

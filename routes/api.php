@@ -33,7 +33,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
 // Route for handling the payment callback
-Route::get('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
+Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
 // Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
 // // Route for handling the payment callback
 // Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback']);
