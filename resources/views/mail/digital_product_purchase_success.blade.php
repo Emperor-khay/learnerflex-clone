@@ -269,8 +269,51 @@
                         <!-- -->ugoraphael@gmail.com</span
                       >
                     </p>
-                    <a href="https://learnerflex.com/auth/signup?aff_id={{ $aff_id }}" class="button">LearnerFlex
-                        Account</a>
+                    <a
+                      href="https://learnerflex.com/auth/signup?aff_id={{ $aff_id }}"
+                      style="
+                        border-radius: 3px;
+                        padding: 8px 8px 8px 8px;
+                        color: rgb(255, 255, 255);
+                        box-shadow:
+                          var(--tw-ring-offset-shadow, 0 0 #0000),
+                          var(--tw-ring-shadow, 0 0 #0000),
+                          0px 1px 1px 0px #dedede;
+                        font-size: 13px;
+                        background-color: rgb(247, 126, 0);
+                        line-height: 100%;
+                        text-decoration: none;
+                        display: inline-block;
+                        max-width: 100%;
+                        mso-padding-alt: 0px;
+                      "
+                      target="_blank"
+                      ><span
+                        ><!--[if mso
+                          ]><i
+                            style="mso-font-width: 400%; mso-text-raise: 12"
+                            hidden
+                            >&#8202;</i
+                          ><!
+                        [endif]--></span
+                      ><span
+                        style="
+                          max-width: 100%;
+                          display: inline-block;
+                          line-height: 120%;
+                          mso-padding-alt: 0px;
+                          mso-text-raise: 6px;
+                        "
+                        >Create
+                        Account</span
+                      ><span
+                        ><!--[if mso
+                          ]><i style="mso-font-width: 400%" hidden
+                            >&#8202;&#8203;</i
+                          ><!
+                        [endif]--></span
+                      ></a
+                    >
                     <p
                       style="
                         font-weight: 400;
@@ -279,7 +322,7 @@
                         margin: 16px 0;
                       "
                     >
-                      Please immediately you log in, ensure you you go through your dashboard and set up your account
+                      Please immediately you log in, ensure you go through your dashboard and set up your account
                     </p>
                   </td>
                 </tr>
@@ -298,7 +341,7 @@
                 <tr>
                   <td>
                     <a
-                      href=""
+                      href="https://learnerflex.com/auth/login"
                       style="
                         border-radius: 3px;
                         padding: 8px 8px 8px 8px;

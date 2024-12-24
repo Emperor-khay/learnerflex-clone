@@ -117,6 +117,23 @@ class RegisterController extends Controller
                 'message' => 'Affiliate id does not exist.',
             ]);
         }
+
+        // Check for valid transactions
+        $validTransaction = DB::table('transactions')
+            ->join('products', 'transactions.product_id', '=', 'products.id')
+            ->where('transactions.email', $validatedData['email'])
+            ->where('transactions.affiliate_id', $referral)
+            ->where('transactions.status', 'success')
+            ->whereNotNull('transactions.product_id')
+            ->where('products.is_affiliated', true) // Check if the product is affiliated
+            ->exists();
+
+        if (!$validTransaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid transaction found to allow registration. Only affiliated products are eligible.',
+            ]);
+        }
         // Hash the password
         $hashedPassword = Hash::make($validatedData['password']);
 
@@ -127,7 +144,7 @@ class RegisterController extends Controller
             $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
         } while ($exists);
         // Create the new user
-         User::create([
+        User::create([
             'aff_id' => $aff_id,
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
@@ -142,14 +159,19 @@ class RegisterController extends Controller
 
         $email = $validatedData['email'];
         $name = $validatedData['name'];
-        Mail::to($email)->send(new \App\Mail\RegisterSuccess($name));
+
+        try {
+            Mail::to($email)->send(new \App\Mail\RegisterSuccess($name));
+        } catch (\Exception $e) {
+            Log::error('Error sending sale notification to vendor', ['vendor_email' => $email, 'error' => $e->getMessage()]);
+        }
+        
 
         // Redirect to signup with success message
-     return response()->json([
+        return response()->json([
             'success' => true,
             'message' => 'Registration successful! You can now log in.'
-         ]);
-        
+        ]);
     }
 
 

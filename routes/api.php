@@ -101,22 +101,13 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 
     Route::post('/logout', [LogoutController::class, 'logout']);
 
-
-    // //gets sales data
-    // Route::get('/affiliate/sales', [UserController::class, 'salesAffiliate']);
-    // // check bank account route and update user account
-    // Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
-    // Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
-    //view all products from a particular vendor
-    // Route::get('product/view-product/{vendor_id}/', [ProductController::class, 'viewProductsByVendor']);
-    //get product by id
-    // Route::get('product/view-product/{vendor_id}/{product_id}', [ProductController::class, 'viewProductByVendor']);
 });
 
 // Vendor routes group
 Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function () {
     Route::get('/dashboard', [SecondVendorController::class, 'vendorDashboardMetrics']);
-    Route::get('/affiliate/dashboard', [SecondVendorController::class, 'affiliateDashboardMetrics']);
+    // Route::get('/affiliate/dashboard', [SecondVendorController::class, 'affiliateDashboardMetrics']);
+    Route::get('/affiliate/dashboard', [AffiliateController::class, 'affiliateDashboardMetrics']);
 
     //profile routes
     Route::post('/update/profile', [SecondVendorController::class, 'handleUserProfile']);
@@ -196,8 +187,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::get('/vendor-status', [SuperAdminUserController::class, 'filterVendorStatus']);
     });
 
-    // Route::get('/user/refferer/{referralId}', [SuperAdminUserController::class, 'getReferrerByReferralId']); // View Single User
-
     // Transactions Route
     Route::get('/transactions', [SuperAdminTransactionController::class, 'index']);
 
@@ -205,14 +194,15 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     //set affiliates to vendor
     Route::get('/vendor-requests', [SuperAdminUserController::class, 'requestToBeVendor']);
     Route::post('/accept-vendor-request/{id}', [SuperAdminUserController::class, 'upgradeAffiliateToVendor']);
+    Route::get('/withdrawals/pending/download', [SuperAdminTransactionController::class, 'downloadPendingWithdrawals']);
+    Route::post('/withdrawals/approve-all', [SuperAdminTransactionController::class, 'approveAllPendingWithdrawals']);
+    // Route::get('/withdrawals', [WithdrawalController::class, 'getFilteredWithdrawals']);
+
 
     Route::post('/change-password', [SecondVendorController::class, 'changePassword'])->name('change-password');
 
     Route::post('/logout', [SuperAdminAuthController::class, 'logout']);
 });
-
-
-//test routes
 
 //test endpoints
 Route::get('/test', function () {
@@ -333,7 +323,3 @@ Route::get('/test', function () {
         ], 500);
     }
 });
-//not sure what these are used for
-// Route::post('/user/get-balance', [UserController::class, 'getBalance']);
-// Route::post('user/total-aff-sales', [UserController::class, 'totalSaleAff']);
-// Route::post('/request-withdrawal', [UserController::class, 'requestWithdrawal']);

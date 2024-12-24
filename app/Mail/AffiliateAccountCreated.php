@@ -20,12 +20,11 @@ class AffiliateAccountCreated extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct($argument, $argument2, $argument3 )
+    public function __construct(string $affiliate_name, string $vendor_name, string $affiliate_email)
     {
-        $this->affiliate_name = $argument;
-        $this->vendor_name = $argument2;
-        $this->affiliate_email = $argument3;
-        
+        $this->affiliate_name = $affiliate_name;
+        $this->vendor_name = $vendor_name;
+        $this->affiliate_email = $affiliate_email;
     }
 
     /**
@@ -34,7 +33,7 @@ class AffiliateAccountCreated extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Affiliate Account Created',
+            subject: 'You just got an account with us',
         );
     }
 

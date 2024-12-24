@@ -4,7 +4,11 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Mail\WithdrawalApproved;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Response;
 
 class SuperAdminTransactionController extends Controller
 {
@@ -61,4 +65,106 @@ class SuperAdminTransactionController extends Controller
         }
         return response()->json($transaction);
     }
+
+    public function downloadPendingWithdrawals(Request $request)
+{
+    try {
+        // Fetch pending withdrawal records
+        $withdrawals = \App\Models\Withdrawal::where('status', 'pending')->get();
+
+        // Define CSV headers
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="pending_withdrawals.csv"',
+        ];
+
+        // Create a callback to write the CSV data
+        $callback = function () use ($withdrawals) {
+            $file = fopen('php://output', 'w');
+
+            // Write the header row
+            fputcsv($file, [
+                'ID', 'User ID', 'Email', 'Amount', 'Old Balance',
+                'Bank Account', 'Bank Name', 'Type', 'Created At',
+            ]);
+
+            // Write each withdrawal record
+            foreach ($withdrawals as $withdrawal) {
+                fputcsv($file, [
+                    $withdrawal->id,
+                    $withdrawal->user_id,
+                    $withdrawal->email,
+                    $withdrawal->amount,
+                    $withdrawal->old_balance,
+                    $withdrawal->bank_account,
+                    $withdrawal->bank_name,
+                    $withdrawal->type,
+                    $withdrawal->created_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Return CSV as a streamed response
+        return Response::stream($callback, 200, $headers);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to generate CSV: ' . $e->getMessage()], 500);
+    }
+}
+
+public function approveAllPendingWithdrawals(Request $request)
+{
+    $type = $request->input('type');
+
+    if (!in_array($type, ['affiliate', 'vendor'])) {
+        return response()->json([
+            'error' => 'Invalid type. Please specify either "affiliate" or "vendor".'
+        ], 400);
+    }
+
+    try {
+        DB::beginTransaction();
+
+        // Fetch all pending withdrawal requests for the given type
+        $pendingWithdrawals = \App\Models\Withdrawal::where('status', 'pending')
+            ->where('type', $type)
+            ->get();
+
+        if ($pendingWithdrawals->isEmpty()) {
+            return response()->json([
+                'message' => 'No pending withdrawal requests to approve for the specified type.',
+            ], 200);
+        }
+
+        foreach ($pendingWithdrawals as $withdrawal) {
+            try {
+                // Update withdrawal status to approved
+                $withdrawal->update(['status' => 'approved']);
+
+                // Send email notification to the user
+                Mail::to($withdrawal->email)->send(new WithdrawalApproved($withdrawal, $type));
+
+            } catch (\Exception $mailException) {
+                // Log email errors and continue processing
+                \Log::error("Failed to send email for withdrawal ID {$withdrawal->id}: " . $mailException->getMessage());
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'All pending withdrawal requests have been approved, and users notified.',
+            'type' => $type,
+            'total_approved' => $pendingWithdrawals->count(),
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'error' => 'Failed to approve withdrawals: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

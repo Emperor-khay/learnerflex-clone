@@ -39,13 +39,14 @@ class AffiliateController extends Controller
             // 4. Total Withdrawals (Sum all withdrawals for the affiliate)
             $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
                 ->where('status', 'approved')
+                ->where('type', 'affiliate')
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
                 ->sum('amount');
 
             // 1. Available Affiliate Earnings (Total earnings for the affiliate)
-            $availableEarn = Transaction::where('affiliate_id', $affiliate->aff_id)
+            $availableEarn = Sale::where('affiliate_id', $affiliate->aff_id)
                 ->where('status', 'success') // Transaction must be successful
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
@@ -56,19 +57,19 @@ class AffiliateController extends Controller
             $availableEarnings = $availableEarn - $totalWithdrawals;
 
             // 2. Today's Affiliate Sales (Sales with affiliate for the current day - both count and amount)
-            $todaySalesData = Transaction::where('affiliate_id', $affiliate->aff_id)
+            $todaySalesData = Sale::where('affiliate_id', $affiliate->aff_id)
                 ->where('status', 'success') // Query Sales model
                 ->whereDate('created_at', Carbon::today())  // Today's sales
-                ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+                ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
                 ->first();
 
             // 3. Total Affiliate Sales (All-time or filtered by date sales with affiliate - both count and amount)
-            $totalSalesData = Transaction::where('affiliate_id', $affiliate->aff_id) // Fixed to use aff_id
+            $totalSalesData = Sale::where('affiliate_id', $affiliate->aff_id) // Fixed to use aff_id
                 ->where('status', 'success')
                 ->when($startDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
-                ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+                ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
                 ->first();
 
             // Return all data in JSON format

@@ -28,7 +28,7 @@ class VendorAccountRejected extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Vendor Account Rejected',
+            subject: 'Vendor Account Request',
         );
     }
 

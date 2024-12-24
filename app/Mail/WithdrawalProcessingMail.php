@@ -31,7 +31,7 @@ class WithdrawalProcessingMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Withdrawal Processing',
+            subject: 'Your requested payment is on its way',
         );
     }
 

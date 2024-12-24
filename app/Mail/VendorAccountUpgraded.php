@@ -22,19 +22,10 @@ class VendorAccountUpgraded extends Mailable
         $this->user = $user;
     }
 
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
-    {
-        return new Envelope(
-            subject: 'Vendor Account Upgraded',
-        );
-    }
 
     public function build()
     {
-        return $this->subject('Your Account has been Upgraded to Vendor')
+        return $this->subject('Vendor Account Request')
                     ->view('mail.vendor-upgraded');
     }
 

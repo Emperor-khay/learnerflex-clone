@@ -216,3 +216,8 @@ POST /products/other/{id}/update - Edit a non-digital product by ID.
 
 Delete Product
 DELETE /products/{id}/delete - Remove a product by ID.
+
+## Admin routes 24/12/2024 ##
+
+/withdrawals/pending/download --- --- returns csv file of response you can convert to csv
+/withdrawals/approve-all ---- approve all pending requests and sends mail must specify type affiliate or vendor

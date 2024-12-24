@@ -17,23 +17,25 @@ class VendorSaleNotificationMail extends Mailable
     public $transaction_amount;
     public $email;
     public $reference;
+    public $vendor_name;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($product_name, $transaction_amount, $email,$reference)
+    public function __construct($product_name, $transaction_amount, $email,$reference, $vendor_name)
     {
         $this->product_name = $product_name;
         $this->transaction_amount = $transaction_amount;
         $this->email = $email;
         $this->reference = $reference;
+        $this->vendor_name = $vendor_name;
     }
 
    
 
     public function build()
     {
-        return $this->subject('New Product Sale')
+        return $this->subject('Money Alert, ' . $this->vendor_name)
                     ->view('mail.vendor_sale_notification');
     }
    

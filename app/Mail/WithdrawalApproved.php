@@ -9,25 +9,20 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class AffiliateSaleNotificationMail extends Mailable
+class WithdrawalApproved extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $affiliate_name;
-    public $product_name;
-    public $commission;
-    public $customer_name;
-    public $customer_email;
-    public $reference_id;
+    public $withdrawal;
+    public $type;
 
-    public function __construct($affiliate_name, $product_name, $commission, $customer_name, $customer_email, $reference_id)
+    /**
+     * Create a new message instance.
+     */
+    public function __construct($withdrawal, $type)
     {
-        $this->affiliate_name = $affiliate_name;
-        $this->product_name = $product_name;
-        $this->commission = $commission;
-        $this->customer_name = $customer_name;
-        $this->customer_email = $customer_email;
-        $this->reference_id = $reference_id;
+        $this->withdrawal = $withdrawal;
+        $this->type = $type;
     }
 
     /**
@@ -35,8 +30,9 @@ class AffiliateSaleNotificationMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $typeLabel = ucfirst($this->type);
         return new Envelope(
-            subject: 'Money Alert, ' . $this->affiliate_name,
+            subject: "Your Payout has been processed 💸🤑",
         );
     }
 
@@ -46,7 +42,7 @@ class AffiliateSaleNotificationMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.affiliate_sale_notification',
+            view: 'mail.withdrawal_approved',
         );
     }
 

@@ -10,8 +10,6 @@ use Illuminate\Support\Facades\Storage;
 
 class Helper
 {
-
-
     public static function generateDownloadLink($productId)
     {
         // Fetch the product by ID

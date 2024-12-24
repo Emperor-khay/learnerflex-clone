@@ -269,7 +269,8 @@ class PaystackController extends Controller
             // Notify the vendor about the sale
             if ($vendor) {
                 try {
-                    Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transaction->org_vendor, $email, $reference));
+                    $vendor_name =  $vendor->name;
+                    Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transaction->org_vendor, $email, $reference, $vendor_name));
                 } catch (\Exception $e) {
                     Log::error('Error sending sale notification to vendor', ['vendor_email' => $vendor->email, 'error' => $e->getMessage()]);
                 }

@@ -198,10 +198,16 @@ class SuperAdminUserController extends Controller
                 'vendor_id' => $vendor->id ?? null,
                 'email' => $request->input('email'),
                 'amount' => 0,
+                'description' => 'onboarded',
                 'status' => 'success',
             ]);
 
             DB::commit();
+            try {
+                Mail::to($request->input('email'))->send(new \App\Mail\AffiliateAccountCreated($request->input('name'), $request->input('email'), $vendor->name));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send email to ' . $request->input('email') . ': ' . $e->getMessage());
+            }
 
             return response()->json(['message' => 'User created successfully', 'user' => $user], 201);
         } catch (\Exception $e) {
@@ -249,6 +255,7 @@ class SuperAdminUserController extends Controller
                     'vendor_id' => $vendor->id,
                     'email' => $user->email,
                     'amount' => 0,
+                    'description' => 'onboarded',
                     'status' => 'success',
 
                 ]);
