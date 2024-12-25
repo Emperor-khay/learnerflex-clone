@@ -590,7 +590,7 @@ class AffiliateController extends Controller
             try {
                 Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
                 // Send email to the affiliate
-                Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
+                // Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
             } catch (\Exception $e) {
                 Log::error('Error sending mail', ['error' => $e->getMessage()]);
             }

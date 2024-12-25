@@ -32,7 +32,7 @@ class EbookPurchaseSuccessMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: ' Ebook Purchase Success',
+            subject: 'Access to Ebook 🥳',
         );
     }
 

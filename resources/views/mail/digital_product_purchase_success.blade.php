@@ -266,7 +266,7 @@
                         >•</span
                       ><span
                         ><strong>Email<!-- -->:</strong>
-                        <!-- -->ugoraphael@gmail.com</span
+                        <!-- -->{{ $email }}</span
                       >
                     </p>
                     <a

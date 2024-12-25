@@ -34,7 +34,7 @@ class DigitalProductPurchaseSuccessMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Product Purchase:' . $this->product_name,
+            subject: 'Access product and free account 🥳',
         );
     }
 

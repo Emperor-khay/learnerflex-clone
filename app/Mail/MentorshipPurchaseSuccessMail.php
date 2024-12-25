@@ -34,7 +34,7 @@ class MentorshipPurchaseSuccessMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Mentorship Purchase Success Mail',
+            subject: 'Access to Mentorship 🥳',
         );
     }
 
