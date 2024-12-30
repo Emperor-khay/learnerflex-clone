@@ -38,7 +38,7 @@ class AccessTokenMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.access-token-mail',
+            view: 'mail.access_token_mail',
         );
     }
 

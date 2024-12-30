@@ -29,10 +29,6 @@ class AffiliateSaleNotificationMail extends Mailable
         $this->customer_email = $customer_email;
         $this->reference_id = $reference_id;
     }
-
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -40,9 +36,6 @@ class AffiliateSaleNotificationMail extends Mailable
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(

@@ -27,10 +27,6 @@ class MentorshipPurchaseSuccessMail extends Mailable
         $this->aff_id = $aff_id;
         $this->product_name =$product_name;
     }
-
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(

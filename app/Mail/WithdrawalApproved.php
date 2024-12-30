@@ -15,19 +15,17 @@ class WithdrawalApproved extends Mailable
 
     public $withdrawal;
     public $type;
+    public $user;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($withdrawal, $type)
+    public function __construct($withdrawal, $type, $user)
     {
         $this->withdrawal = $withdrawal;
         $this->type = $type;
+        $this->user = $user;
     }
-
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         $typeLabel = ucfirst($this->type);
@@ -36,9 +34,6 @@ class WithdrawalApproved extends Mailable
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(

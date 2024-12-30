@@ -241,6 +241,7 @@ class PaystackController extends Controller
             $email = $transaction->email;
             $refferer = User::where('aff_id', $transaction->affiliate_id)->first();
             $product_access_link = $product->access_link ?? '#';
+            $mentor_name = $vendor->name ?? 'Mentor';
 
             // Add the try-catch block for sending emails based on product type
             try {
@@ -251,7 +252,7 @@ class PaystackController extends Controller
                 // For eBooks
                 if ($product_type === 'ebook') {
                     $download_link = Helper::generateDownloadLink($transaction->product_id);
-                    Mail::to($email)->send(new \App\Mail\EbookPurchaseSuccessMail($user_name, $product_name, $product_access_link, $download_link));
+                    Mail::to($email)->send(new \App\Mail\EbookPurchaseSuccessMail($user_name, $product_name, $product_access_link, $download_link, $mentor_name));
                 }
                 // For Digital Products
                 elseif ($product_type === 'digital') {
@@ -259,7 +260,7 @@ class PaystackController extends Controller
                 }
                 // For Mentorship
                 elseif ($product_type === 'mentorship') {
-                    $mentor_name = $vendor->name ?? 'Mentor'; // Assuming the mentor's name is the vendor's name
+                     // Assuming the mentor's name is the vendor's name
                     Mail::to($email)->send(new \App\Mail\MentorshipPurchaseSuccessMail($user_name, $mentor_name, $product_access_link, $aff_id, $product_name));
                 }
             } catch (\Exception $e) {
@@ -268,9 +269,11 @@ class PaystackController extends Controller
 
             // Notify the vendor about the sale
             if ($vendor) {
+                
                 try {
+                    $affiliate_name = $refferer->name ?? null;
                     $vendor_name =  $vendor->name;
-                    Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transaction->org_vendor, $email, $reference, $vendor_name));
+                    Mail::to($vendor->email)->send(new \App\Mail\VendorSaleNotificationMail($product_name, $transaction->org_vendor, $email, $reference, $vendor_name, $affiliate_name));
                 } catch (\Exception $e) {
                     Log::error('Error sending sale notification to vendor', ['vendor_email' => $vendor->email, 'error' => $e->getMessage()]);
                 }

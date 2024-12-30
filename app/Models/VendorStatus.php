@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\VendorStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class VendorStatus extends Model
 {
@@ -23,6 +24,10 @@ class VendorStatus extends Model
      * @var array
      */
     protected $fillable = ['user_id', 'sale_url', 'description', 'review', 'status'];
+
+    protected $casts = [
+        'status' => VendorStatusEnum::class,
+    ];
 
     /**
      * Get the user that requested for vendor account.

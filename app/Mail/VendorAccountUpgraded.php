@@ -26,7 +26,7 @@ class VendorAccountUpgraded extends Mailable
     public function build()
     {
         return $this->subject('Vendor Account Request')
-                    ->view('mail.vendor-upgraded');
+                    ->view('mail.vendor_upgraded');
     }
 
     /**

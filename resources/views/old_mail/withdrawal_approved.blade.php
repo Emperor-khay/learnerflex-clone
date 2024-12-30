@@ -1,0 +1,225 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+  <head>
+    <link
+      rel="preload"
+      as="image"
+      href="https://devlinks-abc.vercel.app/learnerflex-email-banner.png"
+    />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <!--$--></head
+  ><style>
+    @font-face {
+      font-family: "Roboto";
+      font-style: normal;
+      font-weight: 400;
+      mso-font-alt: "sans-serif";
+      src: url(https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap)
+        format("woff2");
+    }
+
+    * {
+      font-family: "Roboto", sans-serif;
+    }
+  </style>
+  <div
+    style="
+      display: none;
+      overflow: hidden;
+      line-height: 1px;
+      opacity: 0;
+      max-height: 0;
+      max-width: 0;
+    "
+  >
+    Great new! {{ $withdrawal->bank_name }}. Your &#8358;{{ $withdrawal->amount }} withdrawal request from LearnerFlex has
+    been received and now being processed.
+    <div>
+       ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿
+    </div>
+  </div>
+  <body
+    style="
+      margin: auto;
+      color: rgb(63, 63, 63);
+      padding-top: 1rem;
+      padding-bottom: 2.5rem;
+    "
+  >
+    <table
+      align="center"
+      width="100%"
+      border="0"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      style="
+        margin-left: auto;
+        margin-right: auto;
+        width: min(100% - 15px, 465px);
+        margin-bottom: 10px;
+        box-shadow:
+          var(--tw-ring-offset-shadow, 0 0 #0000),
+          var(--tw-ring-shadow, 0 0 #0000),
+          0px 0px 9px 0px #a1a1a140;
+        max-width: 37.5em;
+      "
+    >
+      <tbody>
+        <tr style="width: 100%">
+          <td>
+            <img
+              alt="learnerflex logo banner"
+              height="auto"
+              src="https://devlinks-abc.vercel.app/learnerflex-email-banner.png"
+              style="
+                margin-left: auto;
+                margin-right: auto;
+                width: 100%;
+                display: block;
+                outline: none;
+                border: none;
+                text-decoration: none;
+              "
+              width="auto"
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <table
+      align="center"
+      width="100%"
+      border="0"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      style="
+        margin-left: auto;
+        margin-right: auto;
+        width: min(100% - 15px, 465px);
+        border-width: 0.5px;
+        border-style: solid;
+        border-color: rgb(255, 148, 36);
+        box-shadow:
+          var(--tw-ring-offset-shadow, 0 0 #0000),
+          var(--tw-ring-shadow, 0 0 #0000),
+          0px 0px 9px 0px #a1a1a140;
+        border-radius: 10px;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-top: 2rem;
+        background-color: rgb(244, 244, 244);
+        padding-bottom: 1rem;
+        max-width: 37.5em;
+      "
+    >
+      <tbody>
+        <tr style="width: 100%">
+          <td>
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="margin-bottom: 1.5rem"
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <h1
+                      style="
+                        text-wrap: pretty;
+                        font-size: 15px;
+                        line-height: 17.58px;
+                        margin-top: 0px;
+                        margin-bottom: 0px;
+                      "
+                    >
+                      Great new! {{ $withdrawal->bank_name }}.
+                    </h1>
+                    <p
+                      style="
+                        font-weight: 400;
+                        line-height: 15.23px;
+                        font-size: 13px;
+                        margin: 16px 0;
+                      "
+                    >
+                      Your &#8358;{{ $withdrawal->amount }}
+                      withdrawal request from LearnerFlex has been
+                      received and now being processed.
+                    </p>
+                    <p
+                      style="
+                        font-weight: 400;
+                        line-height: 15.23px;
+                        font-size: 13px;
+                        margin: 16px 0;
+                      "
+                    >
+                      You can now login to the bank account you used as your preferred payout method during sign up to access your funds.
+                    </p>
+                    <p
+                      style="
+                        font-weight: 400;
+                        line-height: 15.23px;
+                        font-size: 13px;
+                        margin: 16px 0;
+                        margin-top: 0px;
+                        margin-bottom: 0px;
+                      "
+                    >
+                      Depending on your bank network, it can take up to 1 hour to reflect. For complaints, message us using the link below.
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="text-align: center"
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <p
+                      style="
+                        font-weight: 700;
+                        font-size: 0.875rem;
+                        line-height: 16.41px;
+                        margin: 16px 0;
+                      "
+                    >
+                      <a href="https://learnerflex.com/help"
+                        style="
+                          color: rgb(0, 30, 190);
+                          text-decoration-line: none;
+                        "
+                        target="_blank"
+                        >Click here</a
+                      >
+                      to message us
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+

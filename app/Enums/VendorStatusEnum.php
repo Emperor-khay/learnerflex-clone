@@ -4,7 +4,7 @@ namespace App\Enums;
 
 enum VendorStatusEnum: string
 {
-    case DOWN = 'down';
-    case PENDING = 'pending';
-    case UP = 'up';
+    case Pending = 'pending';
+    case Inactive = 'inactive';
+    case Active = 'active';
 }

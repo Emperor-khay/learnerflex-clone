@@ -28,19 +28,12 @@ class DigitalProductPurchaseSuccessMail extends Mailable
         $this->aff_id = $aff_id;
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
             subject: 'Access product and free account 🥳',
         );
     }
-
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(

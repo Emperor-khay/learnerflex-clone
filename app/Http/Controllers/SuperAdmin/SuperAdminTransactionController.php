@@ -139,11 +139,12 @@ public function approveAllPendingWithdrawals(Request $request)
 
         foreach ($pendingWithdrawals as $withdrawal) {
             try {
+                $user = $withdrawal->user; 
                 // Update withdrawal status to approved
                 $withdrawal->update(['status' => 'approved']);
 
                 // Send email notification to the user
-                Mail::to($withdrawal->email)->send(new WithdrawalApproved($withdrawal, $type));
+                Mail::to($withdrawal->email)->send(new WithdrawalApproved($withdrawal, $type, $user));
 
             } catch (\Exception $mailException) {
                 // Log email errors and continue processing

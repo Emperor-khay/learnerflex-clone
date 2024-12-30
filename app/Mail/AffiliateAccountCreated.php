@@ -17,19 +17,12 @@ class AffiliateAccountCreated extends Mailable
     public $vendor_name;
     public $affiliate_email;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(string $affiliate_name, string $vendor_name, string $affiliate_email)
     {
         $this->affiliate_name = $affiliate_name;
         $this->vendor_name = $vendor_name;
         $this->affiliate_email = $affiliate_email;
     }
-
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(

@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\WithdrawalStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Withdrawal extends Model
 {
@@ -23,6 +24,10 @@ class Withdrawal extends Model
         'old_balance',
         'status',
         'type',
+    ];
+
+    protected $casts = [
+        'status' => WithdrawalStatus::class,
     ];
 
     /**

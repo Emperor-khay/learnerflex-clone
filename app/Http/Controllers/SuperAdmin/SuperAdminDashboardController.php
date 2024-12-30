@@ -248,27 +248,27 @@ class SuperAdminDashboardController extends Controller
                 - Withdrawal::whereHas('user', function ($query) {
                     $query->where('role', 'affiliate');
                 })
-                ->where('status', 'success')
+                ->where('status', 'approved')
                 ->sum('amount'); // Total withdrawn
 
             $unpaidVendorBalance = Sale::sum('org_vendor') // Total owed
                 - Withdrawal::whereHas('user', function ($query) {
                     $query->where('role', 'vendor');
                 })
-                ->where('status', 'success')
+                ->where('status', 'approved')
                 ->sum('amount'); // Total withdrawn
 
             // Total Payouts
             $affiliatePayouts = Withdrawal::whereHas('user', function ($query) {
                 $query->where('role', 'affiliate');
             })
-                ->where('status', 'success')
+                ->where('status', 'approved')
                 ->sum('amount');
 
             $vendorPayouts = Withdrawal::whereHas('user', function ($query) {
                 $query->where('role', 'vendor');
             })
-                ->where('status', 'success')
+                ->where('status', 'approved')
                 ->sum('amount');
 
             // Response Data

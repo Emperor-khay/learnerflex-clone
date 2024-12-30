@@ -16,18 +16,11 @@ class WithdrawalProcessingMail extends Mailable
     public $name;
     public $amount;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct($name, $amount)
     {
         $this->name = $name;
         $this->amount = $amount;
     }
-
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -41,7 +34,7 @@ class WithdrawalProcessingMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.withdrawal_processing_mail',
+            view: 'mail.withdrawal_processing',
         );
     }
 

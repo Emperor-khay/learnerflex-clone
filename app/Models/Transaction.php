@@ -12,8 +12,8 @@ class Transaction extends Model
 
     protected $fillable = [
         'tx_ref',
-        'user_id', // id of user who own product
-        'affiliate_id', //user id id of affilate who reffered user
+        'user_id', 
+        'affiliate_id',
         'product_id',
         'vendor_id',
         'email',

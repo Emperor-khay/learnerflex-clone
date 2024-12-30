@@ -17,13 +17,15 @@ class EbookPurchaseSuccessMail extends Mailable
     public $product_name;
     public $product_access_link;
     public $download_link;
+    public $mentor_name;
 
-    public function __construct($user_name, $product_name, $product_access_link, $download_link)
+    public function __construct($user_name, $product_name, $product_access_link, $download_link, $mentor_name)
     {
         $this->user_name = $user_name;
         $this->product_name = $product_name;
         $this->product_access_link = $product_access_link;
         $this->download_link = $download_link;
+        $this->mentor_name = $mentor_name;
     }
 
     /**

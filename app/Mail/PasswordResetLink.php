@@ -30,7 +30,7 @@ class PasswordResetLink extends Mailable
     public function build()
     {
         return $this->subject('Reset your account password')
-                    ->view('mail.ResetLink')->with(['token' => $this->token]);
+                    ->view('mail.reset_password_link')->with(['token' => $this->token]);
     }
 
 

@@ -15,6 +15,7 @@ use App\Mail\VendorAccountRejected;
 use App\Mail\VendorAccountUpgraded;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
+use App\Enums\TransactionDescription;
 use Illuminate\Support\Facades\Validator;
 
 class SuperAdminUserController extends Controller
@@ -198,7 +199,7 @@ class SuperAdminUserController extends Controller
                 'vendor_id' => $vendor->id ?? null,
                 'email' => $request->input('email'),
                 'amount' => 0,
-                'description' => 'onboarded',
+                'description' => TransactionDescription::IS_ONBOARDED->value,
                 'status' => 'success',
             ]);
 
@@ -255,7 +256,7 @@ class SuperAdminUserController extends Controller
                     'vendor_id' => $vendor->id,
                     'email' => $user->email,
                     'amount' => 0,
-                    'description' => 'onboarded',
+                    'description' => TransactionDescription::IS_ONBOARDED->value,
                     'status' => 'success',
 
                 ]);

@@ -151,14 +151,6 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
 
 
     Route::post('/logout', [LogoutController::class, 'logout']);
-
-    // check bank account route and update user account
-    // Route::post('/get-account-name', [PaymentController::class, 'handleCheckAccount']);
-    // products
-    // Route::get('/products', [ProductController::class, 'index']);
-    // Route::get('/products/status/{status}', [ProductController::class, 'getApprovedProducts']);
-    // Route::get('/products/{product}', [ProductController::class, 'show']);
-    // Route::post('/students', [VendorController::class, 'students']);
 });
 
 

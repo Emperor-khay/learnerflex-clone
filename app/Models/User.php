@@ -44,9 +44,6 @@ class User extends Authenticatable
         'currency',
         'role',
         'image',
-        'is_vendor',
-        'vendor_status',
-        'otp',
         'market_access',
         'bank_name',
         'bank_account'
@@ -72,8 +69,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'has_paid_onboard' => 'boolean',
-            'is_vendor' => 'boolean',
             'market_access' => 'boolean',
         ];
     }
@@ -164,15 +159,6 @@ class User extends Authenticatable
     public function withdrawals(): HasMany
     {
         return $this->hasMany(Withdrawal::class);
-    }
-
-    /**
-     * Get the account model of the user.
-     * This is the User's Bank account.
-     */
-    public function account(): HasOne
-    {
-        return $this->hasOne(Account::class);
     }
 
 
