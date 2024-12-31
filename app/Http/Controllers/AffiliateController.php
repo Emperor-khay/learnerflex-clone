@@ -520,43 +520,74 @@ class AffiliateController extends Controller
 
 
     public function sendVendorRequest(Request $request)
-    {
-        $validate = $request->validate([
-            'sale_url' => 'required|string',
-            'description' => 'nullable|string',
-        ]);
+{
+    $validate = $request->validate([
+        'sale_url' => 'required|string',
+        'description' => 'nullable|string',
+    ]);
 
-        $user = auth()->user();
-        $saleurl = $validate['sale_url'];
+    $user = auth()->user();
+    $saleUrl = $validate['sale_url'];
+    $description = $validate['description'] ?? null;
 
-        // Use null as a default if 'description' is not provided
-        $description = $validate['description'] ?? null;
-        try {
+    try {
+        // Check for existing vendor_status record
+        $existingVendorStatus = DB::table('vendor_status')
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existingVendorStatus) {
+            // Prevent editing if the status is "pending"
+            if ($existingVendorStatus->status === 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot edit your request while it is still pending approval.',
+                ], 403);
+            }
+
+            // Allow editing if the status is "rejected"
+            if ($existingVendorStatus->status === 'rejected') {
+                DB::table('vendor_status')
+                    ->where('user_id', $user->id)
+                    ->update([
+                        'sale_url' => $saleUrl,
+                        'description' => $description,
+                        'status' => 'pending',
+                        'updated_at' => now(),
+                    ]);
+            }
+        } else {
+            // Create a new record if none exists
             DB::table('vendor_status')->insert([
                 'user_id' => $user->id,
-                'sale_url' => $saleurl,
+                'sale_url' => $saleUrl,
                 'description' => $description,
                 'status' => 'pending',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-
-
-            try {
-                Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleurl));
-                // Send email to the affiliate
-                // Mail::to($user->email)->send(new AffiliateVendorRequest($user, $saleurl));
-            } catch (\Exception $e) {
-                Log::error('Error sending mail', ['error' => $e->getMessage()]);
-            }
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'error processing']);
         }
 
+        // Send notification email
+        try {
+            Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleUrl));
+        } catch (\Exception $e) {
+            Log::error('Error sending mail', ['error' => $e->getMessage()]);
+        }
 
-
-        return response()->json(['success' => true, 'message' => 'Vendor Request sent successfully'], 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Vendor Request sent successfully',
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error processing your request.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
 
     public function checkSaleByEmail(Request $request)

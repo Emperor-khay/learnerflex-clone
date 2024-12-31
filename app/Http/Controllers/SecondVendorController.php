@@ -79,6 +79,8 @@ class SecondVendorController extends Controller
 
 
             $totalProductEarnings = $vendorEarn + $availableAffiliateEarnings;
+            \Log::info('total product Earn', ['product earn' => $totalProductEarnings]);
+
 
             // Today's Vendor Sales
             $todaySalesData = Sale::where('vendor_id', $vendor->id)
