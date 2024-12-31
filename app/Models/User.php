@@ -42,6 +42,7 @@ class User extends Authenticatable
         'password',
         'country',
         'currency',
+        'bankcode',
         'role',
         'image',
         'market_access',

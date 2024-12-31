@@ -212,7 +212,7 @@ class SuperAdminAffiliateController extends Controller
         // If there are skipped emails, send them to the admin email
         if (!empty($skippedEmails)) {
             try {
-                Mail::to('learnerflex2@gmail.com')->send(new \App\Mail\SkippedEmails($skippedEmails));
+                Mail::to('learnerflexltd@gmail.com')->send(new \App\Mail\SkippedEmails($skippedEmails));
             } catch (\Exception $e) {
                 \Log::error('Failed to send skipped emails to admin: ' . $e->getMessage());
             }

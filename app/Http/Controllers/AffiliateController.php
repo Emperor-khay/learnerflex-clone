@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TransactionDescription;
 use Carbon\Carbon;
 use App\Models\Sale;
 use App\Models\User;
@@ -200,6 +201,7 @@ class AffiliateController extends Controller
                 'amount' => $formData['amount'],
                 'currency' => $formData['currency'],
                 'status' => 'pending',
+                'description' => TransactionDescription::MARKETPLACE_UNLOCK->value,
                 'org_company' => 0,
                 'org_vendor' => 0,
                 'org_aff' => 0,
@@ -227,54 +229,7 @@ class AffiliateController extends Controller
         }
     }
 
-    // public function marketAccessCallback(Request $request)
-    // {
-
-    //     try {
-    //         $email = urldecode($request->get('email'));
-    //         $orderID = urldecode($request->get('order_id'));
-    //         $reference = request('reference');  // Get reference from the callback
-    //         $paymentDetails = Paystack::getPaymentData();
-    //         // Verify transaction using Paystack reference
-
-    //         if ($paymentDetails['data']['status'] == "success") {
-    //             // Get the authenticated user
-    //             $user = auth()->user();
-    //             // Update user to grant market access
-    //             $user->update([
-    //                 'market_access' => true,
-    //                 'refferal_id' => null,
-
-    //             ]);
-    //             // Update the transaction record
-    //             $transaction = Transaction::where('email', $email)->where('transaction_id', $orderID)->latest()->first();
-
-    //             if ($transaction) {
-    //                 $transaction->update([
-    //                     'tx_ref' => request('reference'),
-    //                     'status' => $paymentDetails['data']['status'],
-    //                     'is_onboard' => 1,
-    //                     'tx_ref' => $reference,
-    //                 ]);
-    //             }
-
-    //             return response()->json([
-    //                 'success' => true,
-    //                 'message' => 'Market access unlocked successfully!'
-    //             ], 200);
-    //         }
-
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Payment failed or not verified.'
-    //         ], 400);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Error verifying payment: ' . $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+ 
 
     public function marketAccessCallback(Request $request)
     {

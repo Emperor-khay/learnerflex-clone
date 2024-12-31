@@ -252,7 +252,7 @@ class PaystackController extends Controller
                 // For eBooks
                 if ($product_type === 'ebook') {
                     $download_link = Helper::generateDownloadLink($transaction->product_id);
-                    Mail::to($email)->send(new \App\Mail\EbookPurchaseSuccessMail($user_name, $product_name, $product_access_link, $download_link, $mentor_name));
+                    Mail::to($email)->send(new \App\Mail\EbookPurchaseSuccessMail($user_name, $product_name, $product_access_link, $download_link, $mentor_name, $aff_id));
                 }
                 // For Digital Products
                 elseif ($product_type === 'digital') {

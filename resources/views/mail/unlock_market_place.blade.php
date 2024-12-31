@@ -92,7 +92,7 @@
                     <p
                       style="font-weight:400;line-height:15.23px;font-size:13px;margin:16px 0"
                     >
-                      Raphael Ugo, You&#x27;ve successfully unlocked the
+                      {{ $name }}, You&#x27;ve successfully unlocked the
                       Marketplace on LearnerFlex
                     </p>
                     <p

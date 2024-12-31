@@ -18,7 +18,7 @@ use Unicodeveloper\Paystack\Facades\Paystack;
 
 class MarketplacePaymentController extends Controller
 {
-    
+
 
     public function payment(Request $request)
     {
@@ -37,7 +37,7 @@ class MarketplacePaymentController extends Controller
             'email' => $request->email,  // Use validated email
             'amount' => 1100 * 100, // Amount in cents (NGN)
             'currency' => $request->currency,
-            'callback_url' => route('marketplace.payment.callback') . '?email=' . urlencode($request->email). '&orderId=' . $orderId,
+            'callback_url' => route('marketplace.payment.callback') . '?email=' . urlencode($request->email) . '&orderId=' . $orderId,
             "orderID" => $orderId,
         ];
 
@@ -81,29 +81,29 @@ class MarketplacePaymentController extends Controller
     public function payment_callback(Request $request)
     {
         // Validate the request input
-    $validator = Validator::make($request->all(), [
-        'reference' => 'required|string',
-        'email' => 'required|email',
-        'orderId' => 'required|string',
-    ]);
+        $validator = Validator::make($request->all(), [
+            'reference' => 'required|string',
+            'email' => 'required|email',
+            'orderId' => 'required|string',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Invalid input data',
-            'errors' => $validator->errors(),
-        ], 400);
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid input data',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
 
-    $email = $request->input('email');
-    $reference = $request->input('reference');  // Get reference from the request
-    $orderId = $request->input('orderId');  // Get orderId from the request
+        $email = $request->input('email');
+        $reference = $request->input('reference');  // Get reference from the request
+        $orderId = $request->input('orderId');  // Get orderId from the request
 
         $paymentDetails = Paystack::getPaymentData();  // Use Paystack package to get payment details
-    
+
         // Check if payment was successful
         if ($paymentDetails['data']['status'] == "success") {
-            
+
             // Create or update the user record
             $user = User::updateOrCreate(
                 ['email' => $email],  // Find user by email
@@ -111,17 +111,25 @@ class MarketplacePaymentController extends Controller
                     'market_access' => 1,
                 ]
             );
-    
+
             // Update the transaction record
             $transaction = Transaction::where('email', $email)->where('transaction_id', $orderId)->latest()->first();
-    
+
             if ($transaction) {
                 $transaction->update([
                     'tx_ref' => $reference,
                     'status' => $paymentDetails['data']['status'],
                 ]);
             }
-    
+
+            // Send email notification
+        try {
+            $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
+            Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
+        } catch (\Exception $e) {
+            Log::error('Failed to send achievement email', ['error' => $e->getMessage()]);
+        }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Transaction successful.',
@@ -130,7 +138,7 @@ class MarketplacePaymentController extends Controller
             ]);
         } else {
             $status = $paymentDetails['data']['status'];
-    
+
             return response()->json([
                 'success' => false,
                 'message' => 'Transaction failed',
@@ -138,7 +146,7 @@ class MarketplacePaymentController extends Controller
             ]);
         }
     }
-    
+
 
 
     // public function redirectToGateway()

@@ -144,7 +144,6 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::post('/product/add-product', [ProductController::class, 'addProduct']);
 
     // withdrawals
-    // Route::get('/make/withdrawal', [VendorController::class, 'withdrawal']);
     Route::post('/request/withdrawal', [WithdrawalController::class, 'index']);
     Route::get('/withdrawals', [WithdrawalController::class, 'WithdrawRecord']);
     Route::post('/change-password', [SecondVendorController::class, 'changePassword'])->name('change-password');

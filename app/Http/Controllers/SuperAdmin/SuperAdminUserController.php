@@ -203,9 +203,10 @@ class SuperAdminUserController extends Controller
                 'status' => 'success',
             ]);
 
+            $vendor_name = $vendor->name ?? '';
             DB::commit();
             try {
-                Mail::to($request->input('email'))->send(new \App\Mail\AffiliateAccountCreated($request->input('name'), $request->input('email'), $vendor->name));
+                Mail::to($request->input('email'))->send(new \App\Mail\AffiliateAccountCreated($request->input('name'), $request->input('email'), $vendor_name));
             } catch (\Exception $e) {
                 \Log::error('Failed to send email to ' . $request->input('email') . ': ' . $e->getMessage());
             }

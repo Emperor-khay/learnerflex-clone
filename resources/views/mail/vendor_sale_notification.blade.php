@@ -109,7 +109,7 @@
                             <p
                               style="font-weight:400;line-height:15.23px;font-size:13px;margin:16px 0;margin-top:0px;margin-bottom:0px"
                             >
-                              <strong>Commission</strong>:{{ $transaction_amount }} ( added to
+                              <strong>Commission</strong>:₦{{ number_format($transaction_amount, 2) }} ( added to
                               your available balance )
                             </p>
                           </td>

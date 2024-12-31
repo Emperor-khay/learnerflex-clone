@@ -64,14 +64,16 @@ class RegisterController extends Controller
                 $paymentData = Paystack::getAuthorizationUrl($formData);
 
                 // Store the user data in the temporary users table
-                TemporaryUsers::create([
-                    'name' => $validatedData['name'],
-                    'email' => $validatedData['email'],
-                    'phone' => $validatedData['phone'],
-                    'password' => $hashedPassword, // Store hashed password
-                    'aff_id' => null,
-                    'order_id' => $orderID,
-                ]);
+                TemporaryUsers::updateOrCreate(
+                    ['email' => $validatedData['email']], // Search criteria
+                    [
+                        'name' => $validatedData['name'],
+                        'phone' => $validatedData['phone'],
+                        'password' => $hashedPassword, // Store hashed password
+                        'aff_id' => null,
+                        'order_id' => $orderID,
+                    ]
+                );
 
                 // Store transaction details in the database
                 Transaction::create([

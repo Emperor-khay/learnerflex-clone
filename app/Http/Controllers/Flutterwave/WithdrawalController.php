@@ -20,82 +20,23 @@ class WithdrawalController extends Controller
         $this->withdrawalService = $withdrawalService;
     }
 
-    /**
-     * Request for latest withdrawals
-     */
-    //     public function index(Request $request)
-    // {
-    //     try {
-    //         $user = auth()->user();
-
-    //         // Validate the request to ensure 'amount' is present and numeric
-    //         $validatedData = $request->validate([
-    //             'amount' => 'required|numeric|min:1',
-    //         ]);
-
-    //         // Retrieve the validated 'amount'
-    //         $amount = $validatedData['amount'];
-
-    //         // Use bank details from the user's profile only
-    //         $bankName = $user->bank_name;
-    //         $bankAccount = $user->bank_account;
-
-    //         // If bank details are missing in the user's profile, return an error
-    //         if (!$bankName || !$bankAccount) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Bank name and account are required in the user profile to proceed with the withdrawal request.',
-    //             ], 400);
-    //         }
-
-    //         // Create the withdrawal request
-    //         $withdrawal = Withdrawal::create([
-    //             'user_id' => $user->id,
-    //             'email' => $user->email,
-    //             'amount' => $amount,
-    //             'old_balance' => null, 
-    //             'bank_name' => $bankName,
-    //             'bank_account' => $bankAccount,
-    //             'status' => 'pending',
-    //         ]);
-
-    //         if ($withdrawal) {
-    //             try {
-    //                 $name = $user->name;
-    //                 Mail::to($user->email)->send(new \App\Mail\WithdrawalProcessingMail($name, $amount));
-    //             } catch (\Exception $e) {
-    //                 Log::error('Error sending mail', ['error' => $e->getMessage()]);
-    //             }
-    //         }
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Withdrawal request submitted successfully.',
-    //             'withdrawal' => $withdrawal,
-    //         ], 201);
-    //     } catch (\Throwable $th) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'An error occurred while submitting the withdrawal request.',
-    //             'error' => $th->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
     public function index(Request $request)
-    {
-        try {
-            $user = auth()->user();
+{
+    try {
+        $user = auth()->user();
 
-            // Validate the request to ensure 'amount' is present and numeric
-            $validatedData = $request->validate([
-                'amount' => 'required|numeric|min:1',
-            ]);
+        // Validate the request to ensure 'amount' and 'type' are present and valid
+        $validatedData = $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'type' => 'required|string|in:affiliate,vendor'
+        ]);
 
-            // Retrieve the validated 'amount'
-            $amount = $validatedData['amount'];
+        // Retrieve the validated data
+        $amount = $validatedData['amount'];
+        $type = $validatedData['type'];
 
-            // Calculate the user's available balance (Example for affiliate type)
+        // Calculate available balance based on the type
+        if ($type === 'affiliate') {
             $totalWithdrawals = Withdrawal::where('user_id', $user->id)
                 ->where('status', 'approved')
                 ->sum('amount');
@@ -105,60 +46,79 @@ class WithdrawalController extends Controller
                 ->sum('org_aff');
 
             $availableBalance = $totalEarnings - $totalWithdrawals;
+        } elseif ($type === 'vendor') {
+            $totalWithdrawals = Withdrawal::where('user_id', $user->id)
+                ->where('status', 'approved')
+                ->sum('amount');
 
-            // Check if the user has enough balance
-            if ($amount > $availableBalance) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Insufficient balance to process this withdrawal request.',
-                ], 400);
-            }
+            $totalEarnings = Sale::where('vendor_id', $user->id)
+                ->where('status', 'success')
+                ->sum('org_vendor');
 
-            // Use bank details from the user's profile only
-            $bankName = $user->bank_name;
-            $bankAccount = $user->bank_account;
-
-            // If bank details are missing in the user's profile, return an error
-            if (!$bankName || !$bankAccount) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Bank name and account are required in the user profile to proceed with the withdrawal request.',
-                ], 400);
-            }
-
-            // Create the withdrawal request
-            $withdrawal = Withdrawal::create([
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'amount' => $amount,
-                'old_balance' => $availableBalance, // Save the current balance
-                'bank_name' => $bankName,
-                'bank_account' => $bankAccount,
-                'status' => 'pending',
-            ]);
-
-            if ($withdrawal) {
-                try {
-                    $name = $user->name;
-                    Mail::to($user->email)->send(new \App\Mail\WithdrawalProcessingMail($name, $amount));
-                } catch (\Exception $e) {
-                    Log::error('Error sending mail', ['error' => $e->getMessage()]);
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Withdrawal request submitted successfully.',
-                'withdrawal' => $withdrawal,
-            ], 201);
-        } catch (\Throwable $th) {
+            $availableBalance = $totalEarnings - $totalWithdrawals;
+        } else {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while submitting the withdrawal request.',
-                'error' => $th->getMessage(),
-            ], 500);
+                'message' => 'Invalid type provided.',
+            ], 400);
         }
+
+        // Check if the user has enough balance
+        if ($amount > $availableBalance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Insufficient balance to process this withdrawal request.',
+            ], 400);
+        }
+
+        // Use bank details from the user's profile only
+        $bankName = $user->bank_name;
+        $bankAccount = $user->bank_account;
+        $bankcode = $user->bankcode;
+
+        // If bank details are missing in the user's profile, return an error
+        if (!$bankName || !$bankAccount|| !$bankcode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bank name and account are required in the user profile to proceed with the withdrawal request.',
+            ], 400);
+        }
+
+        // Create the withdrawal request
+        $withdrawal = Withdrawal::create([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'bankcode' => $bankcode,
+            'amount' => $amount,
+            'old_balance' => $availableBalance, // Save the current balance
+            'bank_name' => $bankName,
+            'bank_account' => $bankAccount,
+            'status' => 'pending',
+        ]);
+
+        if ($withdrawal) {
+            try {
+                $name = $user->name;
+                Mail::to($user->email)->send(new \App\Mail\WithdrawalProcessingMail($name, $amount));
+            } catch (\Exception $e) {
+                Log::error('Error sending mail', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Withdrawal request submitted successfully.',
+            'withdrawal' => $withdrawal,
+        ], 201);
+    } catch (\Throwable $th) {
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while submitting the withdrawal request.',
+            'error' => $th->getMessage(),
+        ], 500);
     }
+}
+
 
     /**
      * Request for total sum of withdrawals made by user

@@ -25,7 +25,7 @@
   <div
     style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
   >
-    Great news! {{ $user->name }}. Your {{ $withdrawal->amount }} withdrawal request from LearnerFlex has
+    Great news! {{ $user->name }}. Your ₦{{ number_format($withdrawal->amount) }} withdrawal request from LearnerFlex has
     been processed.
     <div>
        ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿
@@ -93,7 +93,7 @@
                     <p
                       style="font-weight:400;line-height:15.23px;font-size:13px;margin:16px 0"
                     >
-                      Your ₦{{ $withdrawal->amount }} withdrawal request from LearnerFlex has been
+                      Your ₦{{ number_format($withdrawal->amount) }} withdrawal request from LearnerFlex has been
                      processed.
                     </p>
                     <p
