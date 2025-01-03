@@ -88,7 +88,7 @@
                             >&#8202;&#8203;</i
                           ><!
                         [endif]--></span></a>
-                                    <a href="https://learnerflex.com/auth/signup?aff_id={{ $aff_id }}"
+                                    {{-- <a href="https://learnerflex.com/auth/signup?aff_id={{ $aff_id }}"
                                         style="border-radius:3px;padding:8px 8px 8px 8px;color:rgb(255,255,255);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0px 1px 1px 0px #DEDEDE;font-size:13px;background-color:rgb(247,126,0);line-height:100%;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px"
                                         target="_blank"><span><!--[if mso
                           ]><i
@@ -97,12 +97,11 @@
                             >&#8202;</i
                           ><!
                         [endif]--></span><span
-                                            style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:6px">Access
-                                            my account</span><span><!--[if mso
+                                            style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:6px">Create account</span><span><!--[if mso
                           ]><i style="mso-font-width:400%" hidden
                             >&#8202;&#8203;</i
                           ><!
-                        [endif]--></span></a>
+                        [endif]--></span></a> --}}
                                     <p style="font-weight:700;font-size:0.875rem;line-height:16.41px;margin:16px 0">
                                         <a href="https://learnerflex.com/help"
                                             style="color:rgb(0,30,190);text-decoration-line:none" target="_blank">Click

@@ -161,9 +161,14 @@ class SuperAdminUserController extends Controller
             return response()->json(['error' => $validator->errors()], 400);
         }
 
+        if ($request->input('role') === 'affiliate' && !$request->input('vendor_email')) {
+            return response()->json(['error' => 'Pls fill in the vendor email'], 404);
+        }
+
         DB::beginTransaction();
 
         try {
+            
             // Generate a unique aff_id for the new user
             $aff_id = null;
             do {
@@ -179,6 +184,7 @@ class SuperAdminUserController extends Controller
                 'aff_id' => $aff_id,
                 'name' => $request->input('name'),
                 'email' => $request->input('email'),
+                'password' => bcrypt('123456'),
                 'currency' => $request->input('currency', 'NGN'), // Default to 'NGN' if not provided
                 'referral_id' => null, // Can be updated later if needed
                 'role' => $request->input('role'),
@@ -206,7 +212,12 @@ class SuperAdminUserController extends Controller
             $vendor_name = $vendor->name ?? '';
             DB::commit();
             try {
-                Mail::to($request->input('email'))->send(new \App\Mail\AffiliateAccountCreated($request->input('name'), $request->input('email'), $vendor_name));
+                
+                if ($request->input('role') === 'vendor') {
+                    Mail::to($request->input('email'))->send(new \App\Mail\VendorAccountCreated($request->input('name'), $request->input('email'), $vendor->name));
+                } elseif ($request->input('role') === 'affiliate') {
+                    Mail::to($request->input('email'))->send(new \App\Mail\AffiliateAccountCreated($request->input('name'), $request->input('email'), $vendor_name));
+                } 
             } catch (\Exception $e) {
                 \Log::error('Failed to send email to ' . $request->input('email') . ': ' . $e->getMessage());
             }

@@ -9,20 +9,26 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class AffiliateAccountCreated extends Mailable
+class VendorAccountCreated extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $affiliate_name;
+    public $created_vendor_name;
     public $vendor_name;
-    public $affiliate_email;
-
-    public function __construct(string $affiliate_name, string $affiliate_email, string $vendor_name )
+    public $created_vendor_email;
+    /**
+     * Create a new message instance.
+     */
+    public function __construct(string $created_vendor_name, string $created_vendor_email, string $vendor_name)
     {
-        $this->affiliate_name = $affiliate_name;
+        $this->created_vendor_name = $created_vendor_name;
         $this->vendor_name = $vendor_name;
-        $this->affiliate_email = $affiliate_email;
+        $this->created_vendor_email = $created_vendor_email;
     }
+
+    /**
+     * Get the message envelope.
+     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -36,7 +42,7 @@ class AffiliateAccountCreated extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.affiliate_account_created_by_admin',
+            view: 'mail.vendor_account_created_by_admin',
         );
     }
 

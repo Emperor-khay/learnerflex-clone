@@ -79,7 +79,7 @@ class SecondVendorController extends Controller
 
 
             $totalProductEarnings = $vendorEarn + $availableAffiliateEarnings;
-            \Log::info('total product Earn', ['product earn' => $totalProductEarnings]);
+            \Log::info('total product Earn', ['total product earn' => $totalProductEarnings]);
 
 
             // Today's Vendor Sales

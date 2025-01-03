@@ -38,6 +38,7 @@ class WithdrawalController extends Controller
         // Calculate available balance based on the type
         if ($type === 'affiliate') {
             $totalWithdrawals = Withdrawal::where('user_id', $user->id)
+                ->where('type', 'affiliate')
                 ->where('status', 'approved')
                 ->sum('amount');
 
@@ -49,6 +50,7 @@ class WithdrawalController extends Controller
         } elseif ($type === 'vendor') {
             $totalWithdrawals = Withdrawal::where('user_id', $user->id)
                 ->where('status', 'approved')
+                ->where('type', 'vendor')
                 ->sum('amount');
 
             $totalEarnings = Sale::where('vendor_id', $user->id)
@@ -89,6 +91,7 @@ class WithdrawalController extends Controller
             'user_id' => $user->id,
             'email' => $user->email,
             'bankcode' => $bankcode,
+            'type' => $type,
             'amount' => $amount,
             'old_balance' => $availableBalance, // Save the current balance
             'bank_name' => $bankName,
