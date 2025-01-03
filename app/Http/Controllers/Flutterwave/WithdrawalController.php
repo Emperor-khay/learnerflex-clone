@@ -195,6 +195,19 @@ class WithdrawalController extends Controller
                 ], 400);
             }
 
+            //Use bank details from the user's profile only
+            $bankName = $user->bank_name;
+            $bankAccount = $user->bank_account;
+            $bankcode = $user->bankcode;
+
+            // If bank details are missing in the user's profile, return an error
+            if (!$bankName || !$bankAccount|| !$bankcode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bank name and account are required in the user profile to proceed with the withdrawal request.',
+                ], 400);
+            }
+
             // Create the withdrawal request
             $withdrawal = Withdrawal::create([
                 'user_id' => $user->id,

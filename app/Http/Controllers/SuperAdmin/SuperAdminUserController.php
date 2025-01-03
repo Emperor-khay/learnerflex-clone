@@ -214,7 +214,7 @@ class SuperAdminUserController extends Controller
             try {
                 
                 if ($request->input('role') === 'vendor') {
-                    Mail::to($request->input('email'))->send(new \App\Mail\VendorAccountCreated($request->input('name'), $request->input('email'), $vendor->name));
+                    Mail::to($request->input('email'))->send(new \App\Mail\VendorAccountCreated($request->input('name'), $request->input('email'), $vendor_name));
                 } elseif ($request->input('role') === 'affiliate') {
                     Mail::to($request->input('email'))->send(new \App\Mail\AffiliateAccountCreated($request->input('name'), $request->input('email'), $vendor_name));
                 } 
