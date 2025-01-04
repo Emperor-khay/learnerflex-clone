@@ -191,7 +191,7 @@ class WithdrawalController extends Controller
             if (!$bankName || !$bankAccount || !$bankcode) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bank name and account are required in the user profile to proceed with the withdrawal request.',
+                    'message' => 'Bank name, bankcode and account are required in the user profile to proceed with the withdrawal request.',
                 ], 400);
             }
 

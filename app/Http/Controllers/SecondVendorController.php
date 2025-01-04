@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Flutterwave\Service\Transactions;
@@ -244,6 +245,7 @@ class SecondVendorController extends Controller
                 'message' => 'An error occurred while updating profile',
                 'error' => $e->getMessage()
             ], 500);
+            Log::error('updating profile', ['error' => $e->getMessage()]);
         }
     }
 

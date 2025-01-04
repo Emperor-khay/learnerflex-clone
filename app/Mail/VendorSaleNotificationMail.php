@@ -37,7 +37,7 @@ class VendorSaleNotificationMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Money Alert, ' . $this->vendor_name)
+        return $this->subject('Money Alert, ' . $this->vendor_name . '💸 😃')
                     ->view('mail.vendor_sale_notification');
     }
    

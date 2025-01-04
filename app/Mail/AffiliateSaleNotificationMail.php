@@ -32,7 +32,7 @@ class AffiliateSaleNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Money Alert, ' . $this->affiliate_name,
+            subject: 'Money Alert, ' . $this->affiliate_name . '💸 😃',
         );
     }
 
