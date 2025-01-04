@@ -15,7 +15,7 @@ class AffiliateSaleNotificationMail extends Mailable
 
     public $affiliate_name;
     public $product_name;
-    public $commission;
+    public $amountInNaira;
     public $customer_name;
     public $customer_email;
     public $reference_id;
@@ -24,7 +24,7 @@ class AffiliateSaleNotificationMail extends Mailable
     {
         $this->affiliate_name = $affiliate_name;
         $this->product_name = $product_name;
-        $this->commission = $commission;
+        $this->amountInNaira = $commission / 100;
         $this->customer_name = $customer_name;
         $this->customer_email = $customer_email;
         $this->reference_id = $reference_id;

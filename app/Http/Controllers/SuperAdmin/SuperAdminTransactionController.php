@@ -67,7 +67,7 @@ class SuperAdminTransactionController extends Controller
     }
 
 
-        public function downloadPendingWithdrawals(Request $request) 
+    public function downloadPendingWithdrawals(Request $request)
     {
         try {
             // Fetch pending withdrawal records
@@ -141,11 +141,13 @@ class SuperAdminTransactionController extends Controller
             foreach ($pendingWithdrawals as $withdrawal) {
                 try {
                     $user = $withdrawal->user;
+                    // Convert amount from kobo to naira
+                    $withdrawalAmountInNaira = $withdrawal->amount / 100;
                     // Update withdrawal status to approved
                     $withdrawal->update(['status' => 'approved']);
 
                     // Send email notification to the user
-                    Mail::to($withdrawal->email)->send(new WithdrawalApproved($withdrawal, $type, $user));
+                    Mail::to($withdrawal->email)->send(new WithdrawalApproved($withdrawalAmountInNaira, $type, $user));
                 } catch (\Exception $mailException) {
                     // Log email errors and continue processing
                     \Log::error("Failed to send email for withdrawal ID {$withdrawal->id}: " . $mailException->getMessage());

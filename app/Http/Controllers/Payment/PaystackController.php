@@ -86,8 +86,6 @@ class PaystackController extends Controller
                 }
             }
 
-
-
             // Fetch the product's affiliate commission percentage
             $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0;
 

@@ -13,16 +13,16 @@ class WithdrawalApproved extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $withdrawal;
+    public $withdrawalAmountInNaira;
     public $type;
     public $user;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($withdrawal, $type, $user)
+    public function __construct($withdrawalAmountInNaira, $type, $user)
     {
-        $this->withdrawal = $withdrawal;
+        $this->withdrawalAmountInNaira = $withdrawalAmountInNaira;
         $this->type = $type;
         $this->user = $user;
     }

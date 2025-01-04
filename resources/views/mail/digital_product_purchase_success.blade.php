@@ -87,7 +87,8 @@
                     <h1
                       style="text-wrap:pretty;font-size:15px;line-height:17.58px;margin-top:0px;margin-bottom:0px"
                     >
-                      Congratulations!! {{ $user_name }} 🥳
+                      Congratulations!! Here's your package 📦
+
                     </h1>
                     <p
                       style="font-weight:400;line-height:15.23px;font-size:13px;margin:16px 0"
@@ -148,16 +149,13 @@
                     <p
                       style="font-weight:400;line-height:15.23px;font-size:13px;margin:16px 0"
                     >
-                      To be part of the one big family, use the details below to
-                      access your account which was automatically created for
-                      you during signup. Cheers!
+                    As part of the package, we reserved a spot for you. Use the email you used during the purchase and create an account by clicking the button below.
                     </p>
                     <p
                       style="font-weight:400;line-height:15.23px;font-size:13px;margin:16px 0"
                     >
-                      Please immediately you log in, ensure you change your
-                      password to a more secured password of your
-                      choice
+                    If you don't want a free account, don't bother creating one.
+
                     </p>
                   </td>
                 </tr>
@@ -189,7 +187,7 @@
                         [endif]--></span
                       ><span
                         style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:6px"
-                        >Access my account</span
+                        >Create new account</span
                       ><span
                         ><!--[if mso
                           ]><i style="mso-font-width:400%" hidden

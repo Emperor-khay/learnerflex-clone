@@ -14,7 +14,7 @@ class VendorSaleNotificationMail extends Mailable
     use Queueable, SerializesModels;
 
     public $product_name;
-    public $transaction_amount;
+    public $amountInNaira;
     public $email;
     public $reference;
     public $vendor_name;
@@ -26,7 +26,7 @@ class VendorSaleNotificationMail extends Mailable
     public function __construct($product_name, $transaction_amount, $email,$reference, $vendor_name, $affiliate_name)
     {
         $this->product_name = $product_name;
-        $this->transaction_amount = $transaction_amount;
+        $this->amountInNaira = $transaction_amount / 100;
         $this->email = $email;
         $this->reference = $reference;
         $this->vendor_name = $vendor_name;
