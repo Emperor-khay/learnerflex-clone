@@ -86,15 +86,15 @@ class PaystackController extends Controller
                 }
             }
 
-            
+
 
             // Fetch the product's affiliate commission percentage
             $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0;
 
-            // Calculate shares
-            $org_company_share = $amountKobo * 0.05; // 5% to company (admin)
-            $org_aff_share = $amount * $aff_commission_percentage;  // Dynamic affiliate share
-            $org_vendor_share = $amount - ($org_company_share + $org_aff_share);  // Vendor gets the rest
+            $org_company_share = $amountKobo * 0.05; // 5% of the amount
+            $org_aff_share = $amountKobo * $aff_commission_percentage; // Affiliate share in kobo
+            $org_vendor_share = $amountKobo - ($org_company_share + $org_aff_share); // Vendor share in kobo
+
 
             // Initialize payment with Paystack
             $pay = json_decode($this->initialize_payment($formData));
@@ -262,7 +262,7 @@ class PaystackController extends Controller
                 }
                 // For Mentorship
                 elseif ($product_type === 'mentorship') {
-                     // Assuming the mentor's name is the vendor's name
+                    // Assuming the mentor's name is the vendor's name
                     Mail::to($email)->send(new \App\Mail\MentorshipPurchaseSuccessMail($user_name, $mentor_name, $product_access_link, $aff_id, $product_name));
                 }
             } catch (\Exception $e) {
@@ -271,7 +271,7 @@ class PaystackController extends Controller
 
             // Notify the vendor about the sale
             if ($vendor) {
-                
+
                 try {
                     $affiliate_name = $refferer->name ?? null;
                     $vendor_name =  $vendor->name;
