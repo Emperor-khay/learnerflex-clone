@@ -66,54 +66,8 @@ class SuperAdminTransactionController extends Controller
         return response()->json($transaction);
     }
 
-    //     public function downloadPendingWithdrawals(Request $request)
-    // {
-    //     try {
-    //         // Fetch pending withdrawal records
-    //         $withdrawals = \App\Models\Withdrawal::where('status', 'pending')->get();
 
-    //         // Define CSV headers
-    //         $headers = [
-    //             'Content-Type' => 'text/csv',
-    //             'Content-Disposition' => 'attachment; filename="pending_withdrawals.csv"',
-    //         ];
-
-    //         // Create a callback to write the CSV data
-    //         $callback = function () use ($withdrawals) {
-    //             $file = fopen('php://output', 'w');
-
-    //             // Write the header row
-    //             fputcsv($file, [
-    //                 'ID', 'User ID', 'Email', 'Amount', 'Old Balance',
-    //                 'Bank Account', 'Bank Name', 'Type', 'Created At',
-    //             ]);
-
-    //             // Write each withdrawal record
-    //             foreach ($withdrawals as $withdrawal) {
-    //                 fputcsv($file, [
-    //                     $withdrawal->id,
-    //                     $withdrawal->user_id,
-    //                     $withdrawal->email,
-    //                     $withdrawal->amount,
-    //                     $withdrawal->old_balance,
-    //                     $withdrawal->bank_account,
-    //                     $withdrawal->bank_name,
-    //                     $withdrawal->type,
-    //                     $withdrawal->created_at,
-    //                 ]);
-    //             }
-
-    //             fclose($file);
-    //         };
-
-    //         // Return CSV as a streamed response
-    //         return Response::stream($callback, 200, $headers);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Failed to generate CSV: ' . $e->getMessage()], 500);
-    //     }
-    // }
-
-    public function downloadPendingWithdrawals(Request $request)
+        public function downloadPendingWithdrawals(Request $request) 
     {
         try {
             // Fetch pending withdrawal records
@@ -135,14 +89,15 @@ class SuperAdminTransactionController extends Controller
                 // Write each withdrawal record
                 foreach ($withdrawals as $withdrawal) {
                     $user = $withdrawal->user; // Access the related user
-                    $amount = max(0, $withdrawal->amount - 50); // Deduct 50 Naira but ensure it's not negative
+                    $amountInNaira = ($withdrawal->amount / 100) - 50; // Convert to Naira and deduct 50 Naira
+                    $amountInNaira = max(0, $amountInNaira); // Ensure non-negative amount
 
                     fputcsv($file, [
-                        $user->bankcode ?? 'N/A',    // BANK CODE (from user model, default to N/A if not set)
-                        $withdrawal->bank_name,     // BANK
-                        $withdrawal->bank_account,  // ACCOUNT
-                        $user->name ?? 'Unknown',   // NAME (from user model, default to Unknown if not set)
-                        number_format($amount, 2), // AMOUNT (deducted 50 Naira, formatted as a number)
+                        $user->bankcode ?? 'N/A',          // BANK CODE (from user model, default to N/A if not set)
+                        $withdrawal->bank_name,           // BANK
+                        $withdrawal->bank_account,        // ACCOUNT
+                        $user->name ?? 'Unknown',         // NAME (from user model, default to Unknown if not set)
+                        number_format($amountInNaira, 2)  // AMOUNT in Naira, formatted as 2 decimal places
                     ]);
                 }
 
@@ -153,8 +108,10 @@ class SuperAdminTransactionController extends Controller
             return Response::stream($callback, 200, $headers);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to generate CSV: ' . $e->getMessage()], 500);
+            \Log::error('Failed to generate CSV', ['error' => $e->getMessage()]);
         }
     }
+
 
 
     public function approveAllPendingWithdrawals(Request $request)

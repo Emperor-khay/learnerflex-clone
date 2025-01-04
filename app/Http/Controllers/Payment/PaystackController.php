@@ -86,11 +86,13 @@ class PaystackController extends Controller
                 }
             }
 
+            
+
             // Fetch the product's affiliate commission percentage
             $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0;
 
             // Calculate shares
-            $org_company_share = $amount * 0.05; // 5% to company (admin)
+            $org_company_share = $amountKobo * 0.05; // 5% to company (admin)
             $org_aff_share = $amount * $aff_commission_percentage;  // Dynamic affiliate share
             $org_vendor_share = $amount - ($org_company_share + $org_aff_share);  // Vendor gets the rest
 
@@ -106,7 +108,7 @@ class PaystackController extends Controller
                     'affiliate_id' => $affiliate_id,
                     'product_id' => $request->input('product_id'),
                     'vendor_id' => $product->user_id,
-                    'amount' => $amount,
+                    'amount' => $amountKobo,
                     'currency' => 'NGN',
                     'status' => 'pending',
                     'org_company' => $org_company_share,
