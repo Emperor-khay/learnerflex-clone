@@ -247,6 +247,7 @@ class SecondVendorController extends Controller
             ], 500);
             Log::error('updating profile', ['error' => $e->getMessage()]);
         }
+        \Log::error('updating profile', ['error' => $e->getMessage()]);
     }
 
 
