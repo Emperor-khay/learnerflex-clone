@@ -128,7 +128,7 @@
                       <tbody>
                         <tr>
                           <td>
-                            <p
+                            {{-- <p
                               style="font-weight:400;line-height:15.23px;font-size:13px;display:flex;align-items:center;margin:16px 0;margin-top:0.5px;margin-bottom:0px"
                             >
                               <span
@@ -136,9 +136,9 @@
                                 >•</span
                               ><span
                                 ><strong>Customer Name<!-- -->:</strong>
-                                <!-- -->{ {$customer_name }}</span
+                                <!-- -->{{ $customer_name }}</span
                               >
-                            </p>
+                            </p> --}}
                             <p
                               style="font-weight:400;line-height:15.23px;font-size:13px;display:flex;align-items:center;margin:16px 0;margin-top:0.5px;margin-bottom:0px"
                             >
