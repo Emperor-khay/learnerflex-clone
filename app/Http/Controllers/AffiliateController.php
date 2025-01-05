@@ -93,79 +93,79 @@ class AffiliateController extends Controller
     // }
 
     public function affiliateDashboardMetrics(Request $request)
-{
-    try {
-        // Get authenticated affiliate
-        $affiliate = Auth::guard('sanctum')->user();
+    {
+        try {
+            // Get authenticated affiliate
+            $affiliate = Auth::guard('sanctum')->user();
 
-        if (!$affiliate) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            if (!$affiliate) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
+            // Optional date filters for metrics
+            $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
+            $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
+
+            // Total Withdrawals
+            $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
+                ->where('status', 'approved')
+                ->where('type', 'affiliate')
+                ->when($startDate, function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->sum('amount');
+
+            // Available Affiliate Earnings
+            $availableEarn = Sale::where('affiliate_id', $affiliate->aff_id)
+                ->where('status', 'success')
+                ->when($startDate, function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->sum('org_aff');
+
+            $availableEarnings = $availableEarn - $totalWithdrawals;
+
+            // Today's Affiliate Sales
+            $todaySalesData = Sale::where('affiliate_id', $affiliate->aff_id)
+                ->where('status', 'success')
+                ->whereDate('created_at', Carbon::today())
+                ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
+                ->first();
+
+            // Total Affiliate Sales
+            $totalSalesData = Sale::where('affiliate_id', $affiliate->aff_id)
+                ->where('status', 'success')
+                ->when($startDate, function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
+                ->first();
+
+            // Convert amounts to naira
+            $availableEarningsNaira = $availableEarnings / 100;
+            $totalWithdrawalsNaira = $totalWithdrawals / 100;
+            $todaysTotalAmountNaira = ($todaySalesData->total_amount ?? 0) / 100;
+            $totalSalesAmountNaira = ($totalSalesData->total_amount ?? 0) / 100;
+
+            // Return all data in JSON format
+            return response()->json([
+                'available_affiliate_earnings' => $availableEarningsNaira,
+                'todays_affiliate_sales' => [
+                    'total_amount' => $todaysTotalAmountNaira,
+                    'sale_count' => $todaySalesData->sale_count ?? 0,
+                ],
+                'total_affiliate_sales' => [
+                    'total_amount' => $totalSalesAmountNaira,
+                    'sale_count' => $totalSalesData->sale_count ?? 0,
+                ],
+                'total_withdrawals' => $totalWithdrawalsNaira,
+            ], 200);
+        } catch (\Exception $e) {
+            // Error handling
+            return response()->json(['error' => 'An error occurred'], 500);
+            Log::error('Aff dashboard Error: ' . $e->getMessage());
         }
-
-        // Optional date filters for metrics
-        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
-        $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
-
-        // Total Withdrawals
-        $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
-            ->where('status', 'approved')
-            ->where('type', 'affiliate')
-            ->when($startDate, function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            })
-            ->sum('amount');
-
-        // Available Affiliate Earnings
-        $availableEarn = Sale::where('affiliate_id', $affiliate->aff_id)
-            ->where('status', 'success')
-            ->when($startDate, function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            })
-            ->sum('org_aff');
-
-        $availableEarnings = $availableEarn - $totalWithdrawals;
-
-        // Today's Affiliate Sales
-        $todaySalesData = Sale::where('affiliate_id', $affiliate->aff_id)
-            ->where('status', 'success')
-            ->whereDate('created_at', Carbon::today())
-            ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
-            ->first();
-
-        // Total Affiliate Sales
-        $totalSalesData = Sale::where('affiliate_id', $affiliate->aff_id)
-            ->where('status', 'success')
-            ->when($startDate, function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            })
-            ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
-            ->first();
-
-        // Convert amounts to naira
-        $availableEarningsNaira = $availableEarnings / 100;
-        $totalWithdrawalsNaira = $totalWithdrawals / 100;
-        $todaysTotalAmountNaira = ($todaySalesData->total_amount ?? 0) / 100;
-        $totalSalesAmountNaira = ($totalSalesData->total_amount ?? 0) / 100;
-
-        // Return all data in JSON format
-        return response()->json([
-            'available_affiliate_earnings' => $availableEarningsNaira,
-            'todays_affiliate_sales' => [
-                'total_amount' => $todaysTotalAmountNaira,
-                'sale_count' => $todaySalesData->sale_count ?? 0,
-            ],
-            'total_affiliate_sales' => [
-                'total_amount' => $totalSalesAmountNaira,
-                'sale_count' => $totalSalesData->sale_count ?? 0,
-            ],
-            'total_withdrawals' => $totalWithdrawalsNaira,
-        ], 200);
-    } catch (\Exception $e) {
-        // Error handling
-        return response()->json(['error' => 'An error occurred'], 500);
-        Log::error('Aff dashboard Error: ' . $e->getMessage());
     }
-}
 
 
 
@@ -238,7 +238,7 @@ class AffiliateController extends Controller
         }
     }
 
- 
+
 
     public function marketAccessCallback(Request $request)
     {
@@ -529,73 +529,73 @@ class AffiliateController extends Controller
 
 
     public function sendVendorRequest(Request $request)
-{
-    $validate = $request->validate([
-        'sale_url' => 'required|string',
-        'description' => 'nullable|string',
-    ]);
+    {
+        $validate = $request->validate([
+            'sale_url' => 'required|string',
+            'description' => 'nullable|string',
+        ]);
 
-    $user = auth()->user();
-    $saleUrl = $validate['sale_url'];
-    $description = $validate['description'] ?? null;
+        $user = auth()->user();
+        $saleUrl = $validate['sale_url'];
+        $description = $validate['description'] ?? null;
 
-    try {
-        // Check for existing vendor_status record
-        $existingVendorStatus = DB::table('vendor_status')
-            ->where('user_id', $user->id)
-            ->first();
-
-        if ($existingVendorStatus) {
-            // Prevent editing if the status is "pending"
-            if ($existingVendorStatus->status === 'pending') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You cannot edit your request while it is still pending approval.',
-                ], 403);
-            }
-
-            // Allow editing if the status is "rejected"
-            if ($existingVendorStatus->status === 'rejected') {
-                DB::table('vendor_status')
-                    ->where('user_id', $user->id)
-                    ->update([
-                        'sale_url' => $saleUrl,
-                        'description' => $description,
-                        'status' => 'pending',
-                        'updated_at' => now(),
-                    ]);
-            }
-        } else {
-            // Create a new record if none exists
-            DB::table('vendor_status')->insert([
-                'user_id' => $user->id,
-                'sale_url' => $saleUrl,
-                'description' => $description,
-                'status' => 'pending',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        // Send notification email
         try {
-            Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleUrl));
-        } catch (\Exception $e) {
-            Log::error('Error sending mail', ['error' => $e->getMessage()]);
-        }
+            // Check for existing vendor_status record
+            $existingVendorStatus = DB::table('vendor_status')
+                ->where('user_id', $user->id)
+                ->first();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Vendor Request sent successfully',
-        ], 201);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Error processing your request.',
-            'error' => $e->getMessage(),
-        ], 500);
+            if ($existingVendorStatus) {
+                // Prevent editing if the status is "pending"
+                if ($existingVendorStatus->status === 'pending') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You cannot edit your request while it is still pending approval.',
+                    ], 403);
+                }
+
+                // Allow editing if the status is "rejected"
+                if ($existingVendorStatus->status === 'rejected') {
+                    DB::table('vendor_status')
+                        ->where('user_id', $user->id)
+                        ->update([
+                            'sale_url' => $saleUrl,
+                            'description' => $description,
+                            'status' => 'pending',
+                            'updated_at' => now(),
+                        ]);
+                }
+            } else {
+                // Create a new record if none exists
+                DB::table('vendor_status')->insert([
+                    'user_id' => $user->id,
+                    'sale_url' => $saleUrl,
+                    'description' => $description,
+                    'status' => 'pending',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            // Send notification email
+            try {
+                Mail::to('learnerflexltd@gmail.com')->send(new VendorAccountWanted($user, $saleUrl));
+            } catch (\Exception $e) {
+                Log::error('Error sending mail', ['error' => $e->getMessage()]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Vendor Request sent successfully',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing your request.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
 
 
