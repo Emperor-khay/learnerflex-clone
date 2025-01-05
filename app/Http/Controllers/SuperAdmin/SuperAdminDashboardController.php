@@ -213,7 +213,7 @@ class SuperAdminDashboardController extends Controller
             $productSalesRevenue = $productSales->sum('amount') / 100;
             $productSalesCount = $productSales->count();
 
-            $totalRevenue = $productSalesRevenue + $signupRevenue + $marketplaceRevenue;
+            $totalRevenue = $signupRevenue + $marketplaceRevenue;
 
             // Today's Earnings
             $orgEarningsToday = Sale::whereDate('created_at', today())->sum('org_company') / 100;

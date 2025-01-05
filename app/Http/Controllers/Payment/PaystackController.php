@@ -242,6 +242,7 @@ class PaystackController extends Controller
             $refferer = User::where('aff_id', $transaction->affiliate_id)->first();
             $product_access_link = $product->access_link ?? '#';
             $mentor_name = $vendor->name ?? 'Mentor';
+            $product_image = $product->image;
 
             // Add the try-catch block for sending emails based on product type
             try {
@@ -313,6 +314,9 @@ class PaystackController extends Controller
                 'transaction' => $transaction,
                 'product_name' => $product_name,
                 'product_access_link' => $product_access_link,
+                'product_image' => $product_image,
+                'vendor_id' => $product->vendor_id,
+                'vendor_user_id' => $product->user_id,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error in payment callback', [
