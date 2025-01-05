@@ -106,7 +106,6 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 // Vendor routes group
 Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function () {
     Route::get('/dashboard', [SecondVendorController::class, 'vendorDashboardMetrics']);
-    // Route::get('/affiliate/dashboard', [SecondVendorController::class, 'affiliateDashboardMetrics']);
     Route::get('/affiliate/dashboard', [AffiliateController::class, 'affiliateDashboardMetrics']);
 
     //profile routes

@@ -25,99 +25,198 @@ use App\Http\Requests\UserProfileUpdateRequest;
 class SecondVendorController extends Controller
 {
 
+    //working I just added conversions
+    // public function vendorDashboardMetrics(Request $request)
+    // {
+    //     try {
+    //         // Get authenticated vendor
+    //         $vendor = Auth::guard('sanctum')->user();
+
+    //         if (!$vendor) {
+    //             return response()->json(['error' => 'Unauthorized'], 403);
+    //         }
+
+    //         // Optional date filters for metrics
+    //         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
+    //         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
+
+    //         // Total Vendor Withdrawals
+    //         $vendorWithdrawals = Withdrawal::where('user_id', $vendor->id)
+    //             ->where('type', 'vendor') // Only vendor withdrawals
+    //             ->where('status', 'approved')
+    //             ->when($startDate, function ($query) use ($startDate, $endDate) {
+    //                 $query->whereBetween('created_at', [$startDate, $endDate]);
+    //             })
+    //             ->sum('amount');
+
+    //         // Available Vendor Earnings
+    //         $vendorEarn = Sale::where('vendor_id', $vendor->id)
+    //             ->where('status', 'success')
+    //             ->when($startDate, function ($query) use ($startDate, $endDate) {
+    //                 $query->whereBetween('created_at', [$startDate, $endDate]);
+    //             })
+    //             ->sum('org_vendor');
+    //         $availableVendorEarnings = $vendorEarn - $vendorWithdrawals;
+
+    //         $affiliateWithdrawals = Withdrawal::where('user_id', $vendor->id)
+    //             ->where('type', 'affiliate') // Only vendor withdrawals
+    //             ->where('status', 'approved')
+    //             ->when($startDate, function ($query) use ($startDate, $endDate) {
+    //                 $query->whereBetween('created_at', [$startDate, $endDate]);
+    //             })
+    //             ->sum('amount');
+
+    //         $affiliateEarn = Sale::where('affiliate_id', $vendor->aff_id)
+    //             ->whereNotNull('product_id')
+    //             ->where('status', 'success')
+    //             ->when($startDate, function ($query) use ($startDate, $endDate) {
+    //                 $query->whereBetween('created_at', [$startDate, $endDate]);
+    //             })
+    //             ->sum('org_aff');
+
+    //         $availableAffiliateEarnings = $affiliateEarn - $affiliateWithdrawals;
+
+    //         \Log::info('Vendor Earn', ['vendorEarn' => $vendorEarn]);
+    //         \Log::info('Available Affiliate Earnings', ['availableAffiliateEarnings' => $availableAffiliateEarnings]);
+
+
+    //         $totalProductEarnings = $vendorEarn + $availableAffiliateEarnings;
+    //         \Log::info('total product Earn', ['total product earn' => $totalProductEarnings]);
+
+
+    //         // Today's Vendor Sales
+    //         $todaySalesData = Sale::where('vendor_id', $vendor->id)
+    //             ->where('status', 'success')
+    //             ->whereDate('created_at', Carbon::today())
+    //             ->selectRaw('COUNT(*) as sale_count, SUM(org_vendor) as total_amount')
+    //             ->first();
+
+    //         // Total Vendor Sales
+    //         $totalSalesData = Sale::where('vendor_id', $vendor->id)
+    //             ->where('status', 'success')
+    //             ->when($startDate, function ($query) use ($startDate, $endDate) {
+    //                 $query->whereBetween('created_at', [$startDate, $endDate]);
+    //             })
+    //             ->selectRaw('COUNT(*) as sale_count, SUM(org_vendor) as total_amount')
+    //             ->first();
+
+    //         // Return all data in JSON format
+    //         return response()->json([
+    //             'available_vendor_earnings' => $availableVendorEarnings,
+    //             'total_product_earnings' => $totalProductEarnings,
+    //             'todays_vendor_sales' => [
+    //                 'total_amount' => $todaySalesData->total_amount ?? 0,
+    //                 'sale_count' => $todaySalesData->sale_count ?? 0
+    //             ],
+    //             'total_vendor_sales' => [
+    //                 'total_amount' => $totalSalesData->total_amount ?? 0,
+    //                 'sale_count' => $totalSalesData->sale_count ?? 0
+    //             ],
+    //             'total_withdrawals' => $vendorWithdrawals,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         // Error handling
+    //         return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
+    //     }
+    // }
+
     public function vendorDashboardMetrics(Request $request)
-    {
-        try {
-            // Get authenticated vendor
-            $vendor = Auth::guard('sanctum')->user();
+{
+    try {
+        // Get authenticated vendor
+        $vendor = Auth::guard('sanctum')->user();
 
-            if (!$vendor) {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-
-            // Optional date filters for metrics
-            $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
-            $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
-
-            // Total Vendor Withdrawals
-            $vendorWithdrawals = Withdrawal::where('user_id', $vendor->id)
-                ->where('type', 'vendor') // Only vendor withdrawals
-                ->where('status', 'approved')
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('amount');
-
-            // Available Vendor Earnings
-            $vendorEarn = Sale::where('vendor_id', $vendor->id)
-                ->where('status', 'success')
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('org_vendor');
-            $availableVendorEarnings = $vendorEarn - $vendorWithdrawals;
-
-            $affiliateWithdrawals = Withdrawal::where('user_id', $vendor->id)
-                ->where('type', 'affiliate') // Only vendor withdrawals
-                ->where('status', 'approved')
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('amount');
-
-            $affiliateEarn = Sale::where('affiliate_id', $vendor->aff_id)
-                ->whereNotNull('product_id')
-                ->where('status', 'success')
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('org_aff');
-
-            $availableAffiliateEarnings = $affiliateEarn - $affiliateWithdrawals;
-
-            \Log::info('Vendor Earn', ['vendorEarn' => $vendorEarn]);
-            \Log::info('Available Affiliate Earnings', ['availableAffiliateEarnings' => $availableAffiliateEarnings]);
-
-
-            $totalProductEarnings = $vendorEarn + $availableAffiliateEarnings;
-            \Log::info('total product Earn', ['total product earn' => $totalProductEarnings]);
-
-
-            // Today's Vendor Sales
-            $todaySalesData = Sale::where('vendor_id', $vendor->id)
-                ->where('status', 'success')
-                ->whereDate('created_at', Carbon::today())
-                ->selectRaw('COUNT(*) as sale_count, SUM(org_vendor) as total_amount')
-                ->first();
-
-            // Total Vendor Sales
-            $totalSalesData = Sale::where('vendor_id', $vendor->id)
-                ->where('status', 'success')
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->selectRaw('COUNT(*) as sale_count, SUM(org_vendor) as total_amount')
-                ->first();
-
-            // Return all data in JSON format
-            return response()->json([
-                'available_vendor_earnings' => $availableVendorEarnings,
-                'total_product_earnings' => $totalProductEarnings,
-                'todays_vendor_sales' => [
-                    'total_amount' => $todaySalesData->total_amount ?? 0,
-                    'sale_count' => $todaySalesData->sale_count ?? 0
-                ],
-                'total_vendor_sales' => [
-                    'total_amount' => $totalSalesData->total_amount ?? 0,
-                    'sale_count' => $totalSalesData->sale_count ?? 0
-                ],
-                'total_withdrawals' => $vendorWithdrawals,
-            ], 200);
-        } catch (\Exception $e) {
-            // Error handling
-            return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
+        if (!$vendor) {
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
+
+        // Optional date filters for metrics
+        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
+        $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
+
+        // Total Vendor Withdrawals
+        $vendorWithdrawals = Withdrawal::where('user_id', $vendor->id)
+            ->where('type', 'vendor') // Only vendor withdrawals
+            ->where('status', 'approved')
+            ->when($startDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->sum('amount');
+
+        // Available Vendor Earnings
+        $vendorEarn = Sale::where('vendor_id', $vendor->id)
+            ->where('status', 'success')
+            ->when($startDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->sum('org_vendor');
+        $availableVendorEarnings = $vendorEarn - $vendorWithdrawals;
+
+        // Affiliate Earnings and Withdrawals
+        $affiliateWithdrawals = Withdrawal::where('user_id', $vendor->id)
+            ->where('type', 'affiliate') // Only affiliate withdrawals
+            ->where('status', 'approved')
+            ->when($startDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->sum('amount');
+
+        $affiliateEarn = Sale::where('affiliate_id', $vendor->aff_id)
+            ->whereNotNull('product_id')
+            ->where('status', 'success')
+            ->when($startDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->sum('org_aff');
+
+        $availableAffiliateEarnings = $affiliateEarn - $affiliateWithdrawals;
+
+        // Total Product Earnings
+        $totalProductEarnings = $vendorEarn + $availableAffiliateEarnings;
+
+        // Today's Vendor Sales
+        $todaySalesData = Sale::where('vendor_id', $vendor->id)
+            ->where('status', 'success')
+            ->whereDate('created_at', Carbon::today())
+            ->selectRaw('COUNT(*) as sale_count, SUM(org_vendor) as total_amount')
+            ->first();
+
+        // Total Vendor Sales
+        $totalSalesData = Sale::where('vendor_id', $vendor->id)
+            ->where('status', 'success')
+            ->when($startDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->selectRaw('COUNT(*) as sale_count, SUM(org_vendor) as total_amount')
+            ->first();
+
+        // Convert monetary values to naira
+        $availableVendorEarningsNaira = $availableVendorEarnings / 100;
+        $totalProductEarningsNaira = $totalProductEarnings / 100;
+        $vendorWithdrawalsNaira = $vendorWithdrawals / 100;
+        $todaysTotalAmountNaira = ($todaySalesData->total_amount ?? 0) / 100;
+        $totalSalesAmountNaira = ($totalSalesData->total_amount ?? 0) / 100;
+
+        // Return all data in JSON format
+        return response()->json([
+            'available_vendor_earnings' => $availableVendorEarningsNaira,
+            'total_product_earnings' => $totalProductEarningsNaira,
+            'todays_vendor_sales' => [
+                'total_amount' => $todaysTotalAmountNaira,
+                'sale_count' => $todaySalesData->sale_count ?? 0,
+            ],
+            'total_vendor_sales' => [
+                'total_amount' => $totalSalesAmountNaira,
+                'sale_count' => $totalSalesData->sale_count ?? 0,
+            ],
+            'total_withdrawals' => $vendorWithdrawalsNaira,
+        ], 200);
+    } catch (\Exception $e) {
+        // Error handling
+        return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
     }
+}
+
 
 
     public function affiliateDashboardMetrics(Request $request)

@@ -23,76 +23,6 @@ use Illuminate\Validation\ValidationException;
 
 class AffiliateController extends Controller
 {
-    public function affiliateDashboardMetrics(Request $request)
-    {
-        try {
-            // Get authenticated affiliate
-            $affiliate = Auth::guard('sanctum')->user();
-
-            if (!$affiliate) {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-
-            // Optional date filters for metrics
-            $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
-            $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
-
-            // 4. Total Withdrawals (Sum all withdrawals for the affiliate)
-            $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
-                ->where('status', 'approved')
-                ->where('type', 'affiliate')
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('amount');
-
-            // 1. Available Affiliate Earnings (Total earnings for the affiliate)
-            $availableEarn = Sale::where('affiliate_id', $affiliate->aff_id)
-                ->where('status', 'success') // Transaction must be successful
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->sum('org_aff');  // Sum of earnings amount (affiliate share)
-
-            // Calculate available earnings
-            $availableEarnings = $availableEarn - $totalWithdrawals;
-
-            // 2. Today's Affiliate Sales (Sales with affiliate for the current day - both count and amount)
-            $todaySalesData = Sale::where('affiliate_id', $affiliate->aff_id)
-                ->where('status', 'success') // Query Sales model
-                ->whereDate('created_at', Carbon::today())  // Today's sales
-                ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
-                ->first();
-
-            // 3. Total Affiliate Sales (All-time or filtered by date sales with affiliate - both count and amount)
-            $totalSalesData = Sale::where('affiliate_id', $affiliate->aff_id) // Fixed to use aff_id
-                ->where('status', 'success')
-                ->when($startDate, function ($query) use ($startDate, $endDate) {
-                    $query->whereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
-                ->first();
-
-            // Return all data in JSON format
-            return response()->json([
-                'available_affiliate_earnings' => $availableEarnings,
-                'todays_affiliate_sales' => [
-                    'total_amount' => $todaySalesData->total_amount ?? 0,
-                    'sale_count' => $todaySalesData->sale_count ?? 0
-                ],
-                'total_affiliate_sales' => [
-                    'total_amount' => $totalSalesData->total_amount ?? 0,
-                    'sale_count' => $totalSalesData->sale_count ?? 0
-                ],
-                'total_withdrawals' => $totalWithdrawals,
-            ], 200);
-        } catch (\Exception $e) {
-            // Error handling
-            return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
-        }
-    }
-
-
     // public function affiliateDashboardMetrics(Request $request)
     // {
     //     try {
@@ -110,36 +40,37 @@ class AffiliateController extends Controller
     //         // 4. Total Withdrawals (Sum all withdrawals for the affiliate)
     //         $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
     //             ->where('status', 'approved')
+    //             ->where('type', 'affiliate')
     //             ->when($startDate, function ($query) use ($startDate, $endDate) {
     //                 $query->whereBetween('created_at', [$startDate, $endDate]);
     //             })
     //             ->sum('amount');
 
     //         // 1. Available Affiliate Earnings (Total earnings for the affiliate)
-    //         $availableEarn = Transaction::where('affiliate_id', $affiliate->aff_id)
-    //             ->where('status', 'success') //  Transaction
+    //         $availableEarn = Sale::where('affiliate_id', $affiliate->aff_id)
+    //             ->where('status', 'success') // Transaction must be successful
     //             ->when($startDate, function ($query) use ($startDate, $endDate) {
     //                 $query->whereBetween('created_at', [$startDate, $endDate]);
     //             })
-    //             ->sum('org_aff');  // Sum of earnings amount
+    //             ->sum('org_aff');  // Sum of earnings amount (affiliate share)
 
     //         // Calculate available earnings
-    //         $availableEarnings = $totalWithdrawals - $availableEarn;
+    //         $availableEarnings = $availableEarn - $totalWithdrawals;
 
     //         // 2. Today's Affiliate Sales (Sales with affiliate for the current day - both count and amount)
-    //         $todaySalesData = Transaction::where('affiliate_id', $affiliate->aff_id)
+    //         $todaySalesData = Sale::where('affiliate_id', $affiliate->aff_id)
     //             ->where('status', 'success') // Query Sales model
     //             ->whereDate('created_at', Carbon::today())  // Today's sales
-    //             ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+    //             ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
     //             ->first();
 
     //         // 3. Total Affiliate Sales (All-time or filtered by date sales with affiliate - both count and amount)
-    //         $totalSalesData = Transaction::where('affiliate_id', $affiliate->id)
-    //         ->where('status', 'success')
+    //         $totalSalesData = Sale::where('affiliate_id', $affiliate->aff_id) // Fixed to use aff_id
+    //             ->where('status', 'success')
     //             ->when($startDate, function ($query) use ($startDate, $endDate) {
     //                 $query->whereBetween('created_at', [$startDate, $endDate]);
     //             })
-    //             ->selectRaw('COUNT(*) as sale_count, SUM(amount) as total_amount')
+    //             ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
     //             ->first();
 
     //         // Return all data in JSON format
@@ -160,6 +91,84 @@ class AffiliateController extends Controller
     //         return response()->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
     //     }
     // }
+
+    public function affiliateDashboardMetrics(Request $request)
+{
+    try {
+        // Get authenticated affiliate
+        $affiliate = Auth::guard('sanctum')->user();
+
+        if (!$affiliate) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Optional date filters for metrics
+        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : null;
+        $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : Carbon::now();
+
+        // Total Withdrawals
+        $totalWithdrawals = Withdrawal::where('user_id', $affiliate->id)
+            ->where('status', 'approved')
+            ->where('type', 'affiliate')
+            ->when($startDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->sum('amount');
+
+        // Available Affiliate Earnings
+        $availableEarn = Sale::where('affiliate_id', $affiliate->aff_id)
+            ->where('status', 'success')
+            ->when($startDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->sum('org_aff');
+
+        $availableEarnings = $availableEarn - $totalWithdrawals;
+
+        // Today's Affiliate Sales
+        $todaySalesData = Sale::where('affiliate_id', $affiliate->aff_id)
+            ->where('status', 'success')
+            ->whereDate('created_at', Carbon::today())
+            ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
+            ->first();
+
+        // Total Affiliate Sales
+        $totalSalesData = Sale::where('affiliate_id', $affiliate->aff_id)
+            ->where('status', 'success')
+            ->when($startDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            })
+            ->selectRaw('COUNT(*) as sale_count, SUM(org_aff) as total_amount')
+            ->first();
+
+        // Convert amounts to naira
+        $availableEarningsNaira = $availableEarnings / 100;
+        $totalWithdrawalsNaira = $totalWithdrawals / 100;
+        $todaysTotalAmountNaira = ($todaySalesData->total_amount ?? 0) / 100;
+        $totalSalesAmountNaira = ($totalSalesData->total_amount ?? 0) / 100;
+
+        // Return all data in JSON format
+        return response()->json([
+            'available_affiliate_earnings' => $availableEarningsNaira,
+            'todays_affiliate_sales' => [
+                'total_amount' => $todaysTotalAmountNaira,
+                'sale_count' => $todaySalesData->sale_count ?? 0,
+            ],
+            'total_affiliate_sales' => [
+                'total_amount' => $totalSalesAmountNaira,
+                'sale_count' => $totalSalesData->sale_count ?? 0,
+            ],
+            'total_withdrawals' => $totalWithdrawalsNaira,
+        ], 200);
+    } catch (\Exception $e) {
+        // Error handling
+        return response()->json(['error' => 'An error occurred'], 500);
+        Log::error('Aff dashboard Error: ' . $e->getMessage());
+    }
+}
+
+
+
 
     public function unlockMarketAccess(Request $request)
     {
