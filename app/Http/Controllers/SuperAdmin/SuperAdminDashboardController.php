@@ -228,32 +228,29 @@ class SuperAdminDashboardController extends Controller
             $vendorEarningsTodayCount = Sale::whereDate('created_at', today())->count();
 
             // Unpaid Balances
-            $unpaidAffiliateBalance = (Sale::sum('org_aff')
-                - Withdrawal::whereHas('user', function ($query) {
-                    $query->where('role', 'affiliate');
-                })
-                ->where('status', 'approved')
+            // Unpaid Affiliate Balance
+            $unpaidAffiliateBalance = (Sale::sum('org_aff') // Total owed to affiliates
+                - Withdrawal::where('type', 'affiliate') // Focus on withdrawal type
+                ->where('status', 'approved') // Only approved withdrawals
                 ->sum('amount')) / 100;
 
-            $unpaidVendorBalance = (Sale::sum('org_vendor')
-                - Withdrawal::whereHas('user', function ($query) {
-                    $query->where('role', 'vendor');
-                })
-                ->where('status', 'approved')
+            // Unpaid Vendor Balance
+            $unpaidVendorBalance = (Sale::sum('org_vendor') // Total owed to vendors
+                - Withdrawal::where('type', 'vendor') // Focus on withdrawal type
+                ->where('status', 'approved') // Only approved withdrawals
                 ->sum('amount')) / 100;
 
-            // Total Payouts
-            $affiliatePayouts = Withdrawal::whereHas('user', function ($query) {
-                $query->where('role', 'affiliate');
-            })
-                ->where('status', 'approved')
+
+            // Total Affiliate Payouts
+            $affiliatePayouts = Withdrawal::where('type', 'affiliate') // Focus on withdrawal type
+                ->where('status', 'approved') // Only approved withdrawals
                 ->sum('amount') / 100;
 
-            $vendorPayouts = Withdrawal::whereHas('user', function ($query) {
-                $query->where('role', 'vendor');
-            })
-                ->where('status', 'approved')
+            // Total Vendor Payouts
+            $vendorPayouts = Withdrawal::where('type', 'vendor') // Focus on withdrawal type
+                ->where('status', 'approved') // Only approved withdrawals
                 ->sum('amount') / 100;
+
 
             // Response Data
             return response()->json([
