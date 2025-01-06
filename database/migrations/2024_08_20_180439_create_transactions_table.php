@@ -23,9 +23,9 @@ return new class extends Migration
             $table->string('currency', 10)->nullable();
             $table->string('status')->default('pending');
             $table->string('email')->nullable();
-            $table->integer('org_vendor')->nullable();
-            $table->integer('org_aff')->nullable();
-            $table->integer('org_company')->nullable();
+            $table->bigInteger('org_vendor')->nullable();
+            $table->bigInteger('org_aff')->nullable();
+            $table->bigInteger('org_company')->nullable();
             $table->string('description')->nullable();
 
             

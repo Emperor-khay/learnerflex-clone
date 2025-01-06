@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete(null);
             $table->string('email');
-            $table->decimal('amount');
+            $table->bigInteger('amount');
             $table->string('status')->default('pending');
-            $table->decimal('old_balance')->nullable();
+            $table->decimal('old_balance', 15, 2)->nullable();
             $table->string('bank_account');
             $table->string('bank_name');
             $table->timestamps();

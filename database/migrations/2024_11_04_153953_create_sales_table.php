@@ -19,12 +19,12 @@ return new class extends Migration
             $table->foreignId('affiliate_id')->nullable()->constrained('users')->onDelete('set null'); // Nullable if no affiliate
             $table->decimal('amount', 15, 2); // Sale amount
             $table->string('status')->default('pending');
-            $table->decimal('commission', 15, 2)->nullable(); // Commission given to affiliate
+            $table->decimal('commission', 5, 2)->nullable();
             $table->string('currency', 10)->nullable(); // Currency used in the sale
             $table->string('email')->nullable();
-            $table->integer('org_vendor')->nullable();
-            $table->integer('org_aff')->nullable();
-            $table->integer('org_company')->nullable();
+            $table->bigInteger('org_vendor')->nullable();
+            $table->bigInteger('org_aff')->nullable();
+            $table->bigInteger('org_company')->nullable();
             $table->timestamps();
         });
     }

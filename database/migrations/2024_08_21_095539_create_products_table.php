@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('price', 15, 2);
             $table->decimal('old_price', 15, 2)->nullable();
             $table->string('type');
-            $table->string('commission')->nullable();
+            $table->decimal('commission', 5, 2)->nullable();
             $table->string('contact_email')->nullable();
             $table->string('vsl_pa_link')->nullable();
             $table->string('access_link')->nullable();
