@@ -172,7 +172,7 @@ class SecondVendorController extends Controller
         $availableAffiliateEarnings = $affiliateEarn - $affiliateWithdrawals;
 
         // Total Product Earnings
-        $totalProductEarnings = $vendorEarn + $availableAffiliateEarnings;
+        $totalProductEarnings = $availableVendorEarnings + $availableAffiliateEarnings;
 
         // Today's Vendor Sales
         $todaySalesData = Sale::where('vendor_id', $vendor->id)

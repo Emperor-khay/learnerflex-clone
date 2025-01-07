@@ -196,116 +196,44 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
 //test endpoints
 Route::get('/test', function () {
-    try {
-        // Revenue and Count from Marketplace Unlocks
-        $marketplaceUnlocks = DB::table('transactions')
-            ->whereNull('product_id')
-            ->whereNull('vendor_id')
-            ->where('description', 'marketplace_unlock')
-            ->where('status', 'success');
+        try {
+            // Fetch pending withdrawal records
+            $withdrawals = \App\Models\Withdrawal::with('user')->where('status', 'pending')->get();
 
-        $marketplaceRevenue = $marketplaceUnlocks->sum('amount');
-        $marketplaceCount = $marketplaceUnlocks->count();
+            // Define CSV headers
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="pending_withdrawals.csv"',
+            ];
 
-        // Revenue and Count from Signups
-        $signups = DB::table('transactions')
-            ->whereNull('product_id')
-            ->whereNull('vendor_id')
-            ->where('description', 'signup_fee')
-            ->where('status', 'success');
+            // Create a callback to write the CSV data
+            $callback = function () use ($withdrawals) {
+                $file = fopen('php://output', 'w');
 
-        $signupRevenue = $signups->sum('amount');
-        $signupCount = $signups->count();
+                // Write the header row
+                fputcsv($file, ['BANK CODE', 'BANK', 'ACCOUNT', 'NAME', 'AMOUNT']);
 
-        // Total Revenue Generated (Product Sales + Signups + Marketplace Unlocks)
-        $productSales = DB::table('transactions')
-            ->whereNotNull('product_id')
-            ->whereNotNull('vendor_id')
-            ->where('status', 'success');
+                // Write each withdrawal record
+                foreach ($withdrawals as $withdrawal) {
+                    $user = $withdrawal->user; // Access the related user
+                    $amountInNaira = ($withdrawal->amount / 100) - 50; // Convert to Naira and deduct 50 Naira
+                    $amountInNaira = max(0, $amountInNaira); // Ensure non-negative amount
 
-        $productSalesRevenue = $productSales->sum('amount');
-        $productSalesCount = $productSales->count();
+                    fputcsv($file, [
+                        $user->bankcode ?? 'N/A',          // BANK CODE (from user model, default to N/A if not set)
+                        $withdrawal->bank_name,           // BANK
+                        $withdrawal->bank_account,        // ACCOUNT
+                        $user->name ?? 'Unknown',         // NAME (from user model, default to Unknown if not set)
+                        number_format($amountInNaira, 2)  // AMOUNT in Naira, formatted as 2 decimal places
+                    ]);
+                }
 
-        $totalRevenue = $productSalesRevenue + $signupRevenue + $marketplaceRevenue;
+                fclose($file);
+            };
 
-        // Today's Earnings
-        $orgEarningsToday = DB::table('sales')
-            ->whereDate('created_at', today())
-            ->sum('org_company'); // Organization's share
-        $orgEarningsTodayCount = DB::table('sales')
-            ->whereDate('created_at', today())
-            ->count();
-
-        $affiliateEarningsToday = DB::table('sales')
-            ->whereDate('created_at', today())
-            ->sum('org_aff'); // Affiliates' share
-        $affiliateEarningsTodayCount = DB::table('sales')
-            ->whereDate('created_at', today())
-            ->whereNotNull('affiliate_id') // Count only those involving affiliates
-            ->count();
-
-        $vendorEarningsToday = DB::table('sales')
-            ->whereDate('created_at', today())
-            ->sum('org_vendor'); // Vendors' share
-        $vendorEarningsTodayCount = DB::table('sales')
-            ->whereDate('created_at', today())
-            ->count();
-
-        // Unpaid Balances
-        $unpaidAffiliateBalance = DB::table('sales')->sum('org_aff') // Total owed
-            - DB::table('withdrawals')
-            ->join('users', 'withdrawals.user_id', '=', 'users.id')
-            ->where('users.role', 'affiliate')
-            ->where('withdrawals.status', 'success') // Only successful withdrawals
-            ->sum('withdrawals.amount'); // Total withdrawn
-
-        $unpaidVendorBalance = DB::table('sales')->sum('org_vendor') // Total owed
-            - DB::table('withdrawals')
-            ->join('users', 'withdrawals.user_id', '=', 'users.id')
-            ->where('users.role', 'vendor')
-            ->where('withdrawals.status', 'success') // Only successful withdrawals
-            ->sum('withdrawals.amount'); // Total withdrawn
-
-        // Total Payouts
-        $affiliatePayouts = DB::table('withdrawals')
-            ->join('users', 'withdrawals.user_id', '=', 'users.id')
-            ->where('users.role', 'affiliate')
-            ->where('withdrawals.status', 'success') // Only successful withdrawals
-            ->sum('withdrawals.amount'); // Total affiliate payouts
-
-        $vendorPayouts = DB::table('withdrawals')
-            ->join('users', 'withdrawals.user_id', '=', 'users.id')
-            ->where('users.role', 'vendor')
-            ->where('withdrawals.status', 'success') // Only successful withdrawals
-            ->sum('withdrawals.amount'); // Total vendor payouts
-
-        // Return data
-        return response()->json([
-            'total_revenue' => $totalRevenue,
-            'product_sales_revenue' => $productSalesRevenue,
-            'product_sales_count' => $productSalesCount,
-            'marketplace_revenue' => $marketplaceRevenue,
-            'marketplace_count' => $marketplaceCount,
-            'signup_revenue' => $signupRevenue,
-            'signup_count' => $signupCount,
-            'org_earnings_today' => [
-                'amount' => $orgEarningsToday,
-                'count' => $orgEarningsTodayCount,
-            ],
-            'affiliate_earnings_today' => [
-                'amount' => $affiliateEarningsToday,
-                'count' => $affiliateEarningsTodayCount,
-            ],
-            'vendor_earnings_today' => [
-                'amount' => $vendorEarningsToday,
-                'count' => $vendorEarningsTodayCount,
-            ],
-            'unpaid_affiliate_balance' => $unpaidAffiliateBalance,
-            'unpaid_vendor_balance' => $unpaidVendorBalance,
-            'total_affiliate_payouts' => $affiliatePayouts,
-            'total_vendor_payouts' => $vendorPayouts,
-        ]);
-    } catch (\Exception $e) {
+            // Return CSV as a streamed response
+            return Response::stream($callback, 200, $headers);
+        }  catch (\Exception $e) {
         // Handle any errors
         return response()->json([
             'error' => 'Failed to retrieve analytics data',
