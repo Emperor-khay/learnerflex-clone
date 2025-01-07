@@ -127,7 +127,7 @@ class MarketplacePaymentController extends Controller
             $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
             Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
         } catch (\Exception $e) {
-            Log::error('Failed to send achievement email', ['error' => $e->getMessage()]);
+            \Log::error('Payment Initialization Error: ' . $e->getMessage());
         }
 
             return response()->json([
