@@ -19,7 +19,7 @@ class SuperAdminProductController extends Controller
         $perPage = $request->get('per_page', 25); // Default is 15 products per page
 
         // Fetch the products with pagination
-        $products = Product::paginate($perPage);
+        $products = Product::with(['user'])->paginate($perPage);
 
         return response()->json([
             'success' => true,

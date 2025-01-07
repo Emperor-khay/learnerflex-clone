@@ -124,12 +124,12 @@ class MarketplacePaymentController extends Controller
 
             // Send email notification
             $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
-        // try {
+        try {
             
             Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
-        // } catch (\Exception $e) {
-        //     \Log::error('Unlock marketplace error: ' . $e->getMessage());
-        // }
+        } catch (\Exception $e) {
+            Log::error('Unlock marketplace error: ' . $e->getMessage());
+        }
 
             return response()->json([
                 'success' => true,
