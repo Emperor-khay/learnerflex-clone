@@ -303,7 +303,7 @@ class AffiliateController extends Controller
                     
                     Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
                 } catch (\Exception $e) {
-                    Log::error('Unlock marketplace error: ' . $e->getMessage());
+                    Log::info('Unlock marketplace error:', ['error' => $e->getMessage()]);
                 }
 
                 return response()->json([
