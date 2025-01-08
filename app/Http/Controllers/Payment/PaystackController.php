@@ -21,6 +21,128 @@ use Unicodeveloper\Paystack\Facades\Paystack;
 class PaystackController extends Controller
 {
 
+    // public function make_payment(Request $request)
+    // {
+    //     try {
+    //         // Input validation
+    //         $validator = Validator::make($request->all(), [
+    //             'product_id' => 'required|exists:products,id',
+    //             'email' => 'required|email',
+    //             'aff_id' => 'required|exists:users,aff_id',
+
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             Log::warning('Validation failed for payment callback', [
+    //                 'errors' => $validator->errors()->toArray(),
+    //             ]);
+    //             return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
+    //         }
+
+    //         // Check if the affiliate can sell the product
+    //         if (!Helper::canSellProduct($request->input('aff_id'), $request->input('product_id'))) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Affiliate is not authorized to promote this product.'
+    //             ], 403);
+    //         }
+
+    //         // Retrieve the product from the request
+    //         $product = Product::find($request->input('product_id'));
+
+    //         if (!$product) {
+    //             Log::warning('Product not found', ['product_id' => $request->input('product_id')]);
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Product not found.'
+    //             ], 404);
+    //         }
+
+    //         // Calculate the amount (Paystack expects amount in kobo or lowest currency unit)
+    //         $amount = $product->price;
+    //         $amountKobo = $amount * 100;
+    //         $orderId = strtoupper(Str::random(5) . time());
+    //         // Prepare the data for the payment
+    //         $formData = [
+    //             'email' => $request->input('email'),
+    //             'currency' => 'NGN',
+    //             'callback_url' => 'https://learnerflex.com/dashboard/product/pay' . '?p_id=' . $request->input('product_id') . '&aff_id=' . $request->input('aff_id') . '&email=' . urlencode($request->input('email')) . '&orderId=' . urlencode($orderId),
+    //             'aff_id' => $request->input('aff_id'),
+    //             'amount' => $amountKobo,
+    //             'product_id' => $request->input('product_id'),
+    //             'orderId' => $orderId,
+    //         ];
+
+    //         // Attempt to retrieve Affiliate ID, if provided
+    //         $affiliate_id = null;
+    //         if ($request->has('aff_id')) {
+    //             $affiliate_id = User::where('aff_id', $request->input('aff_id'))->value('aff_id');
+    //             if (!$affiliate_id) {
+    //                 Log::info('Affiliate not found', ['aff_id' => $request->input('aff_id')]);
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Affiliate not found.'
+    //                 ], 404);
+    //             }
+    //         }
+
+    //         // Fetch the product's affiliate commission percentage
+    //         $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0;
+
+    //         $org_company_share = $amountKobo * 0.05; // 5% of the amount
+    //         $org_aff_share = $amountKobo * $aff_commission_percentage; // Affiliate share in kobo
+    //         $org_vendor_share = $amountKobo - ($org_company_share + $org_aff_share); // Vendor share in kobo
+
+
+    //         // Initialize payment with Paystack
+    //         $pay = json_decode($this->initialize_payment($formData));
+
+    //         // Check if payment initialization was successful
+    //         if ($pay && $pay->status) {
+    //             // Save transaction data, including vendor_id
+    //             $tr = Transaction::create([
+    //                 'user_id' => $request->input('user_id'),
+    //                 'email' => $request->input('email'),
+    //                 'affiliate_id' => $affiliate_id,
+    //                 'product_id' => $request->input('product_id'),
+    //                 'vendor_id' => $product->user_id,
+    //                 'amount' => $amountKobo,
+    //                 'currency' => 'NGN',
+    //                 'status' => 'pending',
+    //                 'org_company' => $org_company_share,
+    //                 'org_vendor' => $org_vendor_share,
+    //                 'org_aff' => $org_aff_share,
+    //                 'tx_ref' => $pay->data->reference ?? null,
+    //                 'description' => TransactionDescription::PRODUCT_SALE->value,
+    //                 'transaction_id' => $orderId,
+    //             ]);
+    //             // Return the authorization URL in the JSON response
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'authorization_url' => $pay->data->authorization_url
+    //             ], 200);
+    //         } else {
+    //             Log::error('Payment initialization failed', ['formData' => $formData, 'pay_response' => $pay]);
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => "Something went wrong with the payment initialization."
+    //             ], 500);
+    //         }
+    //     } catch (\Exception $e) {
+    //         // Log any exceptions that occur during the process
+    //         Log::error('Error in make_payment method', [
+    //             'error' => $e->getMessage(),
+    //             'request_data' => $request->all()
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'An error occurred while processing the payment.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function make_payment(Request $request)
     {
         try {
@@ -96,8 +218,9 @@ class PaystackController extends Controller
 
             // Initialize payment with Paystack
             $pay = json_decode($this->initialize_payment($formData));
+            // $pay = Paystack::getAuthorizationUrl($formData);
 
-            return $pay;
+            return response()->json(['pay', $pay])  ;
 
             // Check if payment initialization was successful
             if ($pay && $pay->status) {
@@ -330,6 +453,36 @@ class PaystackController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred during callback processing'], 500);
         }
     }
+//existing one
+    // public function initialize_payment($formData)
+    // {
+    //     $url = "https://api.paystack.co/transaction/initialize";
+    //     $fields_string = http_build_query($formData);
+
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_URL, $url);
+    //     curl_setopt($ch, CURLOPT_POST, true);
+    //     curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
+    //     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    //         "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
+    //         "Cache-Control: no-cache"
+    //     ));
+
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    //     $result = curl_exec($ch);
+
+    //     if (curl_errno($ch)) {
+    //         Log::error('Curl error: ' . curl_error($ch));
+    //         return false;
+    //     }
+
+
+    //     curl_close($ch);
+
+
+    //     return $result;
+    // }
 
     public function initialize_payment($formData)
     {
@@ -350,7 +503,6 @@ class PaystackController extends Controller
         $result = curl_exec($ch);
 
         if (curl_errno($ch)) {
-            Log::error('Curl error: ' . curl_error($ch));
             return false;
         }
 
