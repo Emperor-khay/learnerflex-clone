@@ -97,6 +97,8 @@ class PaystackController extends Controller
             // Initialize payment with Paystack
             $pay = json_decode($this->initialize_payment($formData));
 
+            return $pay;
+
             // Check if payment initialization was successful
             if ($pay && $pay->status) {
                 // Save transaction data, including vendor_id
