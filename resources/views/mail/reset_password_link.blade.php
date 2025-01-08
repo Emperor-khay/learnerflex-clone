@@ -87,7 +87,7 @@
                     <h1
                       style="text-wrap:pretty;font-size:15px;line-height:17.58px;margin-top:0px;margin-bottom:0px"
                     >
-                      Hello, User.
+                      Hello, {{ $name }}.
                     </h1>
                     <p
                       style="font-weight:400;line-height:15.23px;font-size:13px;margin:16px 0"

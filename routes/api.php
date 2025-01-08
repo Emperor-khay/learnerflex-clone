@@ -34,12 +34,9 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
 // Route for handling the payment callback
 Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
-// Route::post('/ebook-mentorship/make-payment', [PayStackEbookController::class, 'make_payment']);
-// // Route for handling the payment callback
-// Route::post('/ebook-mentorship/callback', [PayStackEbookController::class, 'paymentCallback']);
 //password resetting routes
 Route::post('/password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
-Route::post('/password/new-password', [NewPasswordReset::class, 'resetPassword']);
+Route::post('/password/new-password', [PasswordResetController::class, 'resetPassword']);
 Route::get('/user/{id}', [UserController::class, 'getUserById']);
 Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData']);
 Route::get('/vendor-details/{id}', [VendorController::class, 'getVendorStore']);
