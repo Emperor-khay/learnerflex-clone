@@ -288,7 +288,7 @@ class PaystackController extends Controller
 
             // Verify payment with Paystack
             Log::info('Verifying payment with Paystack', ['reference' => $reference]);
-            $response = json_decode($this->verify_payment($reference), true);
+            $response = json_decode($this->verify_payment($reference));
             return $response;
 
             if (!$response || $response->data->status !== "success") {
