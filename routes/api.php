@@ -48,14 +48,6 @@ Route::post('/request-access-token', [RandomController::class, 'requestAccessTok
 Route::post('/validate-access-token', [RandomController::class, 'validateAccessToken']);
 
 
-// unlock market
-//one time payment
-Route::post('/marketplace/payment', [MarketplacePaymentController::class, 'payment'])->name('marketplace.payment');
-Route::post('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
-
-// Route::post('/oh', [MarketplacePaymentController::class, 'redirectToGateway'])->name('oh');
-// Route::get('/ohyes', [MarketplacePaymentController::class, 'handleGatewayCallback'])->name('ohyes');
-
 //User Authentication
 Route::prefix('auth')->group(function () {
     Route::post('/register', [RegisterController::class, 'initiateRegistration']);
@@ -199,3 +191,10 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 //         Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
 //         return "confirmed successfully";
 // });
+
+// unlock market
+// Route::post('/marketplace/payment', [MarketplacePaymentController::class, 'payment'])->name('marketplace.payment');
+// Route::post('/marketplace/payment/callback', [MarketplacePaymentController::class, 'payment_callback'])->name('marketplace.payment.callback');
+
+// Route::post('/oh', [MarketplacePaymentController::class, 'redirectToGateway'])->name('oh');
+// Route::get('/ohyes', [MarketplacePaymentController::class, 'handleGatewayCallback'])->name('ohyes');

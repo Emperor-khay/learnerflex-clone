@@ -288,7 +288,8 @@ class PaystackController extends Controller
 
             // Verify payment with Paystack
             Log::info('Verifying payment with Paystack', ['reference' => $reference]);
-            $response = json_decode($this->verify_payment($reference));
+            $response = json_decode($this->verify_payment($reference), true);
+            return $response;
 
             if (!$response || $response->data->status !== "success") {
                 Log::error('Payment verification failed', [
@@ -297,7 +298,7 @@ class PaystackController extends Controller
                 ]);
                 return response()->json(['message' => 'Transaction not successful', 'success' => false]);
             }
-            
+
             // Check for transaction with matching email and order ID
             Log::info('Searching for transaction', [
                 'email' => $email,

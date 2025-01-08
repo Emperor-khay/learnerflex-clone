@@ -101,6 +101,7 @@ class MarketplacePaymentController extends Controller
 
         $paymentDetails = Paystack::getPaymentData();  // Use Paystack package to get payment details
 
+        return $paymentDetails;
         // Check if payment was successful
         if ($paymentDetails['data']['status'] == "success") {
 
