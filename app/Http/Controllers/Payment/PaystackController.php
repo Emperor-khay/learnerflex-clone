@@ -217,10 +217,9 @@ class PaystackController extends Controller
 
 
             // Initialize payment with Paystack
-            $pay = json_decode($this->initialize_payment($formData));
-            // $pay = Paystack::getAuthorizationUrl($formData);
+            $pay = Paystack::getAuthorizationUrl($formData);
 
-            return response()->json(['pay', $pay])  ;
+            return response()->json([$pay])  ;
 
             // Check if payment initialization was successful
             if ($pay && $pay->status) {
@@ -453,7 +452,8 @@ class PaystackController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred during callback processing'], 500);
         }
     }
-//existing one
+
+
     // public function initialize_payment($formData)
     // {
     //     $url = "https://api.paystack.co/transaction/initialize";
@@ -483,37 +483,6 @@ class PaystackController extends Controller
 
     //     return $result;
     // }
-
-    public function initialize_payment($formData)
-    {
-        $url = "https://api.paystack.co/transaction/initialize";
-        $fields_string = http_build_query($formData);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-            "Cache-Control: no-cache"
-        ));
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-        $result = curl_exec($ch);
-
-        if (curl_errno($ch)) {
-            return false;
-        }
-
-
-        curl_close($ch);
-
-
-        return $result;
-    }
-
-
 
     public function verify_payment($reference)
     {
