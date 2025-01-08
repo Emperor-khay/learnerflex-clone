@@ -289,7 +289,6 @@ class PaystackController extends Controller
             // Verify payment with Paystack
             Log::info('Verifying payment with Paystack', ['reference' => $reference]);
             $response = json_decode($this->verify_payment($reference));
-            return $response;
 
             if (!$response || !isset($response->data) || $response->data->status !== "success") {
                 Log::error('Payment verification failed', [
@@ -451,45 +450,26 @@ class PaystackController extends Controller
     }
 
     private function verify_payment($reference)
-{
-    $secret_key = env('PAYSTACK_SECRET_KEY'); // Replace with your actual secret key
-    $url = "https://api.paystack.co/transaction/verify/{$reference}";
+    {
+        $secret_key = env('PAYSTACK_SECRET_KEY'); // Replace with your actual secret key
+        $url = "https://api.paystack.co/transaction/verify/{$reference}";
 
-    $headers = [
-        'Authorization: Bearer ' . $secret_key,
-        'Content-Type: application/json',
-        'Cache-Control: no-cache',
-    ];
+        $headers = [
+            'Authorization: Bearer ' . $secret_key,
+            'Content-Type: application/json',
+            'Cache-Control: no-cache',
+        ];
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-    $response = curl_exec($ch);
-    curl_close($ch);
+        $response = curl_exec($ch);
+        curl_close($ch);
 
-    return $response;
-}
-
-    // public function verify_payment($reference)
-    // {
-    //     $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
-
-    //     $ch = curl_init();
-    //     curl_setopt($ch, CURLOPT_URL, $url);
-    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    //     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    //         "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-    //         "Cache-Control: no-cache"
-    //     ));
-
-    //     $result = curl_exec($ch);
-
-    //     curl_close($ch);
-
-    //     return $result;
-    // }
+        return $response;
+    }
 
     // public function initialize_payment($formData)
     // {
