@@ -450,29 +450,27 @@ class PaystackController extends Controller
         }
     }
 
-    public function verify_payment($reference)
-    {
-        $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
+    private function verify_payment($reference)
+{
+    $secret_key = env('PAYSTACK_SECRET_KEY'); // Replace with your actual secret key
+    $url = "https://api.paystack.co/transaction/verify/{$reference}";
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-            "Cache-Control: no-cache"
-        ));
+    $headers = [
+        'Authorization: Bearer ' . $secret_key,
+        'Content-Type: application/json',
+        'Cache-Control: no-cache',
+    ];
 
-        $result = curl_exec($ch);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-        if ($result === false) {
-            Log::error('Curl error: ' . curl_error($ch));
-            return json_encode(['status' => false, 'message' => 'Curl error: ' . curl_error($ch)]);
-        }
+    $response = curl_exec($ch);
+    curl_close($ch);
 
-        curl_close($ch);
-
-        return $result;
-    }
+    return $response;
+}
 
     // public function verify_payment($reference)
     // {
