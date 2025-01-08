@@ -291,7 +291,7 @@ class PaystackController extends Controller
             $response = json_decode($this->verify_payment($reference));
             return $response;
 
-            if (!$response || $response->data->status !== "success") {
+            if (!$response || !isset($response->data) || $response->data->status !== "success") {
                 Log::error('Payment verification failed', [
                     'reference' => $reference,
                     'response' => $response
@@ -464,10 +464,34 @@ class PaystackController extends Controller
 
         $result = curl_exec($ch);
 
+        if ($result === false) {
+            Log::error('Curl error: ' . curl_error($ch));
+            return json_encode(['status' => false, 'message' => 'Curl error: ' . curl_error($ch)]);
+        }
+
         curl_close($ch);
 
         return $result;
     }
+
+    // public function verify_payment($reference)
+    // {
+    //     $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
+
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_URL, $url);
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    //         "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
+    //         "Cache-Control: no-cache"
+    //     ));
+
+    //     $result = curl_exec($ch);
+
+    //     curl_close($ch);
+
+    //     return $result;
+    // }
 
     // public function initialize_payment($formData)
     // {
