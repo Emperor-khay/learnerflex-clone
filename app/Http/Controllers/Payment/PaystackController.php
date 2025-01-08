@@ -266,22 +266,22 @@ class PaystackController extends Controller
 
     public function payment_callback(Request $request)
     {
-        // Input validation
-        $validator = Validator::make($request->all(), [
-            'reference' => 'required|string',
-            'email' => 'required|email',
-            'orderId' => 'required|string',
-            'aff_id' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            Log::warning('Validation failed for payment callback', [
-                'errors' => $validator->errors()->toArray(),
-            ]);
-            return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
-        }
-
         try {
+            // Input validation
+            $validator = Validator::make($request->all(), [
+                'reference' => 'required|string',
+                'email' => 'required|email',
+                'orderId' => 'required|string',
+                'aff_id' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('Validation failed for payment callback', [
+                    'errors' => $validator->errors()->toArray(),
+                ]);
+                return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
+            }
+
             $reference = $request->input('reference');
             $email = $request->input('email');
             $orderId = $request->input('orderId');
@@ -297,7 +297,7 @@ class PaystackController extends Controller
                 ]);
                 return response()->json(['message' => 'Transaction not successful', 'success' => false]);
             }
-
+            
             // Check for transaction with matching email and order ID
             Log::info('Searching for transaction', [
                 'email' => $email,
@@ -449,6 +449,24 @@ class PaystackController extends Controller
         }
     }
 
+    public function verify_payment($reference)
+    {
+        $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
+            "Cache-Control: no-cache"
+        ));
+
+        $result = curl_exec($ch);
+
+        curl_close($ch);
+
+        return $result;
+    }
 
     // public function initialize_payment($formData)
     // {
@@ -479,23 +497,4 @@ class PaystackController extends Controller
 
     //     return $result;
     // }
-
-    public function verify_payment($reference)
-    {
-        $url = "https://api.paystack.co/transaction/verify/" . rawurlencode($reference);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "Authorization: Bearer " . env("PAYSTACK_SECRET_KEY"),
-            "Cache-Control: no-cache"
-        ));
-
-        $result = curl_exec($ch);
-
-        curl_close($ch);
-
-        return $result;
-    }
 }
