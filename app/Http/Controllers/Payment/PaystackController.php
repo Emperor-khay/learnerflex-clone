@@ -145,41 +145,41 @@ class PaystackController extends Controller
 
     public function make_payment(Request $request)
     {
-        try {
-            // Input validation
-            $validator = Validator::make($request->all(), [
-                'product_id' => 'required|exists:products,id',
-                'email' => 'required|email',
-                'aff_id' => 'required|exists:users,aff_id',
+        // Input validation
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|exists:products,id',
+            'email' => 'required|email',
+            'aff_id' => 'required|exists:users,aff_id',
 
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('Validation failed for payment callback', [
+                'errors' => $validator->errors()->toArray(),
             ]);
+            return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('Validation failed for payment callback', [
-                    'errors' => $validator->errors()->toArray(),
-                ]);
-                return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
-            }
+        // Check if the affiliate can sell the product
+        if (!Helper::canSellProduct($request->input('aff_id'), $request->input('product_id'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Affiliate is not authorized to promote this product.'
+            ], 403);
+        }
 
-            // Check if the affiliate can sell the product
-            if (!Helper::canSellProduct($request->input('aff_id'), $request->input('product_id'))) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Affiliate is not authorized to promote this product.'
-                ], 403);
-            }
+        // Retrieve the product from the request
+        $product = Product::find($request->input('product_id'));
 
-            // Retrieve the product from the request
-            $product = Product::find($request->input('product_id'));
+        if (!$product) {
+            Log::warning('Product not found', ['product_id' => $request->input('product_id')]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found.'
+            ], 404);
+        }
 
-            if (!$product) {
-                Log::warning('Product not found', ['product_id' => $request->input('product_id')]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Product not found.'
-                ], 404);
-            }
-
+        try {
             // Calculate the amount (Paystack expects amount in kobo or lowest currency unit)
             $amount = $product->price;
             $amountKobo = $amount * 100;
@@ -216,15 +216,11 @@ class PaystackController extends Controller
             $org_vendor_share = $amountKobo - ($org_company_share + $org_aff_share); // Vendor share in kobo
 
 
-            // Initialize payment with Paystack
-            $pay = Paystack::getAuthorizationUrl($formData);
-
-            return response()->json([$pay])  ;
-
-            // Check if payment initialization was successful
-            if ($pay && $pay->status) {
+            try {
+                // Initialize payment with Paystack
+                $pay = Paystack::getAuthorizationUrl($formData);
                 // Save transaction data, including vendor_id
-                $tr = Transaction::create([
+                Transaction::create([
                     'user_id' => $request->input('user_id'),
                     'email' => $request->input('email'),
                     'affiliate_id' => $affiliate_id,
@@ -236,20 +232,21 @@ class PaystackController extends Controller
                     'org_company' => $org_company_share,
                     'org_vendor' => $org_vendor_share,
                     'org_aff' => $org_aff_share,
-                    'tx_ref' => $pay->data->reference ?? null,
+                    'tx_ref' => null,
                     'description' => TransactionDescription::PRODUCT_SALE->value,
                     'transaction_id' => $orderId,
                 ]);
                 // Return the authorization URL in the JSON response
                 return response()->json([
                     'success' => true,
-                    'authorization_url' => $pay->data->authorization_url
+                    'authorization_url' => $pay->url
                 ], 200);
-            } else {
-                Log::error('Payment initialization failed', ['formData' => $formData, 'pay_response' => $pay]);
+            } catch (\Exception $e) {
+                \Log::error(['Payment Initialization failed: ' . $e->getMessage(), 'formData' => $formData,]);
+                // Handle exception
                 return response()->json([
                     'success' => false,
-                    'message' => "Something went wrong with the payment initialization."
+                    'message' => 'Something went wrong with the payment initialization.',
                 ], 500);
             }
         } catch (\Exception $e) {
@@ -269,23 +266,22 @@ class PaystackController extends Controller
 
     public function payment_callback(Request $request)
     {
-        try {
-            // Input validation
-            $validator = Validator::make($request->all(), [
-                'reference' => 'required|string',
-                'email' => 'required|email',
-                'orderId' => 'required|string',
-                'aff_id' => 'required|string',
+        // Input validation
+        $validator = Validator::make($request->all(), [
+            'reference' => 'required|string',
+            'email' => 'required|email',
+            'orderId' => 'required|string',
+            'aff_id' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('Validation failed for payment callback', [
+                'errors' => $validator->errors()->toArray(),
             ]);
+            return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('Validation failed for payment callback', [
-                    'errors' => $validator->errors()->toArray(),
-                ]);
-                return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
-            }
-
-
+        try {
             $reference = $request->input('reference');
             $email = $request->input('email');
             $orderId = $request->input('orderId');
