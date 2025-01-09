@@ -300,7 +300,7 @@ class AffiliateController extends Controller
                 }
                 $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
                 try {
-                    
+
                     Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
                 } catch (\Exception $e) {
                     Log::info('Unlock marketplace error:', ['error' => $e->getMessage()]);
@@ -514,7 +514,7 @@ class AffiliateController extends Controller
         $product->makeHidden(['access_link']);
 
         // Check if the user has market access, paid onboard, and does not have a referral ID
-        if ($user->market_access && is_null($user->refferal_id)) {
+        if ($user->market_access) {
             // User can see all products, no further conditions needed
             return response()->json(['success' => true, 'data' => $product], 200);
         }
@@ -525,7 +525,13 @@ class AffiliateController extends Controller
             ->where('status', 'success')  // Use 'success' to ensure only successful transactions count
             ->exists();
 
-        if ($hasPurchasedFromVendor) {
+        // Check if the user has been onboarded to this vendor
+        $isOnboardedToVendor = Transaction::where('email', $user->email)
+            ->where('vendor_id', $product->vendor_id)
+            ->where('is_onboarded', true)
+            ->exists();
+
+        if ($hasPurchasedFromVendor || $isOnboardedToVendor) {
             // User has previously purchased from this vendor, allow access to the product
             return response()->json(['success' => true, 'data' => $product], 200);
         }

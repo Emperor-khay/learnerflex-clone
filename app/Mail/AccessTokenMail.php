@@ -28,7 +28,7 @@ class AccessTokenMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Access Token Mail',
+            subject: 'Access Token',
         );
     }
 
