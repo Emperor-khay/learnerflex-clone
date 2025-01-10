@@ -440,8 +440,6 @@ class AffiliateController extends Controller
         $products = Product::with($productRelations);
 
         if ($user->market_access) {
-            // Include all products plus user-owned products
-            $products->orWhere('user_id', $user->id);
         } else {
             // Fetch vendor IDs based on successful transactions
             $vendorIds = Transaction::where('email', $user->email)
@@ -501,6 +499,8 @@ class AffiliateController extends Controller
             ]
         ]);
     }
+
+
 
     // public function showAffiliateProduct($id)
     // {

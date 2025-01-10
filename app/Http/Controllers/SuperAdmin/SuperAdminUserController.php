@@ -168,7 +168,7 @@ class SuperAdminUserController extends Controller
         DB::beginTransaction();
 
         try {
-            
+
             // Generate a unique aff_id for the new user
             $aff_id = null;
             do {
@@ -212,12 +212,12 @@ class SuperAdminUserController extends Controller
             $vendor_name = $vendor->name ?? '';
             DB::commit();
             try {
-                
+
                 if ($request->input('role') === 'vendor') {
                     Mail::to($request->input('email'))->send(new \App\Mail\VendorAccountCreated($request->input('name'), $request->input('email'), $vendor_name));
                 } elseif ($request->input('role') === 'affiliate') {
                     Mail::to($request->input('email'))->send(new \App\Mail\AffiliateAccountCreated($request->input('name'), $request->input('email'), $vendor_name));
-                } 
+                }
             } catch (\Exception $e) {
                 \Log::error('Failed to send email to ' . $request->input('email') . ': ' . $e->getMessage());
             }
@@ -254,6 +254,12 @@ class SuperAdminUserController extends Controller
 
             // Update user details
             $user->update($request->only(['name', 'role']));
+
+            // If the requested role is 'vendor' or 'admin', set market_access to true
+            if (in_array($request->input('role'), ['vendor', 'admin'])) {
+                $user->market_access = true;
+                $user->save(); // Save the updated market_access
+            }
 
             // Handle vendor_email if provided
             if ($request->filled('vendor_email')) {
