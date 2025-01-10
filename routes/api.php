@@ -47,6 +47,8 @@ Route::get('/download', [RandomController::class, 'downloadFile'])->name('produc
 Route::post('/request-access-token', [RandomController::class, 'requestAccessToken']);
 Route::post('/validate-access-token', [RandomController::class, 'validateAccessToken']);
 
+Route::post('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
+
 
 //User Authentication
 Route::prefix('auth')->group(function () {
@@ -84,7 +86,6 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     Route::get('/products/{id}', [AffiliateController::class, 'showAffiliateProduct']);
 
     Route::post('/unlock/market', [AffiliateController::class, 'unlockMarketAccess']);
-    Route::post('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
 
     Route::post('/change-password', [SecondVendorController::class, 'changePassword'])->name('change-password');
 
@@ -126,7 +127,7 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::get('/affiliate-details/{aff_id}', [VendorController::class, 'getAffDetails']);
 
     Route::post('/unlock/market', [AffiliateController::class, 'unlockMarketAccess']);
-    Route::post('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
+   
 
     //add new product
     Route::post('/product/add-product', [ProductController::class, 'addProduct']);

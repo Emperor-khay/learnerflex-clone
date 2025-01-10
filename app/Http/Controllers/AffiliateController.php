@@ -190,7 +190,7 @@ class AffiliateController extends Controller
             'amount' => 1100 * 100, // Amount in kobo (NGN)
             'currency' => 'NGN',
             'callback_url' => 'https://learnerflex.com/dashboard/u/marketplace 
-' . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
+    ' . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
             'metadata' => json_encode([
                 'description' => 'Unlock Market Access - Full access to promote products',
                 'orderID' => $orderID,
@@ -240,89 +240,198 @@ class AffiliateController extends Controller
 
 
 
+    // public function marketAccessCallback(Request $request)
+    // {
+    //     try {
+    //         // Validate the POST request payload
+    //         $validator = Validator::make($request->all(), [
+    //             'email' => 'required|email',
+    //             'order_id' => 'required',
+    //             'reference' => 'required',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Validation failed.',
+    //                 'errors' => $validator->errors(),
+    //             ], 422);
+    //         }
+
+    //         // Extract the validated inputs
+    //         $email = $request->input('email');
+    //         $orderID = $request->input('order_id');
+    //         $reference = $request->input('reference');
+    //         // Verify payment with Paystack
+    //         Log::info('Verifying payment with Paystack', ['reference' => $reference]);
+    //         $response = json_decode($this->verify_payment($reference));
+
+    //         if (!$response || $response->data->status !== "success") {
+    //             Log::error('Payment verification failed', [
+    //                 'reference' => $reference,
+    //                 'response' => $response
+    //             ]);
+    //             return response()->json(['message' => 'Transaction not successful', 'success' => false]);
+    //         }
+
+    //         // Verify the transaction status
+    //         if ($response->data->status === "success") {
+    //             // Locate the user using the provided email
+    //             $user = User::where('email', $email)->first();
+
+    //             if (!$user) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'User not found.',
+    //                 ], 404);
+    //             }
+
+    //             // Update the user's market access and clear referral ID
+    //             $user->update([
+    //                 'market_access' => true,
+    //                 'refferal_id' => null,
+    //             ]);
+
+    //             // Locate the transaction based on email and order ID
+    //             $transaction = Transaction::where('email', $email)
+    //                 ->where('transaction_id', $orderID)
+    //                 ->latest()
+    //                 ->first();
+
+    //             // Update the transaction details if found
+    //             if ($transaction) {
+    //                 $transaction->update([
+    //                     'tx_ref' => $reference,
+    //                     'status' => $response->data->status
+    //                 ]);
+    //             }
+    //             $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
+    //             try {
+
+    //                 Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
+    //             } catch (\Exception $e) {
+    //                 Log::info('Unlock marketplace error:', ['error' => $e->getMessage()]);
+    //             }
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Market access unlocked successfully!',
+    //             ], 200);
+    //         }
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Payment failed or not verified.',
+    //         ], 400);
+    //     } catch (\Exception $e) {
+    //         Log::info('Unlock marketplace error:', ['error' => $e->getMessage()]);
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error verifying payment: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
     public function marketAccessCallback(Request $request)
-    {
-        try {
-            // Validate the POST request payload
-            $validator = Validator::make($request->all(), [
-                'email' => 'required|email',
-                'order_id' => 'required',
-                'reference' => 'required',
-            ]);
+{
+    try {
+        // Validate the POST request payload
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'order_id' => 'required',
+            'reference' => 'required',
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed.',
-                    'errors' => $validator->errors(),
-                ], 422);
-            }
-
-            // Extract the validated inputs
-            $email = $request->input('email');
-            $orderID = $request->input('order_id');
-            $reference = $request->input('reference');
-            // Verify payment with Paystack
-            Log::info('Verifying payment with Paystack', ['reference' => $reference]);
-            $response = json_decode($this->verify_payment($reference));
-
-            if (!$response || $response->data->status !== "success") {
-                Log::error('Payment verification failed', [
-                    'reference' => $reference,
-                    'response' => $response
-                ]);
-                return response()->json(['message' => 'Transaction not successful', 'success' => false]);
-            }
-
-            // Verify the transaction status
-            if ($response->data->status === "success") {
-                // Get the authenticated user
-                $user = auth()->user();
-
-                // Update the user's market access and clear referral ID
-                $user->update([
-                    'market_access' => true,
-                    'refferal_id' => null,
-                ]);
-
-                // Locate the transaction based on email and order ID
-                $transaction = Transaction::where('email', $email)
-                    ->where('transaction_id', $orderID)
-                    ->latest()
-                    ->first();
-
-                // Update the transaction details if found
-                if ($transaction) {
-                    $transaction->update([
-                        'tx_ref' => $reference,
-                        'status' => $response->data->status
-                    ]);
-                }
-                $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
-                try {
-
-                    Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
-                } catch (\Exception $e) {
-                    Log::info('Unlock marketplace error:', ['error' => $e->getMessage()]);
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Market access unlocked successfully!',
-                ], 200);
-            }
-
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Payment failed or not verified.',
-            ], 400);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error verifying payment: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(),
+            ], 422);
         }
+
+        // Extract the validated inputs
+        $email = $request->input('email');
+        $orderID = $request->input('order_id');
+        $reference = $request->input('reference');
+
+        // Verify payment with Paystack
+        Log::info('Verifying payment with Paystack', ['reference' => $reference]);
+        $response = json_decode($this->verify_payment($reference));
+
+        if (!$response || $response->data->status !== "success") {
+            Log::error('Payment verification failed', [
+                'reference' => $reference,
+                'response' => $response
+            ]);
+            return response()->json(['message' => 'Transaction not successful', 'success' => false]);
+        }
+
+        // Check if the transaction exists and is pending
+        $transaction = Transaction::where('email', $email)
+            ->where('transaction_id', $orderID)
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+
+        if (!$transaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction not found or already processed.',
+            ], 404);
+        }
+
+        // Verify the transaction's owner (email) matches the user
+        if ($transaction->email !== $email) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction email does not match the user.',
+            ], 400);
+        }
+
+        // Locate the user using the provided email
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        // Update the user's market access and clear referral ID
+        $user->update([
+            'market_access' => true,
+            'refferal_id' => null,
+        ]);
+
+        // Update the transaction with the Paystack reference and success status
+        $transaction->update([
+            'tx_ref' => $reference,
+            'status' => $response->data->status
+        ]);
+
+        // Send the market access email
+        $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
+        try {
+            Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
+        } catch (\Exception $e) {
+            Log::info('Unlock marketplace error:', ['error' => $e->getMessage()]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Market access unlocked successfully!',
+        ], 200);
+    } catch (\Exception $e) {
+        Log::info('Unlock marketplace error:', ['error' => $e->getMessage()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Error verifying payment: ' . $e->getMessage(),
+        ], 500);
     }
+}
+
 
     public function verify_payment($reference)
     {
@@ -547,52 +656,52 @@ class AffiliateController extends Controller
     // }
 
     public function showAffiliateProduct($id)
-{
-    $user = auth()->user();  // Get the authenticated user
+    {
+        $user = auth()->user();  // Get the authenticated user
 
-    // Fetch the product by ID with vendor and user details
-    $product = Product::with([
-        'vendor:id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link',  // Vendor details
-        'user:id,name,email,phone,country,image' // User details
-    ])->find($id);
+        // Fetch the product by ID with vendor and user details
+        $product = Product::with([
+            'vendor:id,name,photo,description,x_link,ig_link,yt_link,fb_link,tt_link',  // Vendor details
+            'user:id,name,email,phone,country,image' // User details
+        ])->find($id);
 
-    if (!$product) {
-        return response()->json(['message' => 'Product not found', 'success' => false], 404);
+        if (!$product) {
+            return response()->json(['message' => 'Product not found', 'success' => false], 404);
+        }
+
+        // Hide the access_link field
+        $product->makeHidden(['access_link']);
+
+        // Allow access if the user is the owner of the product
+        if ($product->user_id === $user->id) {
+            return response()->json(['success' => true, 'data' => $product], 200);
+        }
+
+        // If the user has market access, allow viewing of all products
+        if ($user->market_access) {
+            return response()->json(['success' => true, 'data' => $product], 200);
+        }
+
+        // Check if the user has purchased from this vendor before
+        $hasPurchasedFromVendor = Transaction::where('email', $user->email)
+            ->where('vendor_id', $product->user_id)
+            ->where('status', 'success')  // Only successful transactions
+            ->exists();
+
+        // Check if the user has been onboarded to this vendor
+        $isOnboardedToVendor = Transaction::where('email', $user->email)
+            ->where('vendor_id', $product->user_id)
+            ->where('is_onboarded', true)
+            ->exists();
+
+        // Allow access if the user has purchased or been onboarded to this vendor
+        if ($hasPurchasedFromVendor || $isOnboardedToVendor) {
+            return response()->json(['success' => true, 'data' => $product], 200);
+        }
+
+        // Deny access if the user hasn't purchased or been onboarded to this vendor
+        return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
     }
-
-    // Hide the access_link field
-    $product->makeHidden(['access_link']);
-
-    // Allow access if the user is the owner of the product
-    if ($product->user_id === $user->id) {
-        return response()->json(['success' => true, 'data' => $product], 200);
-    }
-
-    // If the user has market access, allow viewing of all products
-    if ($user->market_access) {
-        return response()->json(['success' => true, 'data' => $product], 200);
-    }
-
-    // Check if the user has purchased from this vendor before
-    $hasPurchasedFromVendor = Transaction::where('email', $user->email)
-        ->where('vendor_id', $product->user_id)
-        ->where('status', 'success')  // Only successful transactions
-        ->exists();
-
-    // Check if the user has been onboarded to this vendor
-    $isOnboardedToVendor = Transaction::where('email', $user->email)
-        ->where('vendor_id', $product->user_id)
-        ->where('is_onboarded', true)
-        ->exists();
-
-    // Allow access if the user has purchased or been onboarded to this vendor
-    if ($hasPurchasedFromVendor || $isOnboardedToVendor) {
-        return response()->json(['success' => true, 'data' => $product], 200);
-    }
-
-    // Deny access if the user hasn't purchased or been onboarded to this vendor
-    return response()->json(['message' => 'You do not have access to view this product.', 'success' => false], 403);
-}
 
 
 
