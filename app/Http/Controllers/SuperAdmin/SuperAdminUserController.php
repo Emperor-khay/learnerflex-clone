@@ -177,7 +177,7 @@ class SuperAdminUserController extends Controller
             } while ($exists);
 
             // Determine market_access based on role
-            $marketAccess = $request->input('role') === 'admin' ? true : false;
+            $marketAccess = ($request->input('role') === 'admin' || $request->input('role') === 'vendor') ? true : false;
 
             // Create the new user
             $user = User::create([
