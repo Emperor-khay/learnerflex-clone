@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'Paystack' => Unicodeveloper\Paystack\Facades\Paystack::class,
             'role' => \App\Http\Middleware\RoleMiddleware::class,
-            'AddSecurityHeaders' => \App\Http\Middleware\AddSecurityHeaders::class
+            // 'AddSecurityHeaders' => \App\Http\Middleware\AddSecurityHeaders::class
         ]);
     
     })
