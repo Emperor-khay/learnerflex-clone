@@ -190,7 +190,7 @@ class AffiliateController extends Controller
             'amount' => 1100 * 100, // Amount in kobo (NGN)
             'currency' => 'NGN',
             'callback_url' => 'https://learnerflex.com/dashboard/u/marketplace 
-    ' . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
+        ' . '?email=' . urlencode($user->email) . '&order_id=' . urlencode($orderID),
             'metadata' => json_encode([
                 'description' => 'Unlock Market Access - Full access to promote products',
                 'orderID' => $orderID,

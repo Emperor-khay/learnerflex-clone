@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\SuperAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'Paystack' => Unicodeveloper\Paystack\Facades\Paystack::class,
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'AddSecurityHeaders' => \App\Http\Middleware\AddSecurityHeaders::class
         ]);
     
     })

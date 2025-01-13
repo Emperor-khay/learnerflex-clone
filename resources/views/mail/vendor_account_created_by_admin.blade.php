@@ -1,10 +1,10 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" lang="en">
   <head>
-    <link
+     <link
       rel="preload"
       as="image"
-      href="https://devlinks-abc.vercel.app/learnerflex-email-banner.png"
+      href="https://learnerflex.com/learnerflex-email-banner.png"
     />
     <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
     <meta name="x-apple-disable-message-reformatting" />
@@ -68,21 +68,17 @@
       <tbody>
         <tr style="width: 100%">
           <td>
-            <img
-              alt="learnerflex logo banner"
-              height="auto"
-              src="https://devlinks-abc.vercel.app/learnerflex-email-banner.png"
-              style="
-                margin-left: auto;
-                margin-right: auto;
-                width: 100%;
-                display: block;
-                outline: none;
-                border: none;
-                text-decoration: none;
-              "
-              width="auto"
-            />
+             <a
+              href="https://learnerflex.com"
+              style="color:#067df7;text-decoration-line:none"
+              target="_blank"
+              ><img
+                alt="learnerflex logo banner"
+                height="auto"
+                src="https://learnerflex.com/learnerflex-email-banner.png"
+                style="margin-left:auto;margin-right:auto;width:100%;display:block;outline:none;border:none;text-decoration:none"
+                width="auto"
+            /></a>
           </td>
         </tr>
       </tbody>
