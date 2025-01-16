@@ -187,7 +187,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 //test endpoints
 Route::get('/test', function () {
     
-    $email = "irechukwuchukwuka@mail.com";
+    $email = "irechukwuchukwuka@gmail.com";
         $name = 'Valued User'; // Fallback to a default name if not available
         Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
         return "confirmed successfully";
