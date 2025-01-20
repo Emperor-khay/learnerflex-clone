@@ -31,8 +31,8 @@ class PasswordResetController extends Controller
                 ], 404);
             }
 
-            // Generate a 6-character alphanumeric token
-            $token = strtoupper(Str::random(6)); // Uppercase for readability
+            // Generate a 6-digit numeric token
+        $token = mt_rand(100000, 999999);
 
             // Store the token in the password_reset_tokens table
             DB::table('password_reset_tokens')->updateOrInsert(

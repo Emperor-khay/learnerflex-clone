@@ -187,10 +187,20 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 //test endpoints
 Route::get('/test', function () {
     
-    $email = "irechukwuchukwuka@gmail.com";
-        $name = 'Valued User'; // Fallback to a default name if not available
-        Mail::to($email)->send(new \App\Mail\MarketplaceUnlockMail($name));
-        return "confirmed successfully";
+    $secret_key = env('PAYSTACK_SECRET_KEY'); // Retrieve secret key from environment variables
+    $url = "https://api.paystack.co/transaction/verify/{$reference}";
+
+    try {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $secret_key,
+            'Content-Type' => 'application/json',
+        ])->get($url);
+
+        return $response->body();
+    } catch (\Exception $e) {
+        Log::error('Error verifying payment with Paystack', ['error' => $e->getMessage()]);
+        return json_encode(['status' => false, 'message' => 'Verification failed']);
+    }
 });
 
 
