@@ -76,7 +76,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 
 
     // withdrawals
-    Route::post('/request/withdrawal', [WithdrawalController::class, 'index']);
+    Route::post('/request/withdrawal', [WithdrawalController::class, 'index'])->middleware('no-cache');
     Route::get('/withdrawals', [WithdrawalController::class, 'WithdrawRecord']);
     //transactions
     Route::get('/transactions', [AffiliateController::class, 'transactions']);
@@ -90,7 +90,6 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
     Route::post('/change-password', [SecondVendorController::class, 'changePassword'])->name('change-password');
 
     Route::post('/logout', [LogoutController::class, 'logout']);
-
 });
 
 // Vendor routes group
@@ -127,7 +126,7 @@ Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(func
     Route::get('/affiliate-details/{aff_id}', [VendorController::class, 'getAffDetails']);
 
     Route::post('/unlock/market', [AffiliateController::class, 'unlockMarketAccess']);
-   
+
 
     //add new product
     Route::post('/product/add-product', [ProductController::class, 'addProduct']);
@@ -186,21 +185,5 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
 //test endpoints
 Route::get('/test', function () {
-    
-    $secret_key = env('PAYSTACK_SECRET_KEY'); // Retrieve secret key from environment variables
-    $url = "https://api.paystack.co/transaction/verify/{$reference}";
-
-    try {
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $secret_key,
-            'Content-Type' => 'application/json',
-        ])->get($url);
-
-        return $response->body();
-    } catch (\Exception $e) {
-        Log::error('Error verifying payment with Paystack', ['error' => $e->getMessage()]);
-        return json_encode(['status' => false, 'message' => 'Verification failed']);
-    }
+    return "Success"; 
 });
-
-
