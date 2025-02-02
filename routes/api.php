@@ -185,5 +185,5 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
 //test endpoints
 Route::get('/test', function () {
-    return "Success"; 
+    return "Staging autodeploy success"; 
 });
