@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auths;
 
 use Log;
 use App\Models\User;
+use App\Rules\ReCaptchaV3;
 use App\Models\Transaction;
 use Illuminate\Support\Str;
 use App\Service\AuthService;
@@ -36,6 +37,7 @@ class RegisterController extends Controller
             'phone' => 'required|string|max:15|unique:users', // Changed to `phone`
             'password' => 'required|string|confirmed|min:4',
             'aff_id' => 'nullable|string|max:30', // aff_id is optional
+            'g-recaptcha-response' => ['required', new ReCaptchaV3('submitContact')]
         ]);
 
 

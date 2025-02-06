@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Mail\AccessTokenMail;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
@@ -109,28 +110,50 @@ class RandomController extends Controller
     }
 
     public function downloadFile(Request $request)
-{
-    try {
-        $token = $request->input('token');
-        $data = Crypt::decrypt($token);
+    {
+        try {
+            $token = $request->input('token');
+            $data = Crypt::decrypt($token);
 
-        // Validate expiry
-        if (now()->timestamp > $data['expires_at']) {
-            return response()->json(['error' => 'This link has expired.'], 403);
+            // Validate expiry
+            if (now()->timestamp > $data['expires_at']) {
+                return response()->json(['error' => 'This link has expired.'], 403);
+            }
+
+            // Find the product
+            $product = Product::findOrFail($data['product_id']);
+
+            // Check if the file exists
+            if (!$product->file || !Storage::disk('private')->exists($product->file)) {
+                return response()->json(['error' => 'File not found.'], 404);
+            }
+
+            // Serve the file for download
+            return Storage::disk('private')->download($product->file);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Invalid or expired token.'], 403);
         }
-
-        // Find the product
-        $product = Product::findOrFail($data['product_id']);
-
-        // Check if the file exists
-        if (!$product->file || !Storage::disk('private')->exists($product->file)) {
-            return response()->json(['error' => 'File not found.'], 404);
-        }
-
-        // Serve the file for download
-        return Storage::disk('private')->download($product->file);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Invalid or expired token.'], 403);
     }
-}
+
+    public function verify(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'action' => 'required|string'
+        ]);
+
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret' => config('recaptcha.v3.private_key'),
+            'response' => $request->input('token'),
+            'remoteip' => $request->ip()
+        ]);
+
+        $body = $response->json();
+
+        if ($body['success'] && $body['action'] == $request->input('action') && $body['score'] >= 0.5) {
+            return response()->json(['success' => true, 'score' => $body['score']]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Invalid captcha'], 400);
+    }
 }
