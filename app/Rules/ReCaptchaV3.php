@@ -42,7 +42,7 @@ class ReCaptchaV3 implements ValidationRule
 
             // When this fails it means the browser didn't send a correct code. This means it's very likely a bot we should block
             if ($body['success'] !== true) {
-                $fail('Your form submission failed the Google reCAPTCHA verification, please try again.');
+                $fail('Recaptcha validation failed, Refresh the page to revalidate recaptcha');
                 return;
             }
 
