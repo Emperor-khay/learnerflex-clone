@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Models\TemporaryUsers;
 use App\Enums\VendorStatusEnum;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -33,8 +34,23 @@ class RegisterController extends Controller
     {
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|string|max:15|unique:users', // Changed to `phone`
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->whereNull('deleted_at'),
+                Rule::unique('temporary_users'), // Ensures email is unique in temporary table
+            ],
+            'phone' => [
+                'required',
+                'string',
+                'max:15',
+                Rule::unique('users')->whereNull('deleted_at'),
+                Rule::unique('temporary_users'), // Prevents duplicate phones in temporary table
+            ],
+            // 'email' => 'required|string|email|max:255|unique:users',
+            // 'phone' => 'required|string|max:15|unique:users', // Changed to `phone`
             'password' => 'required|string|confirmed|min:4',
             'aff_id' => 'nullable|string|max:30', // aff_id is optional
             'g-recaptcha-response' => ['required', new ReCaptchaV3('registration')]
@@ -45,14 +61,14 @@ class RegisterController extends Controller
         if ($request->filled('aff_id')) {
             return $this->storeUser($validatedData, $request->aff_id);
         } else {
-            $existingTempUser = TemporaryUsers::where('phone', $validatedData['phone'])->first();
+            // $existingTempUser = TemporaryUsers::where('phone', $validatedData['phone'])->first();
 
-            if ($existingTempUser) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'The phone number is already in use. Please use a different number.'
-                ], 400);
-            }
+            // if ($existingTempUser) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'The phone number is already in use. Please use a different number.'
+            //     ], 400);
+            // }
             // Hash password before storing in session (for security)
             $hashedPassword = Hash::make($validatedData['password']);
 
