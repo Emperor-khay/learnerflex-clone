@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PasswordReset;
 
 use Carbon\Carbon;
 use App\Models\User;
+use App\Rules\ReCaptchaV3;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,10 @@ class PasswordResetController extends Controller
     {
         try {
             // Validate the request data
-            $request->validate(['email' => 'required|email']);
+            $request->validate([
+                'email' => 'required|email',
+                'g-recaptcha-response' => ['required', new ReCaptchaV3('reset')]
+            ]);
 
             // Find the user by email
             $user = User::where('email', $request->email)->first();
@@ -32,7 +36,7 @@ class PasswordResetController extends Controller
             }
 
             // Generate a 6-digit numeric token
-        $token = mt_rand(100000, 999999);
+            $token = mt_rand(100000, 999999);
 
             // Store the token in the password_reset_tokens table
             DB::table('password_reset_tokens')->updateOrInsert(

@@ -59,7 +59,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [LoginController::class, 'attemptUser']);
 });
 //Admin Authentication
-Route::post('/admin/login', [SuperAdminAuthController::class, 'login']);
+// Route::post('/admin/login', [SuperAdminAuthController::class, 'login']);
 
 // Affiliate routes group
 Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->group(function () {

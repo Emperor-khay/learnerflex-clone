@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Log;
 use App\Models\Sale;
 use App\Helpers\Helper;
 use App\Models\Product;
@@ -11,6 +10,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Mail\AccessTokenMail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
@@ -149,10 +149,27 @@ class RandomController extends Controller
         ]);
 
         $body = $response->json();
+        // Log the full reCAPTCHA response
+    Log::info('reCAPTCHA verification attempt', [
+        'ip' => $request->ip(),
+        'action' => $request->input('action'),
+        'response' => $body
+    ]);
 
         if ($body['success'] && $body['action'] == $request->input('action') && $body['score'] >= 0.5) {
+            Log::info('reCAPTCHA passed', [
+                'ip' => $request->ip(),
+                'action' => $request->input('action'),
+                'score' => $body['score']
+            ]);
             return response()->json(['success' => true, 'score' => $body['score']]);
         }
+
+        Log::warning('Low reCAPTCHA score detected', [
+            'ip' => $request->ip(),
+            'action' => $request->input('action'),
+            'score' => $body['score']
+        ]);
 
         return response()->json(['success' => false, 'message' => 'Invalid captcha'], 400);
     }
