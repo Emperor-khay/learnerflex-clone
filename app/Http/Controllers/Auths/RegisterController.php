@@ -28,7 +28,7 @@ use App\Notifications\RegistrationIssueNotification;
 
 class RegisterController extends Controller
 {
-
+//with faith I puss to prod --- lol
     public function initiateRegistration(Request $request)
     {
         $validatedData = $request->validate([
