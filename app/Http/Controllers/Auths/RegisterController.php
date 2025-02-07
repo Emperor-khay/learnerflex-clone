@@ -45,6 +45,14 @@ class RegisterController extends Controller
         if ($request->filled('aff_id')) {
             return $this->storeUser($validatedData, $request->aff_id);
         } else {
+            $existingTempUser = TemporaryUsers::where('phone', $validatedData['phone'])->first();
+
+            if ($existingTempUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The phone number is already in use. Please use a different number.'
+                ], 400);
+            }
             // Hash password before storing in session (for security)
             $hashedPassword = Hash::make($validatedData['password']);
 
@@ -169,7 +177,7 @@ class RegisterController extends Controller
         } catch (\Exception $e) {
             Log::error('Error sending sale notification to vendor', ['vendor_email' => $email, 'error' => $e->getMessage()]);
         }
-        
+
 
         // Redirect to signup with success message
         return response()->json([
