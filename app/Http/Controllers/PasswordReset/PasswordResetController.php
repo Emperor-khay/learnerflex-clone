@@ -18,12 +18,14 @@ class PasswordResetController extends Controller
 {
     public function sendPasswordResetLink(Request $request)
     {
+        $request->validate([
+            'email' => 'required|email',
+            'g-recaptcha-response' => ['required', new ReCaptchaV3('reset')]
+        ]);
+
         try {
             // Validate the request data
-            $request->validate([
-                'email' => 'required|email',
-                'g-recaptcha-response' => ['required', new ReCaptchaV3('reset')]
-            ]);
+
 
             // Find the user by email
             $user = User::where('email', $request->email)->first();
