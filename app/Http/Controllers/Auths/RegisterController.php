@@ -49,15 +49,24 @@ class RegisterController extends Controller
             // Proceed to initiate payment
             try {
                 // Generate a unique order ID
-                $orderID = strtoupper(Str::random(5) . time());
+                $orderID = 'TXN' . strtoupper(Str::random(5) . time());
 
                 // Prepare the payment data
+                // $formData = [
+                //     'email' => $validatedData['email'],  // Use validated email
+                //     'amount' => 5100 * 100, // Amount in kobo (NGN)
+                //     'currency' => 'NGN',
+                //     'callback_url' => route("auth.payment.callback") . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
+                //     'orderID' => $orderID,
+                // ];
                 $formData = [
                     'email' => $validatedData['email'],  // Use validated email
                     'amount' => 5100 * 100, // Amount in kobo (NGN)
                     'currency' => 'NGN',
-                    'callback_url' => route("auth.payment.callback") . '?email=' . urlencode($request->email) . '&orderId=' . urlencode($orderID), // Corrected query string
-                    'orderID' => $orderID,
+                    'metadata' => [
+                        'transaction_id' => $orderID,
+                        'description' => TransactionDescription::SIGNUP_FEE->value,
+                    ],
                 ];
 
                 // Initialize payment with Paystack using Unicodeveloper package
@@ -96,7 +105,8 @@ class RegisterController extends Controller
                 // Return the authorization URL in the response
                 return response()->json([
                     'success' => true,
-                    'authorization_url' => $paymentData, // Correct response for the payment URL
+                    'authorization_url' => $paymentData->url,
+                    'transaction_id' => $orderID,
                 ], 200);
             } catch (\Exception $e) {
                 \Log::error('Payment Initialization Error: ' . $e->getMessage());
@@ -167,7 +177,7 @@ class RegisterController extends Controller
         } catch (\Exception $e) {
             Log::error('Error sending sale notification to vendor', ['vendor_email' => $email, 'error' => $e->getMessage()]);
         }
-        
+
 
         // Redirect to signup with success message
         return response()->json([

@@ -1,8 +1,11 @@
 <?php
 
 use App\Helpers\Helper;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Events\PaymentReceiptSent;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RandomController;
@@ -15,6 +18,7 @@ use App\Http\Controllers\Vendor\VendorController;
 use App\Http\Controllers\Auths\RegisterController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Payment\PaystackController;
+use App\Http\Controllers\TransactionStatusController;
 use App\Http\Controllers\Flutterwave\PaymentController;
 use App\Http\Controllers\PasswordReset\NewPasswordReset;
 use App\Http\Controllers\Payment\PayStackEbookController;
@@ -32,7 +36,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 //Public Routes
 
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
-// Route for handling the payment callback
+// Route for handling the  product payment callback
 Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
 //password resetting routes
 Route::post('/password/reset-link', [PasswordResetController::class, 'sendPasswordResetLink']);
@@ -43,11 +47,13 @@ Route::get('/vendor-details/{id}', [VendorController::class, 'getVendorStore']);
 // Route::get('/vendor-store/{id}', [VendorController::class, 'getVendorStore']);
 Route::get('/download', [RandomController::class, 'downloadFile'])->name('product.download');
 
+Route::post('/paystack/webhook', [PaystackController::class, 'handleWebhook']);
+Route::get('/transaction/status', [TransactionStatusController::class, 'checkStatus']);
 
 Route::post('/request-access-token', [RandomController::class, 'requestAccessToken']);
 Route::post('/validate-access-token', [RandomController::class, 'validateAccessToken']);
 
-Route::post('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
+// Route::post('/unlock/market/callback', [AffiliateController::class, 'marketAccessCallback'])->name('unlock.market.callback');
 
 
 //User Authentication
@@ -187,3 +193,4 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 Route::get('/test', function () {
     return "Staging autodeploy success"; 
 });
+
