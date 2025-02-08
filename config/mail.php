@@ -48,7 +48,18 @@ return [
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
-        
+
+        'admin_mailer' => [ // Custom mailer for admin notifications
+            'transport' => 'smtp',
+            'host' => env('ADMIN_MAIL_HOST', 'smtp.mailtrap.io'),
+            'port' => env('ADMIN_MAIL_PORT', 2525),
+            'username' => env('ADMIN_MAIL_USERNAME'),
+            'password' => env('ADMIN_MAIL_PASSWORD'),
+            'encryption' => env('ADMIN_MAIL_ENCRYPTION', 'tls'),
+            'timeout' => null,
+            'auth_mode' => null,
+        ],
+
         'mailgun' => [
             'transport' => 'mailgun',
             'domain' => env('MAILGUN_DOMAIN'),
