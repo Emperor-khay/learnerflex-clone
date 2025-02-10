@@ -33,9 +33,10 @@ class IssueProcessingTransaction extends Mailable
     public function build()
     {
         return $this->subject('Issue Processing Transaction')
-                    ->to('learnerflexltd@gmail.com')
-                    ->mailer('admin_mailer') // Use custom mailer
-                    ->view('emails.issue-processing-transaction');
+            ->to('learnerflexltd@gmail.com')
+            ->mailer('admin_mailer') // Use custom mailer
+            ->view('mail.issue_processing_transaction'); // Remove .blade.php
+
     }
 }
 

@@ -100,21 +100,17 @@ class PaystackController extends Controller
                 'email' => $email,
                 'orderId' => $orderId
             ]);
-            $customMessage = "This transaction could not be found in the database but the person was charged. Please check the logs and verify the payment. {$data}";
+            $customMessage = "This transaction could not be found in the database but the person was charged. Please check the logs and verify the payment." . print_r($data, true);
 
             // Send email using the custom mailer
             $this->sendAdminTransactionError($email, $orderId, $customMessage);
-            $transaction->update([
-                'response_data' => 'Transaction not found',
-                'error' => "Transaction not found. {$email} orderId: {$orderId}",
-            ]);
             return http_response_code(200);
         }
 
         // Update transaction status and tx_ref
         $transaction->update([
             'tx_ref' => $reference,
-            'status' => 'success',
+            'status' => $data['status'],
         ]);
 
         // Process the successful payment based on the transaction type
@@ -323,7 +319,7 @@ class PaystackController extends Controller
 
         DB::transaction(function () use ($transaction, $data) {
             $transaction->update([
-                'status' => 'failed',
+                'status' => $data['status'],
                 'tx_ref' => $data['reference'],
                 'response_data' => 'failed charge by paystack',
                 'error' => 'failed charge by paystack',
@@ -347,7 +343,7 @@ class PaystackController extends Controller
         return http_response_code(200);
     }
 
-    private function sendAdminTransactionError($email, $orderId, $customMessage = null)
+    private function sendAdminTransactionError($email, $orderId, $customMessage)
     {
         $defaultMessage = "This is a failed transaction on paystack.com or this transaction could not be found in the database. Please check the logs and verify the payment.";
         $message = $customMessage ?? $defaultMessage;
@@ -479,129 +475,129 @@ class PaystackController extends Controller
             'email' => $transaction->email,
         ]);
     }
-    // public function make_payment(Request $request)
-    // {
-    //     // Input validation
-    //     $validator = Validator::make($request->all(), [
-    //         'product_id' => 'required|exists:products,id',
-    //         'email' => 'required|email',
-    //         'aff_id' => 'required|exists:users,aff_id',
+    public function make_payment(Request $request)
+    {
+        // Input validation
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|exists:products,id',
+            'email' => 'required|email',
+            'aff_id' => 'required|exists:users,aff_id',
 
-    //     ]);
+        ]);
 
-    //     if ($validator->fails()) {
-    //         Log::warning('Validation failed for payment callback', [
-    //             'errors' => $validator->errors()->toArray(),
-    //         ]);
-    //         return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
-    //     }
+        if ($validator->fails()) {
+            Log::warning('Validation failed for payment callback', [
+                'errors' => $validator->errors()->toArray(),
+            ]);
+            return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
+        }
 
-    //     // Check if the affiliate can sell the product
-    //     if (!Helper::canSellProduct($request->input('aff_id'), $request->input('product_id'))) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Affiliate is not authorized to promote this product.'
-    //         ], 403);
-    //     }
+        // Check if the affiliate can sell the product
+        if (!Helper::canSellProduct($request->input('aff_id'), $request->input('product_id'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Affiliate is not authorized to promote this product.'
+            ], 403);
+        }
 
-    //     // Retrieve the product from the request
-    //     $product = Product::find($request->input('product_id'));
+        // Retrieve the product from the request
+        $product = Product::find($request->input('product_id'));
 
-    //     if (!$product) {
-    //         Log::warning('Product not found', ['product_id' => $request->input('product_id')]);
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Product not found.'
-    //         ], 404);
-    //     }
+        if (!$product) {
+            Log::warning('Product not found', ['product_id' => $request->input('product_id')]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found.'
+            ], 404);
+        }
 
-    //     try {
-    //         // Calculate the amount (Paystack expects amount in kobo or lowest currency unit)
-    //         $amount = $product->price;
-    //         $amountKobo = $amount * 100;
-    //         $orderId = 'TXN' . strtoupper(Str::random(5) . time());
-    //         // Prepare the data for the payment
-    //         $formData = [
-    //             'email' => $request->input('email'),
-    //             'currency' => 'NGN',
-    //             'amount' => $amountKobo,
-    //             'metadata' => [
-    //                 'transaction_id' => $orderId, // Add this line
-    //                 'product_id' => $request->input('product_id'),
-    //                 'aff_id' => $request->input('aff_id'),
-    //                 'description' => TransactionDescription::PRODUCT_SALE->value,
-    //             ],
-    //         ];
+        try {
+            // Calculate the amount (Paystack expects amount in kobo or lowest currency unit)
+            $amount = $product->price;
+            $amountKobo = $amount * 100;
+            $orderId = 'TXN' . strtoupper(Str::random(5) . time());
+            // Prepare the data for the payment
+            $formData = [
+                'email' => $request->input('email'),
+                'currency' => 'NGN',
+                'amount' => $amountKobo,
+                'metadata' => [
+                    'transaction_id' => $orderId, // Add this line
+                    'product_id' => $request->input('product_id'),
+                    'aff_id' => $request->input('aff_id'),
+                    'description' => TransactionDescription::PRODUCT_SALE->value,
+                ],
+            ];
 
-    //         // Attempt to retrieve Affiliate ID, if provided
-    //         $affiliate_id = null;
-    //         if ($request->has('aff_id')) {
-    //             $affiliate_id = User::where('aff_id', $request->input('aff_id'))->value('aff_id');
-    //             if (!$affiliate_id) {
-    //                 Log::info('Affiliate not found', ['aff_id' => $request->input('aff_id')]);
-    //                 return response()->json([
-    //                     'success' => false,
-    //                     'message' => 'Affiliate not found.'
-    //                 ], 404);
-    //             }
-    //         }
+            // Attempt to retrieve Affiliate ID, if provided
+            $affiliate_id = null;
+            if ($request->has('aff_id')) {
+                $affiliate_id = User::where('aff_id', $request->input('aff_id'))->value('aff_id');
+                if (!$affiliate_id) {
+                    Log::info('Affiliate not found', ['aff_id' => $request->input('aff_id')]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Affiliate not found.'
+                    ], 404);
+                }
+            }
 
-    //         // Fetch the product's affiliate commission percentage
-    //         $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0;
+            // Fetch the product's affiliate commission percentage
+            $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0;
 
-    //         $org_company_share = $amountKobo * 0.05; // 5% of the amount
-    //         $org_aff_share = $amountKobo * $aff_commission_percentage; // Affiliate share in kobo
-    //         $org_vendor_share = $amountKobo - ($org_company_share + $org_aff_share); // Vendor share in kobo
+            $org_company_share = $amountKobo * 0.05; // 5% of the amount
+            $org_aff_share = $amountKobo * $aff_commission_percentage; // Affiliate share in kobo
+            $org_vendor_share = $amountKobo - ($org_company_share + $org_aff_share); // Vendor share in kobo
 
 
-    //         try {
-    //             // Initialize payment with Paystack
-    //             $pay = Paystack::getAuthorizationUrl($formData);
-    //             // Save transaction data, including vendor_id
-    //             Transaction::create([
-    //                 'user_id' => $request->input('user_id'),
-    //                 'email' => $request->input('email'),
-    //                 'affiliate_id' => $affiliate_id,
-    //                 'product_id' => $request->input('product_id'),
-    //                 'vendor_id' => $product->user_id,
-    //                 'amount' => $amountKobo,
-    //                 'currency' => 'NGN',
-    //                 'status' => 'pending',
-    //                 'org_company' => $org_company_share,
-    //                 'org_vendor' => $org_vendor_share,
-    //                 'org_aff' => $org_aff_share,
-    //                 'tx_ref' => null,
-    //                 'description' => TransactionDescription::PRODUCT_SALE->value,
-    //                 'transaction_id' => $orderId,
-    //             ]);
-    //             // Return the authorization URL in the JSON response
-    //             return response()->json([
-    //                 'success' => true,
-    //                 'authorization_url' => $pay->url,
-    //                 'transaction_id' => $orderId,
-    //             ], 200);
-    //         } catch (\Exception $e) {
-    //             \Log::error(['Payment Initialization failed: ' . $e->getMessage(), 'formData' => $formData,]);
-    //             // Handle exception
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Something went wrong with the payment initialization.',
-    //             ], 500);
-    //         }
-    //     } catch (\Exception $e) {
-    //         // Log any exceptions that occur during the process
-    //         Log::error('Error in make_payment method', [
-    //             'error' => $e->getMessage(),
-    //             'request_data' => $request->all()
-    //         ]);
+            try {
+                // Initialize payment with Paystack
+                $pay = Paystack::getAuthorizationUrl($formData);
+                // Save transaction data, including vendor_id
+                Transaction::create([
+                    'user_id' => $request->input('user_id'),
+                    'email' => $request->input('email'),
+                    'affiliate_id' => $affiliate_id,
+                    'product_id' => $request->input('product_id'),
+                    'vendor_id' => $product->user_id,
+                    'amount' => $amountKobo,
+                    'currency' => 'NGN',
+                    'status' => 'pending',
+                    'org_company' => $org_company_share,
+                    'org_vendor' => $org_vendor_share,
+                    'org_aff' => $org_aff_share,
+                    'tx_ref' => null,
+                    'description' => TransactionDescription::PRODUCT_SALE->value,
+                    'transaction_id' => $orderId,
+                ]);
+                // Return the authorization URL in the JSON response
+                return response()->json([
+                    'success' => true,
+                    'authorization_url' => $pay->url,
+                    'transaction_id' => $orderId,
+                ], 200);
+            } catch (\Exception $e) {
+                \Log::error(['Payment Initialization failed: ' . $e->getMessage(), 'formData' => $formData,]);
+                // Handle exception
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Something went wrong with the payment initialization.',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            // Log any exceptions that occur during the process
+            Log::error('Error in make_payment method', [
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
 
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'An error occurred while processing the payment.',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing the payment.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     // public function payment_callback(Request $request)
     // {
