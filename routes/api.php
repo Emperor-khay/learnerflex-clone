@@ -50,7 +50,7 @@ Route::get('/vendor-details/{id}', [VendorController::class, 'getVendorStore']);
 Route::get('/download', [RandomController::class, 'downloadFile'])->name('product.download');
 
 Route::post('/paystack/webhook', [PaystackController::class, 'handleWebhook']);
-Route::get('/transaction/status', [TransactionStatusController::class, 'checkStatus']);
+Route::post('/transaction/status', [TransactionStatusController::class, 'checkStatus']);
 
 Route::post('/request-access-token', [RandomController::class, 'requestAccessToken']);
 Route::post('/validate-access-token', [RandomController::class, 'validateAccessToken']);
