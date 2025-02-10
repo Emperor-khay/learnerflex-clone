@@ -37,7 +37,18 @@ class PaystackController extends Controller
     {
         // Verify that the request came from Paystack
         if (!$this->verifyWebhookSignature($request)) {
-            return response()->json(['message' => 'Invalid signature'], 400);
+            $payload = $request->all();
+            $email = $payload['data']['customer']['email'] ?? 'Unknown';
+            $orderId = $payload['data']['reference'] ?? 'Unknown';
+            $customMessage = 'Paystack webhook signature verification failed. Suspected hacking attempt.';
+
+            Log::warning('Invalid Paystack webhook signature', [
+                'email' => $email,
+                'orderId' => $orderId
+            ]);
+            $this->sendAdminTransactionError($email, $orderId, $customMessage);
+
+            return http_response_code(200);
         }
 
         $payload = $request->all();
@@ -89,18 +100,14 @@ class PaystackController extends Controller
                 'email' => $email,
                 'orderId' => $orderId
             ]);
-            $customMessage = "This transaction could not be found in the database. Please check the logs and verify the payment.";
+            $customMessage = "This transaction could not be found in the database but the person was charged. Please check the logs and verify the payment. {$data}";
 
             // Send email using the custom mailer
-            try {
-                Mail::mailer('admin_mailer')->to('learnerflexltd@gmail.com')->send(new IssueProcessingTransaction($email, $orderId, $customMessage));
-            } catch (\Throwable $th) {
-                Log::error('Transaction not found', [
-                    'error' => $th->getMessage(),
-                    'email' => $email,
-                    'orderId' => $orderId
-                ]);
-            }
+            $this->sendAdminTransactionError($email, $orderId, $customMessage);
+            $transaction->update([
+                'response_data' => 'Transaction not found',
+                'error' => "Transaction not found. {$email} orderId: {$orderId}",
+            ]);
             return http_response_code(200);
         }
 
@@ -123,7 +130,7 @@ class PaystackController extends Controller
                 break;
             default:
                 Log::error('Unknown transaction type', ['transaction_id' => $transaction->id]);
-                return response()->json(['message' => 'Unknown transaction type'], 400);
+                return http_response_code(200);
         }
 
         // return response()->json(['message' => 'Webhook processed successfully'], 200);
@@ -162,8 +169,13 @@ class PaystackController extends Controller
                 'error' => $e->getMessage(),
                 'transaction_id' => $transaction->id
             ]);
+            $customMessage = "Error processing product sale ";
+            $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
 
-            return false;
+            $transaction->update([
+                'response_data' => 'Error processing product sale',
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -281,69 +293,81 @@ class PaystackController extends Controller
 
     private function handleFailedCharge($data)
     {
-        try {
-            $transaction = Transaction::where('email', $data['customer']['email'])
-                ->where('transaction_id', $data['metadata']['transaction_id'])
-                ->where('status', 'pending')
-                ->first();
 
-            if (!$transaction) {
-                Log::error('Transaction not found for failed charge', [
-                    'email' => $data['customer']['email'],
-                    'orderId' => $data['metadata']['transaction_id']
-                ]);
-                return response()->json(['success' => false, 'message' => 'Transaction not found'], 404);
-            }
-            if (!$transaction) {
-                $email = $data['customer']['email'];
-                $orderId = $data['metadata']['transaction_id'];
+        $transaction = Transaction::where('email', $data['customer']['email'])
+            ->where('transaction_id', $data['metadata']['transaction_id'])
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$transaction) {
+            $email = $data['customer']['email'];
+            $orderId = $data['metadata']['transaction_id'];
+            Log::error('Transaction not found', [
+                'email' => $data['customer']['email'],
+                'orderId' => $orderId
+            ]);
+            $customMessage = "This is a failed transaction on paystack.com and this transaction could not be found in the database. Please check the logs and verify the payment. ";
+
+            // Send email using the custom mailer
+            try {
+                Mail::mailer('admin_mailer')->to('learnerflexltd@gmail.com')->send(new IssueProcessingTransaction($email, $orderId, $customMessage));
+            } catch (\Throwable $th) {
                 Log::error('Transaction not found', [
-                    'email' => $data['customer']['email'],
+                    'error' => $th->getMessage(),
+                    'email' => $email,
                     'orderId' => $orderId
                 ]);
-                $customMessage = "This is a failed transaction on paystack.com and this transaction could not be found in the database. Please check the logs and verify the payment. ";
-
-                // Send email using the custom mailer
-                try {
-                    Mail::mailer('admin_mailer')->to('learnerflexltd@gmail.com')->send(new IssueProcessingTransaction($email, $orderId, $customMessage));
-                } catch (\Throwable $th) {
-                    Log::error('Transaction not found', [
-                        'error' => $th->getMessage(),
-                        'email' => $email,
-                        'orderId' => $orderId
-                    ]);
-                }
-                return http_response_code(200);
             }
-
-            DB::transaction(function () use ($transaction, $data) {
-                $transaction->update([
-                    'status' => 'failed',
-                    'tx_ref' => $data['reference'],
-                ]);
-
-                // Log the failed charge
-                Log::info('Charge failed', [
-                    'transaction_id' => $transaction->id,
-                    'email' => $transaction->email,
-                    'amount' => $data['amount'] / 100, // Convert from kobo to Naira
-                    'message' => $data['gateway_response'] ?? 'Unknown error'
-                ]);
-
-                // Send failure notification email to the customer
-                $amount = $data['amount'] / 100; // Convert from kobo to Naira
-                $message = $data['gateway_response'] ?? 'Unknown error';
-
-                Mail::to($transaction->email)->send(new UserPaymentFailedNotification($transaction, $amount, $message));
-            });
-
             return http_response_code(200);
-        } catch (Exception $e) {
-            Log::error('Error handling failed charge', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+        }
+
+        DB::transaction(function () use ($transaction, $data) {
+            $transaction->update([
+                'status' => 'failed',
+                'tx_ref' => $data['reference'],
+                'response_data' => 'failed charge by paystack',
+                'error' => 'failed charge by paystack',
             ]);
-            return http_response_code(200);
+
+            // Log the failed charge
+            Log::info('Charge failed', [
+                'transaction_id' => $transaction->id,
+                'email' => $transaction->email,
+                'amount' => $data['amount'] / 100, // Convert from kobo to Naira
+                'message' => $data['gateway_response'] ?? 'Unknown error'
+            ]);
+
+            // Send failure notification email to the customer
+            $amount = $data['amount'] / 100; // Convert from kobo to Naira
+            $message = $data['gateway_response'] ?? 'Unknown error';
+
+            Mail::to($transaction->email)->send(new UserPaymentFailedNotification($transaction, $amount, $message));
+        });
+
+        return http_response_code(200);
+    }
+
+    private function sendAdminTransactionError($email, $orderId, $customMessage = null)
+    {
+        $defaultMessage = "This is a failed transaction on paystack.com or this transaction could not be found in the database. Please check the logs and verify the payment.";
+        $message = $customMessage ?? $defaultMessage;
+
+        Log::error('Transaction Error', [
+            'email' => $email,
+            'orderId' => $orderId,
+            'message' => $message
+        ]);
+
+        try {
+            Mail::mailer('admin_mailer')
+                ->to('learnerflexltd@gmail.com')
+                ->send(new IssueProcessingTransaction($email, $orderId, $message));
+        } catch (\Throwable $th) {
+            Log::error('Failed to send error notification email', [
+                'error' => $th->getMessage(),
+                'email' => $email,
+                'orderId' => $orderId
+            ]);
         }
     }
 
@@ -354,16 +378,19 @@ class PaystackController extends Controller
             $temporaryUser  = TemporaryUsers::where('email', $transaction->email)->where('order_id', $transaction->transaction_id)->first();
 
             if (!$temporaryUser) {
-                // Notify admin about the issue with registration
-                Mail::to('learnflexltd@gmail.com')->send(new \App\Mail\IssueOnRegisteration($transaction->transaction_id, $transaction->email));
-
                 // Log the error
                 Log::error('Temporary user data not found for signup fee payment', [
                     'transaction_id' => $transaction->transaction_id,
                     'email' => $transaction->email,
                 ]);
+                $customMessage = "Please register the user with email, {$$transaction->email}, with order id {$transaction->transaction_id}. Their data was not found after payment, register them manually on the platform";
 
-                return;
+                $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
+                $transaction->update([
+                    'response_data' => "Could not find user with email {$transaction->email}",
+                    'error' => 'User not found',
+                ]);
+                return http_response_code(200);
             }
 
             // Generate a unique aff_id for the new user
@@ -386,12 +413,6 @@ class PaystackController extends Controller
                 'market_access' => true,
             ]);
 
-            // Update the transaction record in the database
-            $transaction->update([
-                'tx_ref' => $transaction->tx_ref,
-                'status' => 'success',
-            ]);
-
             // Delete the temporary user data
             $temporaryUser->delete();
 
@@ -412,177 +433,175 @@ class PaystackController extends Controller
                 'email' => $transaction->email,
                 'error' => $e->getMessage(),
             ]);
+            $customMessage = "Error processing signup fee payment" . $e->getMessage();
+            $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
+            $transaction->update([
+                'response_data' => 'Error processing signup fee payment',
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
     private function processMarketAccess($transaction)
     {
-        try {
-            // Locate the user using the email from the transaction
-            $user = User::where('email', $transaction->email)->first();
+        // Locate the user using the email from the transaction
+        $user = User::where('email', $transaction->email)->first();
 
-            if (!$user) {
-                Log::error('User  not found for market access', [
-                    'email' => $transaction->email,
-                    'transaction_id' => $transaction->transaction_id,
-                ]);
-                return; // Exit if user not found
-            }
-
-            // Update the user's market access and clear referral ID
-            $user->update([
-                'market_access' => true,
-                'refferal_id' => null,
-            ]);
-
-            // Update the transaction with the Paystack reference and success status
-            $transaction->update([
-                'tx_ref' => $transaction->tx_ref,
-                'status' => 'success', // Assuming the payment was successful
-            ]);
-
-            // Send the market access email
-            $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
-            try {
-                Mail::to($transaction->email)->send(new \App\Mail\MarketplaceUnlockMail($name));
-            } catch (\Exception $e) {
-                Log::error('Error sending market access email:', ['error' => $e->getMessage()]);
-            }
-
-            Log::info('Market access unlocked successfully', [
-                'transaction_id' => $transaction->transaction_id,
+        if (!$user) {
+            Log::error('User  not found for market access', [
                 'email' => $transaction->email,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error processing market access', [
                 'transaction_id' => $transaction->transaction_id,
-                'error' => $e->getMessage(),
             ]);
+            $customMessage = "Decide what to do, the user with this email: {$transaction->email}, transaction_id: {$transaction->transaction_id}. what not found after payment was successful, pls check with paystack as well";
+            $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
+            $transaction->update([
+                'response_data' => 'Could not found the user, please try again or report the issue',
+                'error' => 'User not found',
+            ]);
+            return http_response_code(200);
         }
-    }
-    public function make_payment(Request $request)
-    {
-        // Input validation
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-            'email' => 'required|email',
-            'aff_id' => 'required|exists:users,aff_id',
 
+        // Update the user's market access and clear referral ID
+        $user->update([
+            'market_access' => true,
         ]);
 
-        if ($validator->fails()) {
-            Log::warning('Validation failed for payment callback', [
-                'errors' => $validator->errors()->toArray(),
-            ]);
-            return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
-        }
-
-        // Check if the affiliate can sell the product
-        if (!Helper::canSellProduct($request->input('aff_id'), $request->input('product_id'))) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Affiliate is not authorized to promote this product.'
-            ], 403);
-        }
-
-        // Retrieve the product from the request
-        $product = Product::find($request->input('product_id'));
-
-        if (!$product) {
-            Log::warning('Product not found', ['product_id' => $request->input('product_id')]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Product not found.'
-            ], 404);
-        }
-
+        // Send the market access email
+        $name = $user->name ?? 'Valued User'; // Fallback to a default name if not available
         try {
-            // Calculate the amount (Paystack expects amount in kobo or lowest currency unit)
-            $amount = $product->price;
-            $amountKobo = $amount * 100;
-            $orderId = 'TXN' . strtoupper(Str::random(5) . time());
-            // Prepare the data for the payment
-            $formData = [
-                'email' => $request->input('email'),
-                'currency' => 'NGN',
-                'amount' => $amountKobo,
-                'metadata' => [
-                    'transaction_id' => $orderId, // Add this line
-                    'product_id' => $request->input('product_id'),
-                    'aff_id' => $request->input('aff_id'),
-                    'description' => TransactionDescription::PRODUCT_SALE->value,
-                ],
-            ];
-
-            // Attempt to retrieve Affiliate ID, if provided
-            $affiliate_id = null;
-            if ($request->has('aff_id')) {
-                $affiliate_id = User::where('aff_id', $request->input('aff_id'))->value('aff_id');
-                if (!$affiliate_id) {
-                    Log::info('Affiliate not found', ['aff_id' => $request->input('aff_id')]);
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Affiliate not found.'
-                    ], 404);
-                }
-            }
-
-            // Fetch the product's affiliate commission percentage
-            $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0;
-
-            $org_company_share = $amountKobo * 0.05; // 5% of the amount
-            $org_aff_share = $amountKobo * $aff_commission_percentage; // Affiliate share in kobo
-            $org_vendor_share = $amountKobo - ($org_company_share + $org_aff_share); // Vendor share in kobo
-
-
-            try {
-                // Initialize payment with Paystack
-                $pay = Paystack::getAuthorizationUrl($formData);
-                // Save transaction data, including vendor_id
-                Transaction::create([
-                    'user_id' => $request->input('user_id'),
-                    'email' => $request->input('email'),
-                    'affiliate_id' => $affiliate_id,
-                    'product_id' => $request->input('product_id'),
-                    'vendor_id' => $product->user_id,
-                    'amount' => $amountKobo,
-                    'currency' => 'NGN',
-                    'status' => 'pending',
-                    'org_company' => $org_company_share,
-                    'org_vendor' => $org_vendor_share,
-                    'org_aff' => $org_aff_share,
-                    'tx_ref' => null,
-                    'description' => TransactionDescription::PRODUCT_SALE->value,
-                    'transaction_id' => $orderId,
-                ]);
-                // Return the authorization URL in the JSON response
-                return response()->json([
-                    'success' => true,
-                    'authorization_url' => $pay->url,
-                    'transaction_id' => $orderId,
-                ], 200);
-            } catch (\Exception $e) {
-                \Log::error(['Payment Initialization failed: ' . $e->getMessage(), 'formData' => $formData,]);
-                // Handle exception
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Something went wrong with the payment initialization.',
-                ], 500);
-            }
+            Mail::to($transaction->email)->send(new \App\Mail\MarketplaceUnlockMail($name));
         } catch (\Exception $e) {
-            // Log any exceptions that occur during the process
-            Log::error('Error in make_payment method', [
-                'error' => $e->getMessage(),
-                'request_data' => $request->all()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while processing the payment.',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::error('Error sending market access email:', ['error' => $e->getMessage()]);
         }
+
+        Log::info('Market access unlocked successfully', [
+            'transaction_id' => $transaction->transaction_id,
+            'email' => $transaction->email,
+        ]);
     }
+    // public function make_payment(Request $request)
+    // {
+    //     // Input validation
+    //     $validator = Validator::make($request->all(), [
+    //         'product_id' => 'required|exists:products,id',
+    //         'email' => 'required|email',
+    //         'aff_id' => 'required|exists:users,aff_id',
+
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         Log::warning('Validation failed for payment callback', [
+    //             'errors' => $validator->errors()->toArray(),
+    //         ]);
+    //         return response()->json(['success' => false, 'message' => 'Invalid input data', 'errors' => $validator->errors()], 400);
+    //     }
+
+    //     // Check if the affiliate can sell the product
+    //     if (!Helper::canSellProduct($request->input('aff_id'), $request->input('product_id'))) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Affiliate is not authorized to promote this product.'
+    //         ], 403);
+    //     }
+
+    //     // Retrieve the product from the request
+    //     $product = Product::find($request->input('product_id'));
+
+    //     if (!$product) {
+    //         Log::warning('Product not found', ['product_id' => $request->input('product_id')]);
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Product not found.'
+    //         ], 404);
+    //     }
+
+    //     try {
+    //         // Calculate the amount (Paystack expects amount in kobo or lowest currency unit)
+    //         $amount = $product->price;
+    //         $amountKobo = $amount * 100;
+    //         $orderId = 'TXN' . strtoupper(Str::random(5) . time());
+    //         // Prepare the data for the payment
+    //         $formData = [
+    //             'email' => $request->input('email'),
+    //             'currency' => 'NGN',
+    //             'amount' => $amountKobo,
+    //             'metadata' => [
+    //                 'transaction_id' => $orderId, // Add this line
+    //                 'product_id' => $request->input('product_id'),
+    //                 'aff_id' => $request->input('aff_id'),
+    //                 'description' => TransactionDescription::PRODUCT_SALE->value,
+    //             ],
+    //         ];
+
+    //         // Attempt to retrieve Affiliate ID, if provided
+    //         $affiliate_id = null;
+    //         if ($request->has('aff_id')) {
+    //             $affiliate_id = User::where('aff_id', $request->input('aff_id'))->value('aff_id');
+    //             if (!$affiliate_id) {
+    //                 Log::info('Affiliate not found', ['aff_id' => $request->input('aff_id')]);
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Affiliate not found.'
+    //                 ], 404);
+    //             }
+    //         }
+
+    //         // Fetch the product's affiliate commission percentage
+    //         $aff_commission_percentage = $product->commission ? $product->commission / 100 : 0;
+
+    //         $org_company_share = $amountKobo * 0.05; // 5% of the amount
+    //         $org_aff_share = $amountKobo * $aff_commission_percentage; // Affiliate share in kobo
+    //         $org_vendor_share = $amountKobo - ($org_company_share + $org_aff_share); // Vendor share in kobo
+
+
+    //         try {
+    //             // Initialize payment with Paystack
+    //             $pay = Paystack::getAuthorizationUrl($formData);
+    //             // Save transaction data, including vendor_id
+    //             Transaction::create([
+    //                 'user_id' => $request->input('user_id'),
+    //                 'email' => $request->input('email'),
+    //                 'affiliate_id' => $affiliate_id,
+    //                 'product_id' => $request->input('product_id'),
+    //                 'vendor_id' => $product->user_id,
+    //                 'amount' => $amountKobo,
+    //                 'currency' => 'NGN',
+    //                 'status' => 'pending',
+    //                 'org_company' => $org_company_share,
+    //                 'org_vendor' => $org_vendor_share,
+    //                 'org_aff' => $org_aff_share,
+    //                 'tx_ref' => null,
+    //                 'description' => TransactionDescription::PRODUCT_SALE->value,
+    //                 'transaction_id' => $orderId,
+    //             ]);
+    //             // Return the authorization URL in the JSON response
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'authorization_url' => $pay->url,
+    //                 'transaction_id' => $orderId,
+    //             ], 200);
+    //         } catch (\Exception $e) {
+    //             \Log::error(['Payment Initialization failed: ' . $e->getMessage(), 'formData' => $formData,]);
+    //             // Handle exception
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Something went wrong with the payment initialization.',
+    //             ], 500);
+    //         }
+    //     } catch (\Exception $e) {
+    //         // Log any exceptions that occur during the process
+    //         Log::error('Error in make_payment method', [
+    //             'error' => $e->getMessage(),
+    //             'request_data' => $request->all()
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'An error occurred while processing the payment.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     // public function payment_callback(Request $request)
     // {
