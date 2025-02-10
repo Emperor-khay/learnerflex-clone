@@ -170,8 +170,9 @@ class PaystackController extends Controller
 
             $transaction->update([
                 'response_data' => 'Error processing product sale',
-                'error' => $e->getMessage(),
+                'errors' => $e->getMessage(),
             ]);
+            return http_response_code(200);
         }
     }
 
@@ -322,7 +323,7 @@ class PaystackController extends Controller
                 'status' => $data['status'],
                 'tx_ref' => $data['reference'],
                 'response_data' => 'failed charge by paystack',
-                'error' => 'failed charge by paystack',
+                'errors' => 'failed charge by paystack',
             ]);
 
             // Log the failed charge
@@ -384,7 +385,7 @@ class PaystackController extends Controller
                 $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
                 $transaction->update([
                     'response_data' => "Could not find user with email {$transaction->email}",
-                    'error' => 'User not found',
+                    'errors' => 'User not found',
                 ]);
                 return http_response_code(200);
             }
@@ -433,7 +434,7 @@ class PaystackController extends Controller
             $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
             $transaction->update([
                 'response_data' => 'Error processing signup fee payment',
-                'error' => $e->getMessage(),
+                'errors' => $e->getMessage(),
             ]);
         }
     }
@@ -452,7 +453,7 @@ class PaystackController extends Controller
             $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
             $transaction->update([
                 'response_data' => 'Could not found the user, please try again or report the issue',
-                'error' => 'User not found',
+                'errors' => 'User not found',
             ]);
             return http_response_code(200);
         }
