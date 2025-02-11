@@ -42,9 +42,11 @@ class PaystackController extends Controller
             $orderId = $payload['data']['reference'] ?? 'Unknown';
             $customMessage = 'Paystack webhook signature verification failed. Suspected hacking attempt.';
 
-            Log::warning('Invalid Paystack webhook signature', [
+            Log::warning('Invalid Paystack webhook signature. Potential security threat.', [
                 'email' => $email,
-                'orderId' => $orderId
+                'orderId' => $orderId,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->header('User-Agent')
             ]);
             $this->sendAdminTransactionError($email, $orderId, $customMessage);
 
@@ -161,11 +163,13 @@ class PaystackController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
 
-            Log::error('Error processing product sale', [
+            Log::error('Error processing product sale. Customer may not have received their product.', [
                 'error' => $e->getMessage(),
-                'transaction_id' => $transaction->id
+                'transaction_id' => $transaction->id,
+                'product_id' => $transaction->product_id,
+                'customer_email' => $transaction->email
             ]);
-            $customMessage = "Error processing product sale ";
+            $customMessage = "Error processing product sale. Urgent: Customer paid but may not have received their product. Manual intervention required.";
             $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
 
             $transaction->update([
@@ -346,13 +350,14 @@ class PaystackController extends Controller
 
     private function sendAdminTransactionError($email, $orderId, $customMessage)
     {
-        $defaultMessage = "This is a failed transaction on paystack.com or this transaction could not be found in the database. Please check the logs and verify the payment.";
+        $defaultMessage = "ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.";
         $message = $customMessage ?? $defaultMessage;
 
-        Log::error('Transaction Error', [
+        Log::error('Transaction Error. Admin action required.', [
             'email' => $email,
             'orderId' => $orderId,
-            'message' => $message
+            'message' => $message,
+            'timestamp' => now()->toDateTimeString()
         ]);
 
         try {
@@ -360,7 +365,7 @@ class PaystackController extends Controller
                 ->to('learnerflexltd@gmail.com')
                 ->send(new IssueProcessingTransaction($email, $orderId, $message));
         } catch (\Throwable $th) {
-            Log::error('Failed to send error notification email', [
+            Log::critical('Failed to send admin error notification email. Urgent manual check needed.', [
                 'error' => $th->getMessage(),
                 'email' => $email,
                 'orderId' => $orderId
@@ -380,7 +385,7 @@ class PaystackController extends Controller
                     'transaction_id' => $transaction->transaction_id,
                     'email' => $transaction->email,
                 ]);
-                $customMessage = "Please register the user with email, {$$transaction->email}, with order id {$transaction->transaction_id}. Their data was not found after payment, register them manually on the platform";
+                $customMessage = "Please register the user with email, {$$transaction->email}, with order id {$transaction->transaction_id}. Their data was not found after payment, register them manually on the platform. ";
 
                 $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
                 $transaction->update([
@@ -423,6 +428,7 @@ class PaystackController extends Controller
                 'transaction_id' => $transaction->transaction_id,
                 'email' => $transaction->email,
             ]);
+            return http_response_code(200);
         } catch (\Exception $e) {
             // Log the error
             Log::error('Error processing signup fee payment', [
@@ -430,12 +436,13 @@ class PaystackController extends Controller
                 'email' => $transaction->email,
                 'error' => $e->getMessage(),
             ]);
-            $customMessage = "Error processing signup fee payment" . $e->getMessage();
+            $customMessage = "Error saving user information after successful signup payment. 1. User not created, email not sent, Temporary record not deleted, although the transaction record is was successfully updated to success while other is Error:" . $e->getMessage();
             $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
             $transaction->update([
                 'response_data' => 'Error processing signup fee payment',
                 'errors' => $e->getMessage(),
             ]);
+            return http_response_code(200);
         }
     }
 
@@ -449,7 +456,7 @@ class PaystackController extends Controller
                 'email' => $transaction->email,
                 'transaction_id' => $transaction->transaction_id,
             ]);
-            $customMessage = "Decide what to do, the user with this email: {$transaction->email}, transaction_id: {$transaction->transaction_id}. what not found after payment was successful, pls check with paystack as well";
+            $customMessage = "Decide what to do, the user with this email: {$transaction->email}, transaction_id: {$transaction->transaction_id}. what not found after unlock marketplace payment was successful, pls check with paystack as well";
             $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
             $transaction->update([
                 'response_data' => 'Could not found the user, please try again or report the issue',
@@ -475,6 +482,7 @@ class PaystackController extends Controller
             'transaction_id' => $transaction->transaction_id,
             'email' => $transaction->email,
         ]);
+        return http_response_code(200);
     }
     public function make_payment(Request $request)
     {

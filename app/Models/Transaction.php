@@ -28,6 +28,8 @@ class Transaction extends Model
         'org_vendor',
         'org_aff',
         'meta',
+        'response_data',
+        'errors',
     ];
 
     /**

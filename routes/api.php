@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use App\Mail\IssueProcessingTransaction;
 use App\Http\Controllers\RandomController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\Users\UserController;
@@ -192,7 +193,33 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 });
 
 //test endpoints
-Route::get('/test', function () {
-    return "Staging autodeploy success"; 
+$email = 'unnmarketplace@gmail.com';
+$orderId= '123456';
+$customMessage = 'ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.';
+Route::get('/test', function ($email, $orderId, $customMessage)
+{
+    $defaultMessage = "ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.";
+    $message = $customMessage ?? $defaultMessage;
+
+    Log::error('Transaction Error. Admin action required.', [
+        'email' => $email,
+        'orderId' => $orderId,
+        'message' => $message,
+        'timestamp' => now()->toDateTimeString()
+    ]);
+
+    try {
+        Mail::mailer('admin_mailer')
+            ->to('learnerflexltd@gmail.com')
+            ->send(new IssueProcessingTransaction($email, $orderId, $message));
+    } catch (\Throwable $th) {
+        Log::critical('Failed to send admin error notification email. Urgent manual check needed.', [
+            'error' => $th->getMessage(),
+            'email' => $email,
+            'orderId' => $orderId
+        ]);
+    }
 });
+
+
 
