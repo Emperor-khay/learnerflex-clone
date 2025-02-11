@@ -198,20 +198,16 @@ Route::get('/test', function ()
 {
     $email = 'unnmarketplace@gmail.com';
 $orderId= '123456';
-$customMessage = 'ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.';
-    $defaultMessage = "ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.";
-    $message = $customMessage ?? $defaultMessage;
+$message = 'ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.';
+    
 
-    Log::error('Transaction Error. Admin action required.', [
-        'email' => $email,
-        'orderId' => $orderId,
-        'message' => $message,
-        'timestamp' => now()->toDateTimeString()
-    ]);
+
 
         Mail::mailer('admin_mailer')
             ->to('learnerflexltd@gmail.com')
             ->send(new IssueProcessingTransaction($email, $orderId, $message));
+
+            return "sent";
     
 });
 
