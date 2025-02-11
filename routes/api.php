@@ -209,17 +209,10 @@ $customMessage = 'ALERT: Transaction processing issue detected. Immediate action
         'timestamp' => now()->toDateTimeString()
     ]);
 
-    try {
         Mail::mailer('admin_mailer')
             ->to('learnerflexltd@gmail.com')
             ->send(new IssueProcessingTransaction($email, $orderId, $message));
-    } catch (\Throwable $th) {
-        Log::critical('Failed to send admin error notification email. Urgent manual check needed.', [
-            'error' => $th->getMessage(),
-            'email' => $email,
-            'orderId' => $orderId
-        ]);
-    }
+    
 });
 
 
