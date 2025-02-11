@@ -193,11 +193,12 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 });
 
 //test endpoints
-$email = 'unnmarketplace@gmail.com';
+
+Route::get('/test', function ()
+{
+    $email = 'unnmarketplace@gmail.com';
 $orderId= '123456';
 $customMessage = 'ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.';
-Route::get('/test', function ($email, $orderId, $customMessage)
-{
     $defaultMessage = "ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.";
     $message = $customMessage ?? $defaultMessage;
 

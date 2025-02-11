@@ -130,8 +130,7 @@ class PaystackController extends Controller
                 Log::error('Unknown transaction type', ['transaction_id' => $transaction->id]);
                 return http_response_code(200);
         }
-
-        // return response()->json(['message' => 'Webhook processed successfully'], 200);
+        
         return http_response_code(200);
     }
 
