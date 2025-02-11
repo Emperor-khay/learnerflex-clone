@@ -50,7 +50,7 @@ class PaystackController extends Controller
             ]);
             $this->sendAdminTransactionError($email, $orderId, $customMessage);
 
-            return http_response_code(200);
+            return http_response_code(401);
         }
 
         $payload = $request->all();
@@ -130,7 +130,7 @@ class PaystackController extends Controller
                 Log::error('Unknown transaction type', ['transaction_id' => $transaction->id]);
                 return http_response_code(200);
         }
-        
+
         return http_response_code(200);
     }
 
@@ -374,32 +374,29 @@ class PaystackController extends Controller
 
     private function processSignupFee($transaction)
     {
+        // Retrieve temporary user data from the database
+        $temporaryUser = TemporaryUsers::where('email', $transaction->email)
+            ->where('order_id', $transaction->transaction_id)
+            ->first();
+
+        if (!$temporaryUser) {
+            Log::error('Temporary user data not found for signup fee payment', [
+                'transaction_id' => $transaction->transaction_id,
+                'email' => $transaction->email,
+            ]);
+            $customMessage = "URGENT: User paid signup fee but temporary data is missing. Manual registration required for email: {$transaction->email}, transaction ID: {$transaction->transaction_id}. Verify payment on Paystack and complete user registration manually.";
+            $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
+            $transaction->update([
+                'response_data' => "Temporary user data not found for email {$transaction->email}",
+                'errors' => 'Temporary user not found',
+            ]);
+            return http_response_code(200);
+        }
+
+        // Generate a unique aff_id for the new user
+        $aff_id = $this->generateUniqueAffId();
+
         try {
-            // Retrieve temporary user data from the database
-            $temporaryUser  = TemporaryUsers::where('email', $transaction->email)->where('order_id', $transaction->transaction_id)->first();
-
-            if (!$temporaryUser) {
-                // Log the error
-                Log::error('Temporary user data not found for signup fee payment', [
-                    'transaction_id' => $transaction->transaction_id,
-                    'email' => $transaction->email,
-                ]);
-                $customMessage = "Please register the user with email, {$$transaction->email}, with order id {$transaction->transaction_id}. Their data was not found after payment, register them manually on the platform. ";
-
-                $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
-                $transaction->update([
-                    'response_data' => "Could not find user with email {$transaction->email}",
-                    'errors' => 'User not found',
-                ]);
-                return http_response_code(200);
-            }
-
-            // Generate a unique aff_id for the new user
-            do {
-                $aff_id = Str::random(8);
-                $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
-            } while ($exists);
-
             // Create the new user
             $user = User::create([
                 'aff_id' => $aff_id,
@@ -419,23 +416,31 @@ class PaystackController extends Controller
 
             // Generate token and send confirmation email
             $token = $user->createToken('YourAppName')->plainTextToken;
-            $name = $temporaryUser->name;
-            Mail::to($transaction->email)->send(new \App\Mail\RegisterSuccess($name));
+            try {
+                Mail::to($transaction->email)->send(new \App\Mail\RegisterSuccess($temporaryUser->name));
+            } catch (\Exception $e) {
+                Log::error('Error sending sign up email:', ['error' => $e->getMessage()]);
+            }
+            
 
             // Log the successful registration
             Log::info('Signup fee payment processed successfully', [
                 'transaction_id' => $transaction->transaction_id,
                 'email' => $transaction->email,
+                'user_id' => $user->id,
             ]);
+
             return http_response_code(200);
         } catch (\Exception $e) {
-            // Log the error
             Log::error('Error processing signup fee payment', [
                 'transaction_id' => $transaction->transaction_id,
                 'email' => $transaction->email,
                 'error' => $e->getMessage(),
             ]);
-            $customMessage = "Error saving user information after successful signup payment. 1. User not created, email not sent, Temporary record not deleted, although the transaction record is was successfully updated to success while other is Error:" . $e->getMessage();
+            $customMessage = "CRITICAL: Error during user creation after successful signup payment. Details: " .
+                "1. User not created, 2. Confirmation email not sent, 3. Temporary record not deleted. " .
+                "Transaction record updated to success. Error: " . $e->getMessage() .
+                " Immediate action required to complete user registration manually.";
             $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
             $transaction->update([
                 'response_data' => 'Error processing signup fee payment',
@@ -444,6 +449,18 @@ class PaystackController extends Controller
             return http_response_code(200);
         }
     }
+
+    private function generateUniqueAffId()
+    {
+        do {
+            $aff_id = Str::random(8);
+            $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+        } while ($exists);
+
+        return $aff_id;
+    }
+
+
 
     private function processMarketAccess($transaction)
     {
@@ -891,6 +908,79 @@ class PaystackController extends Controller
     //         Mail::to($refferer->email)->send(new \App\Mail\AffiliateSaleNotificationMail($product_name, $transaction->org_aff, $transaction->email, $transaction->tx_ref, $affiliate_name));
     //     } catch (\Exception $e) {
     //         Log::error('Error sending sale notification to affiliate', ['affiliate_email' => $refferer->email, 'error' => $e->getMessage()]);
+    //     }
+    // }
+
+    // private function processSignupFee($transaction)
+    // {
+    //     try {
+    //         // Retrieve temporary user data from the database
+    //         $temporaryUser  = TemporaryUsers::where('email', $transaction->email)->where('order_id', $transaction->transaction_id)->first();
+
+    //         if (!$temporaryUser) {
+    //             // Log the error
+    //             Log::error('Temporary user data not found for signup fee payment', [
+    //                 'transaction_id' => $transaction->transaction_id,
+    //                 'email' => $transaction->email,
+    //             ]);
+    //             $customMessage = "Please register the user with email, {$$transaction->email}, with order id {$transaction->transaction_id}. Their data was not found after payment, register them manually on the platform. ";
+
+    //             $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
+    //             $transaction->update([
+    //                 'response_data' => "Could not find user with email {$transaction->email}",
+    //                 'errors' => 'User not found',
+    //             ]);
+    //             return http_response_code(200);
+    //         }
+
+    //         // Generate a unique aff_id for the new user
+    //         do {
+    //             $aff_id = Str::random(8);
+    //             $exists = DB::table('users')->where('aff_id', $aff_id)->exists();
+    //         } while ($exists);
+
+    //         // Create the new user
+    //         $user = User::create([
+    //             'aff_id' => $aff_id,
+    //             'name' => $temporaryUser->name,
+    //             'email' => $temporaryUser->email,
+    //             'phone' => $temporaryUser->phone,
+    //             'password' => $temporaryUser->password, // Already hashed
+    //             'country' => null,
+    //             'refferal_id' => null,
+    //             'image' => null,
+    //             'role' => 'affiliate',
+    //             'market_access' => true,
+    //         ]);
+
+    //         // Delete the temporary user data
+    //         $temporaryUser->delete();
+
+    //         // Generate token and send confirmation email
+    //         $token = $user->createToken('YourAppName')->plainTextToken;
+    //         $name = $temporaryUser->name;
+    //         Mail::to($transaction->email)->send(new \App\Mail\RegisterSuccess($name));
+
+    //         // Log the successful registration
+    //         Log::info('Signup fee payment processed successfully', [
+    //             'transaction_id' => $transaction->transaction_id,
+    //             'email' => $transaction->email,
+    //         ]);
+    //         return http_response_code(200);
+    //     } catch (\Exception $e) {
+    //         // Log the error
+    //         Log::error('Error processing signup fee payment', [
+    //             'transaction_id' => $transaction->transaction_id,
+    //             'email' => $transaction->email,
+    //             'error' => $e->getMessage(),
+    //         ]);
+    //         $customMessage = "Error saving user information after successful signup payment. 1. User not created, email not sent, Temporary record not deleted, although the transaction record is was successfully updated to success while other is Error:" . $e->getMessage();
+    //         $this->sendAdminTransactionError($transaction->email, $transaction->transaction_id, $customMessage);
+    //         $transaction->update([
+    //             'response_data' => 'Error processing signup fee payment',
+    //             'errors' => $e->getMessage(),
+    //         ]);
+    //         return http_response_code(200);
     //     }
     // }
 

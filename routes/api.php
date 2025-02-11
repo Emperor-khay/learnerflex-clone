@@ -38,7 +38,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminTransactionController;
 
 Route::post('/payment/make-payment', [PaystackController::class, 'make_payment']);
 // Route for handling the  product payment callback
-Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
+// Route::post('/payment/callback', [PaystackController::class, 'payment_callback'])->name('payment.callback');
 //captcha
 Route::post('/verify-captcha', [RandomController::class, 'verify']);
 //password resetting routes
