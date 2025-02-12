@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use App\Mail\IssueProcessingTransaction;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\RandomController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\Users\UserController;
@@ -49,6 +51,7 @@ Route::get('/user/store-details/{id}', [VendorController::class, 'getVendorData'
 Route::get('/vendor-details/{id}', [VendorController::class, 'getVendorStore']);
 // Route::get('/vendor-store/{id}', [VendorController::class, 'getVendorStore']);
 Route::get('/download', [RandomController::class, 'downloadFile'])->name('product.download');
+Route::get('/product/{id}', [RandomController::class, 'show']);
 
 Route::post('/paystack/webhook', [PaystackController::class, 'handleWebhook']);
 Route::post('/transaction/status', [TransactionStatusController::class, 'checkStatus']);
@@ -200,15 +203,62 @@ Route::get('/test', function ()
 $orderId= '123456';
 $message = 'ALERT: Transaction processing issue detected. Immediate action required to ensure customer satisfaction.';
     
-
-
-
         Mail::mailer('admin_mailer')
             ->to('learnerflexltd@gmail.com')
             ->send(new IssueProcessingTransaction($email, $orderId, $message));
 
             return "sent";
     
+});
+
+Route::get('/test-withdrawal', function (Request $request)
+{
+
+    
+    // Retrieve the type (affiliate or vendor)
+    $type = "vendor";
+    try {
+        // Fetch pending withdrawal records
+        $withdrawals = \App\Models\Withdrawal::with('user')->where('status', 'pending')->where('type', $type)->get();
+
+        // Define CSV headers
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="pending_withdrawals.csv"',
+        ];
+
+        // Create a callback to write the CSV data
+        $callback = function () use ($withdrawals) {
+            $file = fopen('php://output', 'w');
+
+            // Write the header row
+            fputcsv($file, ['BANK CODE', 'BANK', 'ACCOUNT', 'NAME', 'AMOUNT', 'DETAILS']);
+
+            // Write each withdrawal record
+            foreach ($withdrawals as $withdrawal) {
+                $user = $withdrawal->user; // Access the related user
+                $amountInNaira = ($withdrawal->amount / 100) - 50; // Convert to Naira and deduct 50 Naira
+                $amountInNaira = max(0, $amountInNaira); // Ensure non-negative amount
+
+                fputcsv($file, [
+                    $user->bankcode ?? 'N/A',          // BANK CODE (from user model, default to N/A if not set)
+                    $withdrawal->bank_name,           // BANK
+                    $withdrawal->bank_account,        // ACCOUNT
+                    $user->name ?? 'Unknown',         // NAME (from user model, default to Unknown if not set)
+                    $amountInNaira,  // AMOUNT in Naira, formatted as 2 decimal places
+                    'Learnerflex Payout',             // DETAILS
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Return CSV as a streamed response
+        return Response::stream($callback, 200, $headers);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to generate CSV: ' . $e->getMessage()], 500);
+        \Log::error('Failed to generate CSV', ['error' => $e->getMessage()]);
+    }
 });
 
 

@@ -96,7 +96,7 @@ class SuperAdminTransactionController extends Controller
                 $file = fopen('php://output', 'w');
 
                 // Write the header row
-                fputcsv($file, ['BANK CODE', 'BANK', 'ACCOUNT', 'NAME', 'AMOUNT']);
+                fputcsv($file, ['BANK CODE', 'BANK', 'ACCOUNT', 'NAME', 'AMOUNT', 'DETAILS']);
 
                 // Write each withdrawal record
                 foreach ($withdrawals as $withdrawal) {
@@ -109,7 +109,8 @@ class SuperAdminTransactionController extends Controller
                         $withdrawal->bank_name,           // BANK
                         $withdrawal->bank_account,        // ACCOUNT
                         $user->name ?? 'Unknown',         // NAME (from user model, default to Unknown if not set)
-                        number_format($amountInNaira, 2)  // AMOUNT in Naira, formatted as 2 decimal places
+                        $amountInNaira,  // AMOUNT in Naira, formatted as 2 decimal places
+                        'Learnerflex Payout',             // DETAILS
                     ]);
                 }
 

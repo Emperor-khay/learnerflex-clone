@@ -10,6 +10,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Mail\AccessTokenMail;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -150,11 +151,11 @@ class RandomController extends Controller
 
         $body = $response->json();
         // Log the full reCAPTCHA response
-    Log::info('reCAPTCHA verification attempt', [
-        'ip' => $request->ip(),
-        'action' => $request->input('action'),
-        'response' => $body
-    ]);
+        Log::info('reCAPTCHA verification attempt', [
+            'ip' => $request->ip(),
+            'action' => $request->input('action'),
+            'response' => $body
+        ]);
 
         if ($body['success'] && $body['action'] == $request->input('action') && $body['score'] >= 0.5) {
             Log::info('reCAPTCHA passed', [
@@ -172,5 +173,22 @@ class RandomController extends Controller
         ]);
 
         return response()->json(['success' => false, 'message' => 'Invalid captcha'], 400);
+    }
+
+    public function show($id): JsonResponse
+    {
+        $product = Product::select('id', 'name', 'price', 'image')->find($id);
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $product
+        ]);
     }
 }
