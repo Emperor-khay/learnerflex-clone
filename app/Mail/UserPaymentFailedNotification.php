@@ -34,6 +34,6 @@ class UserPaymentFailedNotification extends Mailable
     {
         return $this->subject('Payment Failed')
                     ->to($this->transaction->email)
-                    ->view('emails.user-payment-failed-notification');
+                    ->view('mail.user_payment_failed_notification');
     }
 }

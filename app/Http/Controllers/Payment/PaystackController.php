@@ -341,7 +341,16 @@ class PaystackController extends Controller
             $amount = $data['amount'] / 100; // Convert from kobo to Naira
             $message = $data['gateway_response'] ?? 'Unknown error';
 
-            Mail::to($transaction->email)->send(new UserPaymentFailedNotification($transaction, $amount, $message));
+            try {
+                Mail::to($transaction->email)->send(new UserPaymentFailedNotification($transaction, $amount, $message));
+            } catch (\Throwable $th) {
+                Log::critical('Failed to send User payment failed notification email. Urgent manual check needed.', [
+                    'error' => $th->getMessage(),
+                    'email' => $amount,
+                    'orderId' => $message
+                ]);
+            }
+           
         });
 
         return http_response_code(200);
