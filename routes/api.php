@@ -88,7 +88,7 @@ Route::middleware(['auth:sanctum', 'role:affiliate'])->prefix('affiliate')->grou
 
 
     // withdrawals
-    Route::post('/request/withdrawal', [WithdrawalController::class, 'index'])->middleware('no-cache');
+    Route::post('/request/withdrawal', [WithdrawalController::class, 'index']);
     Route::get('/withdrawals', [WithdrawalController::class, 'WithdrawRecord']);
     //transactions
     Route::get('/transactions', [AffiliateController::class, 'transactions']);
